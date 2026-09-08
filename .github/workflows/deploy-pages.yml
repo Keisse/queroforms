@@ -25,16 +25,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build
 
       - name: Ensure SPA fallback and custom domain
         run: |
-          cp public/404.html dist/404.html
+          cp dist/index.html dist/404.html
           cp public/CNAME dist/CNAME
           touch dist/.nojekyll
 
