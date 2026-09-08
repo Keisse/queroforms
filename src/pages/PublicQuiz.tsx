@@ -65,7 +65,7 @@ export default function PublicQuiz(){
     <div className="quiz-stage">
       {step.kind==='intro' && <div className="intro-card intro-certificate-screen">
         <div className="certificate-image-wrap">
-          <img className="certificate-image" src="/certificado.webp" alt="Certificado Gestão de Projetos com IA - Formação Mestre GP" />
+          <img className="certificate-image" src="/certificado-inline.svg" alt="Certificado Gestão de Projetos com IA - Formação Mestre GP" />
         </div>
         <h1>Se torne um mestre do <span>cloud certificado.</span></h1>
         <p className="intro-question">Você já usa o cloud?</p>
