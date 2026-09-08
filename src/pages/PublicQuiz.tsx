@@ -64,19 +64,8 @@ export default function PublicQuiz(){
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
       {step.kind==='intro' && <div className="intro-card intro-certificate-screen">
-        <div className="certificate-scene" aria-hidden="true">
-          <span className="decor decor-blue"/><span className="decor decor-gold"/><span className="decor decor-star">✦</span>
-          <div className="certificate-card">
-            <div className="certificate-emblem">★</div>
-            <div className="certificate-label">CERTIFICADO</div>
-            <div className="certificate-rule"/>
-            <div className="certificate-title">Gestão de Projetos com IA</div>
-            <div className="certificate-subtitle">Formação Mestre GP</div>
-            <div className="certificate-rule small"/>
-            <div className="certificate-note">Diagnóstico de maturidade</div>
-            <div className="certificate-stars">— ★ ★ ★ —</div>
-            <div className="certificate-seal"><span>★</span></div>
-          </div>
+        <div className="certificate-image-wrap">
+          <img className="certificate-image" src="/certificado.webp" alt="Certificado Gestão de Projetos com IA - Formação Mestre GP" />
         </div>
         <h1>Se torne um mestre do <span>cloud certificado.</span></h1>
         <p className="intro-question">Você já usa o cloud?</p>
