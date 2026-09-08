@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BarChart3, Check, LoaderCircle, Sparkles, Users } from 'lucide-react';
-import { gpIaSteps, levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, BarChart3, Check, Sparkles, Users } from 'lucide-react';
+import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
+import { loadSteps } from '../lib/stepsStore';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 
 function AvatarMale(){
@@ -11,23 +12,18 @@ function AvatarFemale(){
 }
 
 export default function PublicQuiz(){
+  const [steps]=useState<Step[]>(()=>loadSteps());
   const [idx,setIdx]=useState(0);
   const [answers,setAnswers]=useState<Record<string,string|string[]>>({});
   const [email,setEmail]=useState('');
   const [name,setName]=useState('');
   const [saving,setSaving]=useState(false);
   const [saveError,setSaveError]=useState('');
-  const step=gpIaSteps[idx];
-  const progress=Math.round(((idx+1)/gpIaSteps.length)*100);
-  const result=useMemo(()=>scoreResult(answers),[answers]);
-  const next=()=>setIdx(i=>Math.min(i+1,gpIaSteps.length-1));
+  const step=steps[idx];
+  const progress=Math.round(((idx+1)/steps.length)*100);
+  const result=useMemo(()=>scoreResult(steps,answers),[steps,answers]);
+  const next=()=>setIdx(i=>Math.min(i+1,steps.length-1));
   const back=()=>setIdx(i=>Math.max(i-1,0));
-
-  useEffect(()=>{
-    if(step?.kind!=='processing') return;
-    const timer=window.setTimeout(()=>next(),2200);
-    return ()=>window.clearTimeout(timer);
-  },[step?.kind]);
 
   const select=(s:Extract<Step,{kind:'question'}>, value:string)=>{
     if(s.input==='multi'){
@@ -67,7 +63,7 @@ export default function PublicQuiz(){
   };
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">Diagnóstico de Maturidade</div><div className="counter">{step.kind==='intro'?'':`${idx+1}/${gpIaSteps.length}`}</div></div>
+    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">Diagnóstico de Maturidade</div><div className="counter">{step.kind==='intro'?'':`${idx+1}/${steps.length}`}</div></div>
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
       {step.kind==='branch' && (()=>{
@@ -109,7 +105,7 @@ export default function PublicQuiz(){
         {step.stat && <div className="stat-box">{step.stat}</div>}
         {step.source&&<div className="source-note">Fonte: {step.source}</div>}
         <button className="primary big" onClick={next}>Continuar</button></div>}
-      {step.kind==='processing' && <div className="processing-view"><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><LoaderCircle className="spin"/><p className="muted center">Estamos cruzando suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p></div>}
+      {step.kind==='processing' && <div className="processing-view"><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" onClick={next}>Ver resultado</button></div>}
       {step.kind==='email' && <div className="field-view"><h1>{step.title}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!email.includes('@')} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
       {step.kind==='name' && <div className="field-view"><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button>{saveError&&<div className="save-error">{saveError}</div>}<small>{supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
       {step.kind==='result' && <Result name={name} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined}/>} 
@@ -138,7 +134,7 @@ function Result({name,pct,level,dimensions,salaryRange}:{name:string,pct:number,
     <div className="result-copy"><h2>{copy.headline}</h2><p>{copy.next}</p></div>
 
     <section className="dimension-card">
-      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>Onde sua IA já gera valor — e onde ainda existe espaço para crescer</h2></div>
+      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>Onde sua IA já gera valor e onde ainda existe espaço para crescer</h2></div>
       <div className="dimension-bars">{chartData.map(([label,value])=><div className="dimension-row" key={label}><div className="dimension-meta"><span>{label}</span><b>{value}%</b></div><div className="dimension-track"><i style={{width:`${value}%`}}/></div></div>)}</div>
     </section>
 
@@ -149,8 +145,8 @@ function Result({name,pct,level,dimensions,salaryRange}:{name:string,pct:number,
           return <div className="salary-col" key={p.label}><span className="salary-value">{fmt(p.value)}</span><div className="salary-bar-wrap"><div className={`salary-bar ${i===projection.length-1?'top':''}`} style={{height:`${h}%`}}/></div><small>{p.label}</small></div>;
         })}
       </div>
-      <p className="salary-note">Projeção educativa a partir da sua faixa salarial atual, combinando o prêmio médio de certificação PMP® (+22%), ciclos de reajuste anual e o diferencial de quem une Gestão de Projetos e IA. Baseada em médias de mercado — não é uma promessa individual; resultados variam por empresa, senioridade e região.</p>
-      <div className="source-note">Fontes: PMI — Earning Power: Project Management Salary Survey; Mario H. Trentim, Board Member PMI Global</div>
+      <p className="salary-note">Projeção educativa a partir da sua faixa salarial atual, combinando o prêmio médio de certificação PMP® (+22%), ciclos de reajuste anual e o diferencial de quem une Gestão de Projetos e IA. Baseada em médias de mercado, não é uma promessa individual; resultados variam por empresa, senioridade e região.</p>
+      <div className="source-note">Fontes: PMI, Earning Power: Project Management Salary Survey; Mario H. Trentim, Board Member PMI Global</div>
     </section>}
 
     <section className="pmi-card">
