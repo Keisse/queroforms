@@ -4,13 +4,6 @@ import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '..
 import { loadSteps } from '../lib/stepsStore';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 
-function AvatarMale(){
-  return <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMax slice"><rect width="200" height="240" fill="#dbe9fb"/><circle cx="100" cy="92" r="46" fill="#f0c8a0"/><path d="M56 88c0-30 20-52 44-52s44 22 44 52c0-8-6-14-12-16-4 10-14 16-32 16s-28-6-32-16c-6 2-12 8-12 16z" fill="#2b2320"/><path d="M40 240c4-46 30-70 60-70s56 24 60 70z" fill="#284a6b"/></svg>;
-}
-function AvatarFemale(){
-  return <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMax slice"><rect width="200" height="240" fill="#fbe3ec"/><path d="M46 84c0-34 24-58 54-58s54 24 54 58c0 6-2 34-8 46-6-18-10-30-10-30s-6 18-36 18-36-18-36-18-4 12-10 30c-6-12-8-40-8-46z" fill="#4a2c22"/><circle cx="100" cy="94" r="42" fill="#f2cfa8"/><path d="M34 240c4-44 32-66 66-66s62 22 66 66z" fill="#b6577d"/></svg>;
-}
-
 export default function PublicQuiz(){
   const [steps]=useState<Step[]>(()=>loadSteps());
   const [idx,setIdx]=useState(0);
@@ -97,7 +90,7 @@ export default function PublicQuiz(){
           <button className="primary intro-choice" onClick={()=>chooseCloud('nao')}>Não <span>→</span></button>
         </div>
       </div>}
-      {step.kind==='question' && step.layout==='photo' && <div className="question-view"><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<AvatarFemale/>:<AvatarMale/>}</div><span>{o.label}</span></button>})}</div></div>}
+      {step.kind==='question' && step.layout==='photo' && <div className="question-view"><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{o.label}</span></button>})}</div></div>}
       {step.kind==='question' && step.layout!=='photo' && <div className="question-view"><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{o.label}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" onClick={next}>Continuar</button>}</div>}
       {step.kind==='insight' && <div className="insight-view"><div className="insight-visual">{step.visual==='chart'?<BarChart3 size={54}/>:step.visual==='people'?<Users size={54}/>:<Sparkles size={54}/>}</div><small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p>
         {step.chart && <div className="insight-chart">{step.chart.map(bar=><div className="insight-bar-row" key={bar.label}><div className="insight-bar-meta"><span>{bar.label}</span><b>{bar.suffix}</b></div><div className="insight-bar-track"><i className={bar.highlight?'highlight':''} style={{width:`${bar.value}%`}}/></div></div>)}</div>}
