@@ -1,0 +1,1 @@
+export default function Placeholder({title}:{title:string}){return <><header className="page-head"><div><div className="crumb">Keisse › My workspace</div><h1>{title}</h1></div></header><div className="empty-card"><h2>{title}</h2><p>Estrutura preparada para o MVP. Esta área será alimentada pelas respostas salvas no Supabase.</p></div></>}
