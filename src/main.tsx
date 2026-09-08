@@ -8,6 +8,7 @@ import PublicQuiz from './pages/PublicQuiz';
 import Placeholder from './pages/Placeholder';
 import Settings from './pages/Settings';
 import './styles/global.css';
+import './styles/introCertificate.css';
 
 function Admin({children}:{children:React.ReactNode}){return <AppShell>{children}</AppShell>}
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><Routes>
