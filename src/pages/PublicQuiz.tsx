@@ -32,6 +32,11 @@ export default function PublicQuiz(){
     }
   };
 
+  const chooseCloud=(value:'sim'|'nao')=>{
+    setAnswers(current=>({...current,'cloud-use':value}));
+    setTimeout(next,160);
+  };
+
   const saveLead=async()=>{
     setSaving(true); setSaveError('');
     try{
@@ -55,10 +60,31 @@ export default function PublicQuiz(){
   };
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">QueroForms</div><div className="counter">{idx+1}/{gpIaSteps.length}</div></div>
+    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">QueroForms</div><div className="counter">{step.kind==='intro'?'':`${idx+1}/${gpIaSteps.length}`}</div></div>
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
-      {step.kind==='intro' && <div className="intro-card"><div className="hero-orbit"><span>Planejamento</span><span>Riscos</span><span>Decisões</span><span>Relatórios</span><div>IA</div></div><h1>{step.title}</h1><p>{step.body}</p><button className="primary big" onClick={next}>{step.cta}</button></div>}
+      {step.kind==='intro' && <div className="intro-card intro-certificate-screen">
+        <div className="certificate-scene" aria-hidden="true">
+          <span className="decor decor-blue"/><span className="decor decor-gold"/><span className="decor decor-star">✦</span>
+          <div className="certificate-card">
+            <div className="certificate-emblem">★</div>
+            <div className="certificate-label">CERTIFICADO</div>
+            <div className="certificate-rule"/>
+            <div className="certificate-title">Gestão de Projetos com IA</div>
+            <div className="certificate-subtitle">Formação Mestre GP</div>
+            <div className="certificate-rule small"/>
+            <div className="certificate-note">Diagnóstico de maturidade</div>
+            <div className="certificate-stars">— ★ ★ ★ —</div>
+            <div className="certificate-seal"><span>★</span></div>
+          </div>
+        </div>
+        <h1>Se torne um mestre do <span>cloud certificado.</span></h1>
+        <p className="intro-question">Você já usa o cloud?</p>
+        <div className="intro-choice-row">
+          <button className="primary intro-choice" onClick={()=>chooseCloud('sim')}>Sim <span>→</span></button>
+          <button className="primary intro-choice" onClick={()=>chooseCloud('nao')}>Não <span>→</span></button>
+        </div>
+      </div>}
       {step.kind==='question' && <div className="question-view"><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{o.label}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" onClick={next}>Continuar</button>}</div>}
       {step.kind==='insight' && <div className="insight-view"><div className="insight-visual"><Sparkles size={54}/></div><small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p><div className="stat-box">{step.stat}</div>{step.source&&<div className="source-note">Fonte: {step.source}</div>}<button className="primary big" onClick={next}>Continuar</button></div>}
       {step.kind==='processing' && <div className="processing-view"><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><LoaderCircle className="spin"/><p className="muted center">Estamos cruzando suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p></div>}
