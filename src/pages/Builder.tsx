@@ -1,5 +1,5 @@
-import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useEffect, useState, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps, resetSteps, hasCustomSteps } from '../lib/stepsStore';
 import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
@@ -11,6 +11,7 @@ const FLOW_WIDTH_KEY='queroforms-builder-flow-width';
 const PROPS_WIDTH_KEY='queroforms-builder-props-width';
 
 type NewScreenType='single'|'multi'|'scale'|'insight'|'email'|'name'|'processing';
+type DropPosition='before'|'after';
 
 const NEW_SCREEN_OPTIONS:{type:NewScreenType;icon:string;title:string;description:string}[]=[
   {type:'single',icon:'◉',title:'Pergunta — escolha única',description:'Uma resposta entre várias opções.'},
@@ -52,6 +53,10 @@ function labelFor(s: Step){
     : 'Resultado';
 }
 
+function canReorderStep(s:Step){
+  return s.kind!=='intro' && s.kind!=='branch' && s.kind!=='result';
+}
+
 function createNewStep(type:NewScreenType):Step{
   const stamp=`${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
   if(type==='single') return {
@@ -86,6 +91,8 @@ export default function Builder(){
   const [flowWidth,setFlowWidth]=useState(()=>readPanelWidth(FLOW_WIDTH_KEY,260));
   const [propsWidth,setPropsWidth]=useState(()=>readPanelWidth(PROPS_WIDTH_KEY,380));
   const [addOpen,setAddOpen]=useState(false);
+  const [draggedStepId,setDraggedStepId]=useState<string|null>(null);
+  const [dropTarget,setDropTarget]=useState<{id:string;position:DropPosition}|null>(null);
   const step=steps[sel];
 
   useEffect(()=>{
@@ -156,6 +163,58 @@ export default function Builder(){
     setSel(insertAt);
     setAddOpen(false);
   };
+
+  const startStepDrag=(s:Step,e:ReactDragEvent<HTMLSpanElement>)=>{
+    if(!canReorderStep(s)){
+      e.preventDefault();
+      return;
+    }
+    setDraggedStepId(s.id);
+    setDropTarget(null);
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain',s.id);
+  };
+
+  const dragOverStep=(s:Step,e:ReactDragEvent<HTMLDivElement>)=>{
+    if(!draggedStepId || draggedStepId===s.id) return;
+    if(s.kind==='intro' || s.kind==='branch') return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect='move';
+    const rect=e.currentTarget.getBoundingClientRect();
+    const position:DropPosition=s.kind==='result' || e.clientY<rect.top+(rect.height/2) ? 'before' : 'after';
+    setDropTarget({id:s.id,position});
+  };
+
+  const dropStep=(s:Step,e:ReactDragEvent<HTMLDivElement>)=>{
+    if(!draggedStepId || !dropTarget || dropTarget.id!==s.id) return;
+    e.preventDefault();
+    const fromIndex=steps.findIndex(item=>item.id===draggedStepId);
+    if(fromIndex<0) return;
+    const moving=steps[fromIndex];
+    if(!canReorderStep(moving)) return;
+
+    const selectedId=steps[sel]?.id;
+    const without=steps.filter(item=>item.id!==draggedStepId);
+    let insertAt=without.findIndex(item=>item.id===s.id);
+    if(insertAt<0) return;
+    if(s.kind!=='result' && dropTarget.position==='after') insertAt+=1;
+    const resultIndex=without.findIndex(item=>item.kind==='result');
+    if(resultIndex>=0) insertAt=Math.min(insertAt,resultIndex);
+
+    const next=[...without];
+    next.splice(insertAt,0,moving);
+    setSteps(next);
+    const nextSelectedIndex=next.findIndex(item=>item.id===selectedId);
+    setSel(nextSelectedIndex>=0?nextSelectedIndex:insertAt);
+    setDraggedStepId(null);
+    setDropTarget(null);
+  };
+
+  const finishStepDrag=()=>{
+    setDraggedStepId(null);
+    setDropTarget(null);
+  };
+
   const publish=async()=>{
     setPublishing(true); setPublishError('');
     try{
@@ -218,17 +277,35 @@ export default function Builder(){
       <section className="steps-panel">
         <div className="steps-title">Fluxo <span>{steps.length} telas</span></div>
         <div className="steps-list">
-          {steps.map((s,i)=><div className={`step-item ${i===sel?'active':''}`} key={s.id} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
-            <span onClick={()=>setSel(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
-              <span className="step-num">{i+1}</span>
-              <div><b>{labelFor(s)}</b><small>{s.kind}</small></div>
-            </span>
-            <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>
-          </div>)}
+          {steps.map((s,i)=>{
+            const reorderable=canReorderStep(s);
+            const dropClass=dropTarget?.id===s.id ? `builder-step-drop-${dropTarget.position}` : '';
+            return <div
+              className={`step-item ${i===sel?'active':''} ${draggedStepId===s.id?'builder-step-dragging':''} ${dropClass}`}
+              key={s.id}
+              onDragOver={e=>dragOverStep(s,e)}
+              onDrop={e=>dropStep(s,e)}
+              style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}
+            >
+              <span
+                className={`builder-step-handle ${reorderable?'':'locked'}`}
+                draggable={reorderable}
+                onDragStart={e=>startStepDrag(s,e)}
+                onDragEnd={finishStepDrag}
+                onClick={e=>e.stopPropagation()}
+                title={reorderable?'Arraste para mudar a ordem':'Esta tela tem posição protegida'}
+              ><GripVertical size={16}/></span>
+              <span onClick={()=>setSel(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1,minWidth:0}}>
+                <span className="step-num">{i+1}</span>
+                <div style={{minWidth:0}}><b>{labelFor(s)}</b><small>{s.kind}</small></div>
+              </span>
+              <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>
+            </div>;
+          })}
         </div>
         <div className="builder-add-screen-wrap">
           <button className="btn builder-add-screen" onClick={()=>setAddOpen(true)}><Plus size={16}/> Adicionar tela</button>
-          <small>Será inserida depois da tela selecionada.</small>
+          <small>Arraste pelo ícone ⋮⋮ para reordenar. Novas telas entram depois da selecionada.</small>
         </div>
       </section>
 
