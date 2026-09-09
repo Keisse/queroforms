@@ -17,6 +17,7 @@ import './styles/finalPolish.css';
 import './styles/aiCloud.css';
 import './finalPolish';
 import './focusValueImage';
+import './modernProjectImage';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
