@@ -151,6 +151,34 @@ function installMarketValueVisual() {
   });
 }
 
+function installAiCloudContext() {
+  document.querySelectorAll<HTMLElement>('.insight-view').forEach(view => {
+    const eyebrow = view.querySelector('small')?.textContent?.trim().toLowerCase();
+    if (eyebrow !== 'pmbok® 8ª edição') return;
+
+    const visual = view.querySelector<HTMLElement>('.insight-visual');
+    if (!visual || visual.dataset.aiCloudReady === 'true') return;
+
+    visual.dataset.aiCloudReady = 'true';
+    visual.classList.add('qf-ai-cloud-host');
+    visual.innerHTML = `
+      <div class="qf-ai-cloud" role="img" aria-label="Nuvem com várias inteligências artificiais">
+        <span class="qf-cloud-puff p1"></span>
+        <span class="qf-cloud-puff p2"></span>
+        <span class="qf-cloud-puff p3"></span>
+        <span class="qf-cloud-puff p4"></span>
+        <span class="qf-ai-chip c1">IA</span>
+        <span class="qf-ai-chip c2">IA</span>
+        <span class="qf-ai-chip c3">IA</span>
+        <span class="qf-ai-chip c4">IA</span>
+        <span class="qf-ai-chip c5">IA</span>
+        <span class="qf-ai-chip c6">IA</span>
+        <span class="qf-ai-chip c7">IA</span>
+      </div>
+    `;
+  });
+}
+
 function updateSalaryProjection() {
   const chart = document.querySelector<HTMLElement>('.result-view .salary-chart');
   if (!chart) return;
@@ -178,6 +206,7 @@ function applyFinalPolish() {
   softenAlmostThereStat();
   installSalaryContextProjection();
   installMarketValueVisual();
+  installAiCloudContext();
   updateSalaryProjection();
 }
 
