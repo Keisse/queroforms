@@ -38,6 +38,19 @@ create index if not exists submissions_created_at_idx on public.submissions(crea
 alter table public.surveys enable row level security;
 alter table public.submissions enable row level security;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'surveys'
+  ) then
+    alter publication supabase_realtime add table public.surveys;
+  end if;
+end $$;
+
 drop policy if exists "public can insert submissions" on public.submissions;
 create policy "public can insert submissions"
 on public.submissions for insert
