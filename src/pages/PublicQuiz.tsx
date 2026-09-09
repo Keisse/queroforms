@@ -5,6 +5,19 @@ import { loadSteps } from '../lib/stepsStore';
 import { fetchPublishedSteps } from '../lib/surveyConfig';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 
+function stepsFromSurveyRecord(record: unknown): Step[] | null {
+  const config = (record as { config?: Record<string, unknown> } | null)?.config;
+  const steps = config?.steps;
+  return Array.isArray(steps) && steps.length ? (steps as Step[]) : null;
+}
+
+function introHeading(title: string){
+  const marker='cloud certificado.';
+  const pos=title.toLowerCase().indexOf(marker);
+  if(pos<0) return title;
+  return <>{title.slice(0,pos)}<span>{title.slice(pos)}</span></>;
+}
+
 export default function PublicQuiz(){
   const [steps,setSteps]=useState<Step[]|null>(null);
   const [idx,setIdx]=useState(0);
@@ -16,11 +29,38 @@ export default function PublicQuiz(){
 
   useEffect(()=>{
     let active=true;
-    fetchPublishedSteps('gp-ia').then(remote=>{
+
+    const applyPublishedSteps=(next:Step[]|null, fallback=false)=>{
       if(!active) return;
-      setSteps(remote ?? loadSteps());
-    });
-    return ()=>{active=false};
+      const resolved=next ?? (fallback ? loadSteps() : null);
+      if(!resolved?.length) return;
+      setSteps(resolved);
+      setIdx(current=>Math.min(current,resolved.length-1));
+    };
+
+    const refresh=()=>{
+      fetchPublishedSteps('gp-ia').then(remote=>applyPublishedSteps(remote,true));
+    };
+
+    refresh();
+
+    const channel=supabase
+      .channel('public-survey-gp-ia')
+      .on(
+        'postgres_changes',
+        {event:'UPDATE',schema:'public',table:'surveys',filter:'slug=eq.gp-ia'},
+        payload=>applyPublishedSteps(stepsFromSurveyRecord(payload.new))
+      )
+      .subscribe();
+
+    const onFocus=()=>refresh();
+    window.addEventListener('focus',onFocus);
+
+    return ()=>{
+      active=false;
+      window.removeEventListener('focus',onFocus);
+      void supabase.removeChannel(channel);
+    };
   },[]);
 
   const result=useMemo(()=>steps?scoreResult(steps,answers):{pct:0,level:1,dimensions:{} as Record<string,number>},[steps,answers]);
@@ -97,8 +137,8 @@ export default function PublicQuiz(){
         <div className="certificate-image-wrap">
           <img className="certificate-image" src="https://trentim.com/wp-content/uploads/2026/09/Imagem-do-Certificado.png" alt="Certificado Gestão de Projetos com IA - Formação Mestre GP" loading="eager" decoding="async" />
         </div>
-        <h1>Se torne um mestre do <span>cloud certificado.</span></h1>
-        <p className="intro-question">Você já usa o cloud?</p>
+        <h1>{introHeading(step.title)}</h1>
+        <p className="intro-question">{step.body}</p>
         <div className="intro-choice-row">
           <button className="primary intro-choice" onClick={()=>chooseCloud('sim')}>Sim <span>→</span></button>
           <button className="primary intro-choice" onClick={()=>chooseCloud('nao')}>Não <span>→</span></button>
