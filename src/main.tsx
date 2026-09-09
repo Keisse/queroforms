@@ -19,6 +19,7 @@ import './finalPolish';
 import './focusValueImage';
 import './modernProjectImage';
 import './contextImageUpload';
+import './contextDraftDatabaseBridge';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
