@@ -57,6 +57,12 @@ to authenticated
 using (true)
 with check (true);
 
+drop policy if exists "public can read published surveys" on public.surveys;
+create policy "public can read published surveys"
+on public.surveys for select
+to anon
+using (status = 'published');
+
 insert into public.surveys(slug,name,status,config)
 values (
   'gp-ia',

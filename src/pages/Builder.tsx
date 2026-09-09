@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps, resetSteps, hasCustomSteps } from '../lib/stepsStore';
+import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
 
 function labelFor(s: Step){
   return s.kind==='question' ? s.title
@@ -15,10 +16,23 @@ function labelFor(s: Step){
 
 export default function Builder(){
   const [steps,setSteps]=useState<Step[]>(()=>loadSteps());
+  const [loading,setLoading]=useState(true);
   const [sel,setSel]=useState(0);
   const [savedMsg,setSavedMsg]=useState('');
+  const [publishError,setPublishError]=useState('');
+  const [publishing,setPublishing]=useState(false);
   const [customized,setCustomized]=useState(hasCustomSteps());
   const step=steps[sel];
+
+  useEffect(()=>{
+    let active=true;
+    fetchPublishedSteps('gp-ia').then(remote=>{
+      if(!active) return;
+      if(remote) setSteps(remote);
+      setLoading(false);
+    });
+    return ()=>{active=false};
+  },[]);
 
   const update=(patch: Partial<Step>)=>{
     setSteps(prev=>prev.map((s,i)=>i===sel?{...s,...patch} as Step:s));
@@ -38,11 +52,20 @@ export default function Builder(){
     if(step.options.length<=1) return;
     update({options: step.options.filter((_,i)=>i!==optIdx)} as Partial<Step>);
   };
-  const publish=()=>{
-    saveSteps(steps);
-    setCustomized(true);
-    setSavedMsg('Publicado ✓');
-    setTimeout(()=>setSavedMsg(''),2200);
+  const publish=async()=>{
+    setPublishing(true); setPublishError('');
+    try{
+      await publishSteps('gp-ia', steps);
+      saveSteps(steps);
+      setCustomized(true);
+      setSavedMsg('Publicado ✓ já vale para todo mundo');
+    }catch{
+      setPublishError('Não consegui publicar agora. As alterações continuam salvas neste navegador.');
+      saveSteps(steps);
+    }finally{
+      setPublishing(false);
+      setTimeout(()=>{setSavedMsg('');setPublishError('');},3500);
+    }
   };
   const restore=()=>{
     resetSteps();
@@ -50,21 +73,24 @@ export default function Builder(){
     setSteps(defaults);
     setSel(0);
     setCustomized(false);
-    setSavedMsg('Restaurado ao padrão');
-    setTimeout(()=>setSavedMsg(''),2200);
+    setSavedMsg('Restaurado ao padrão (lembre de clicar em Publicar)');
+    setTimeout(()=>setSavedMsg(''),3500);
   };
+
+  if(loading) return <p className="muted">Carregando perguntas publicadas...</p>;
 
   return <>
     <header className="page-head">
       <div><div className="crumb">Diagnósticos › GP com IA</div><h1>Editor do diagnóstico</h1></div>
       <div className="head-actions">
         {savedMsg && <span className="conn ok" style={{alignSelf:'center',marginRight:8}}>{savedMsg}</span>}
+        {publishError && <span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>{publishError}</span>}
         <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Pré-visualizar</a>
-        <button className="btn" onClick={restore} title="Volta às perguntas originais neste navegador">Restaurar padrão</button>
-        <button className="btn dark" onClick={publish}>Publicar</button>
+        <button className="btn" onClick={restore} title="Volta às perguntas originais do código">Restaurar padrão</button>
+        <button className="btn dark" onClick={publish} disabled={publishing}>{publishing?'Publicando...':'Publicar'}</button>
       </div>
     </header>
-    {customized && <p className="muted" style={{margin:'-10px 0 18px'}}>Você está editando uma versão personalizada, salva neste navegador. Quem acessa o link em outro dispositivo ainda vê a versão publicada no código.</p>}
+    {customized && <p className="muted" style={{margin:'-10px 0 18px'}}>Publicado: quem acessar o link do diagnóstico, em qualquer dispositivo, já vê essa versão.</p>}
     <div className="builder-grid">
       <section className="steps-panel">
         <div className="steps-title">Fluxo <span>{steps.length} telas</span></div>

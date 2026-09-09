@@ -1,20 +1,34 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, BarChart3, Check, Sparkles, Users } from 'lucide-react';
 import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
 import { loadSteps } from '../lib/stepsStore';
+import { fetchPublishedSteps } from '../lib/surveyConfig';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 
 export default function PublicQuiz(){
-  const [steps]=useState<Step[]>(()=>loadSteps());
+  const [steps,setSteps]=useState<Step[]|null>(null);
   const [idx,setIdx]=useState(0);
   const [answers,setAnswers]=useState<Record<string,string|string[]>>({});
   const [email,setEmail]=useState('');
   const [name,setName]=useState('');
   const [saving,setSaving]=useState(false);
   const [saveError,setSaveError]=useState('');
+
+  useEffect(()=>{
+    let active=true;
+    fetchPublishedSteps('gp-ia').then(remote=>{
+      if(!active) return;
+      setSteps(remote ?? loadSteps());
+    });
+    return ()=>{active=false};
+  },[]);
+
+  const result=useMemo(()=>steps?scoreResult(steps,answers):{pct:0,level:1,dimensions:{} as Record<string,number>},[steps,answers]);
+
+  if(!steps) return <div className="quiz-wrap"><div className="quiz-stage" style={{textAlign:'center',paddingTop:100,color:'#7a8b9c'}}>Carregando diagnóstico...</div></div>;
+
   const step=steps[idx];
   const progress=Math.round(((idx+1)/steps.length)*100);
-  const result=useMemo(()=>scoreResult(steps,answers),[steps,answers]);
   const next=()=>setIdx(i=>Math.min(i+1,steps.length-1));
   const back=()=>setIdx(i=>Math.max(i-1,0));
 
