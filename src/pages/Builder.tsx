@@ -2,7 +2,7 @@ import { useEffect, useState, type DragEvent as ReactDragEvent, type PointerEven
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps, resetSteps, hasCustomSteps } from '../lib/stepsStore';
-import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
+import { fetchBuilderSteps, publishSteps, saveDraftSteps } from '../lib/surveyConfig';
 
 const INTRO_TITLE = 'Se torne um mestre do cloud certificado.';
 const INTRO_QUESTION = 'Você já usa o cloud?';
@@ -86,6 +86,7 @@ export default function Builder(){
   const [sel,setSel]=useState(0);
   const [savedMsg,setSavedMsg]=useState('');
   const [publishError,setPublishError]=useState('');
+  const [savingDraft,setSavingDraft]=useState(false);
   const [publishing,setPublishing]=useState(false);
   const [customized,setCustomized]=useState(hasCustomSteps());
   const [flowWidth,setFlowWidth]=useState(()=>readPanelWidth(FLOW_WIDTH_KEY,260));
@@ -97,7 +98,7 @@ export default function Builder(){
 
   useEffect(()=>{
     let active=true;
-    fetchPublishedSteps('gp-ia').then(remote=>{
+    fetchBuilderSteps('gp-ia').then(remote=>{
       if(!active) return;
       if(remote) setSteps(normalizeIntro(remote));
       setLoading(false);
@@ -215,15 +216,30 @@ export default function Builder(){
     setDropTarget(null);
   };
 
+  const saveDraft=async()=>{
+    setSavingDraft(true); setPublishError('');
+    try{
+      await saveDraftSteps('gp-ia', steps);
+      saveSteps(steps);
+      setSavedMsg('Rascunho salvo no banco ✓');
+    }catch{
+      saveSteps(steps);
+      setPublishError('Não consegui salvar o rascunho no banco. Mantive uma cópia neste navegador.');
+    }finally{
+      setSavingDraft(false);
+      setTimeout(()=>{setSavedMsg('');setPublishError('');},3500);
+    }
+  };
+
   const publish=async()=>{
     setPublishing(true); setPublishError('');
     try{
       await publishSteps('gp-ia', steps);
       saveSteps(steps);
       setCustomized(true);
-      setSavedMsg('Publicado ✓ já vale para todo mundo');
+      setSavedMsg('Publicado ✓ alterações salvas e já valem para todo mundo');
     }catch{
-      setPublishError('Não consegui publicar agora. As alterações continuam salvas neste navegador.');
+      setPublishError('Não consegui publicar agora. Use Salvar rascunho para manter as alterações no banco.');
       saveSteps(steps);
     }finally{
       setPublishing(false);
@@ -236,7 +252,7 @@ export default function Builder(){
     setSteps(defaults);
     setSel(0);
     setCustomized(false);
-    setSavedMsg('Restaurado ao padrão (lembre de clicar em Publicar)');
+    setSavedMsg('Restaurado ao padrão (salve o rascunho ou publique para gravar no banco)');
     setTimeout(()=>setSavedMsg(''),3500);
   };
 
@@ -258,7 +274,7 @@ export default function Builder(){
     setConfirmText('');
   };
 
-  if(loading) return <p className="muted">Carregando perguntas publicadas...</p>;
+  if(loading) return <p className="muted">Carregando rascunho do banco...</p>;
 
   return <>
     <header className="page-head">
@@ -269,7 +285,8 @@ export default function Builder(){
         <button className="btn" onClick={resetPanelWidths} title="Volta as colunas ao tamanho inicial">Redefinir colunas</button>
         <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Pré-visualizar</a>
         <button className="btn" onClick={restore} title="Volta às perguntas originais do código">Restaurar padrão</button>
-        <button className="btn dark" onClick={publish} disabled={publishing}>{publishing?'Publicando...':'Publicar'}</button>
+        <button className="btn" data-qf-save-draft="true" onClick={saveDraft} disabled={savingDraft||publishing}>{savingDraft?'Salvando...':'Salvar rascunho'}</button>
+        <button className="btn dark" onClick={publish} disabled={publishing||savingDraft}>{publishing?'Publicando...':'Publicar'}</button>
       </div>
     </header>
     {customized && <p className="muted" style={{margin:'-10px 0 18px'}}>Publicado: quem acessar o link do diagnóstico, em qualquer dispositivo, já vê essa versão.</p>}
