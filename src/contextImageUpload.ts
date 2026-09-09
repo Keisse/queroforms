@@ -1,5 +1,7 @@
 const MARKER_RE = /\s*\[\[QF_IMAGE:([^\]]+)\]\]\s*/;
 const STYLE_ID = 'qf-context-image-editor-styles';
+const DRAFT_KEY = 'qf_gp_ia_context_drafts_v1';
+const appliedDrafts = new Set<string>();
 
 function parseSource(raw: string) {
   const match = raw.match(MARKER_RE);
@@ -16,11 +18,12 @@ function composeSource(source: string, imageUrl: string) {
   return `${clean}${clean ? '\n' : ''}[[QF_IMAGE:${url}]]`;
 }
 
-function setReactTextareaValue(textarea: HTMLTextAreaElement, value: string) {
-  const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-  descriptor?.set?.call(textarea, value);
-  textarea.dispatchEvent(new Event('input', { bubbles: true }));
-  textarea.dispatchEvent(new Event('change', { bubbles: true }));
+function setReactFieldValue(field: HTMLTextAreaElement | HTMLInputElement, value: string) {
+  const proto = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+  descriptor?.set?.call(field, value);
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+  field.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function isValidImageUrl(value: string) {
@@ -47,23 +50,126 @@ function selectedStepIsInsight() {
   return active?.querySelector('small')?.textContent?.trim() === 'insight';
 }
 
+function activeStepIndex() {
+  const items = Array.from(document.querySelectorAll<HTMLElement>('.step-item'));
+  return items.findIndex(item => item.classList.contains('active'));
+}
+
 function findSourceField() {
   const panel = document.querySelector<HTMLElement>('.props-panel');
   if (!panel) return null;
   const labels = Array.from(panel.querySelectorAll<HTMLLabelElement>('label'));
-  const label = labels.find(item => item.textContent?.trim() === 'Fonte');
+  const label = labels.find(item =>
+    item.textContent?.trim() === 'Fonte' &&
+    !item.classList.contains('qf-context-source-label')
+  );
   const textarea = label?.nextElementSibling instanceof HTMLTextAreaElement ? label.nextElementSibling : null;
   return label && textarea ? { panel, label, textarea } : null;
 }
 
-function fieldValue(labelText: string) {
+function findNativeField(labelText: string) {
   const panel = document.querySelector<HTMLElement>('.props-panel');
-  if (!panel) return '';
+  if (!panel) return null;
   const labels = Array.from(panel.querySelectorAll<HTMLLabelElement>('label'));
-  const label = labels.find(item => item.textContent?.trim() === labelText && !item.classList.contains('qf-context-source-label'));
+  const label = labels.find(item =>
+    item.textContent?.trim() === labelText &&
+    !item.classList.contains('qf-context-source-label') &&
+    !item.closest('.qf-context-image-editor')
+  );
   const field = label?.nextElementSibling;
-  if (field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement) return field.value;
-  return '';
+  return field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement ? field : null;
+}
+
+function fieldValue(labelText: string) {
+  return findNativeField(labelText)?.value || '';
+}
+
+type ContextDraft = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  stat: string;
+  source: string;
+  imageUrl: string;
+  savedAt: number;
+};
+
+function readDrafts(): Record<string, ContextDraft> {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, ContextDraft> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeDrafts(drafts: Record<string, ContextDraft>) {
+  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+}
+
+function setStatus(message: string, isError = false) {
+  const status = document.querySelector<HTMLElement>('.qf-context-image-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('error', isError);
+}
+
+function saveCurrentDraft() {
+  const sourceField = findSourceField();
+  const index = activeStepIndex();
+  if (!sourceField || index < 0) return;
+
+  const parsed = parseSource(sourceField.textarea.value);
+  const urlInput = document.querySelector<HTMLInputElement>('.qf-context-image-url');
+  const imageUrl = (urlInput?.value || parsed.imageUrl).trim();
+
+  if (!isValidImageUrl(imageUrl)) {
+    setStatus('Corrija a URL antes de salvar o rascunho.', true);
+    return;
+  }
+
+  const sourceProxy = document.querySelector<HTMLTextAreaElement>('.qf-context-source-proxy');
+  const drafts = readDrafts();
+  drafts[String(index)] = {
+    eyebrow: fieldValue('Categoria (eyebrow)'),
+    title: fieldValue('Título'),
+    body: fieldValue('Texto'),
+    stat: fieldValue('Destaque (stat)'),
+    source: sourceProxy?.value ?? parsed.source,
+    imageUrl,
+    savedAt: Date.now(),
+  };
+  writeDrafts(drafts);
+  setStatus('Rascunho salvo neste navegador ✓');
+}
+
+function restoreDraftIfNeeded() {
+  const sourceField = findSourceField();
+  const index = activeStepIndex();
+  if (!sourceField || index < 0) return;
+
+  const key = String(index);
+  if (appliedDrafts.has(key)) return;
+  const draft = readDrafts()[key];
+  if (!draft) return;
+
+  appliedDrafts.add(key);
+  const fields: Array<[string, string]> = [
+    ['Categoria (eyebrow)', draft.eyebrow],
+    ['Título', draft.title],
+    ['Texto', draft.body],
+    ['Destaque (stat)', draft.stat],
+  ];
+  fields.forEach(([label, value]) => {
+    const field = findNativeField(label);
+    if (field && field.value !== value) setReactFieldValue(field, value);
+  });
+
+  const rawValue = composeSource(draft.source, draft.imageUrl);
+  if (sourceField.textarea.value !== rawValue) setReactFieldValue(sourceField.textarea, rawValue);
+  requestAnimationFrame(() => setStatus('Rascunho recuperado ✓'));
 }
 
 function ensureStyles() {
@@ -76,16 +182,17 @@ function ensureStyles() {
     .qf-context-image-box{border:1px solid #d7e2eb;background:#f8fbfe;border-radius:14px;padding:12px}
     .qf-context-image-url{width:100%;padding:10px 11px;border:1px solid #cfdce7;border-radius:10px;font:inherit;color:#17324d;background:#fff}
     .qf-context-image-url:focus{outline:2px solid rgba(20,121,208,.15);border-color:#78aeda}
-    .qf-context-image-preview{height:132px;border-radius:11px;background:#eaf4fd;overflow:hidden;display:grid;place-items:center;color:#7b8ea0;font-size:12px;margin:10px 0}
+    .qf-context-image-preview{height:132px;border-radius:11px;background:#eaf4fd;overflow:hidden;display:grid;place-items:center;color:#7b8ea0;font-size:12px;margin:10px 0;text-align:center;padding:0 12px}
     .qf-context-image-preview img{width:100%;height:100%;object-fit:cover;display:block}
     .qf-context-image-actions{display:flex;gap:7px;flex-wrap:wrap}
     .qf-context-image-actions .btn{padding:8px 11px}
     .qf-context-image-preview-btn{background:#1479d0!important;color:#fff!important;border-color:#1479d0!important}
+    .qf-context-image-save-btn{background:#fff!important;color:#1479d0!important;border-color:#9fc7e9!important;font-weight:700}
     .qf-context-image-help{display:block;color:#8a99a8;font-size:11px;line-height:1.4;margin-top:8px}
     .qf-context-image-status{display:block;color:#1479d0;font-size:11px;font-weight:700;margin-top:7px;min-height:16px}
     .qf-context-image-status.error{color:#b93838}
     .qf-context-source-proxy{width:100%;min-height:68px;margin-bottom:2px}
-    .qf-builder-context-image-preview{width:100%;height:190px;border-radius:16px;overflow:hidden;background:#eef7ff;margin-bottom:16px}
+    .qf-builder-context-image-preview{width:100%;height:190px;border-radius:16px;overflow:hidden;background:#eef7ff;margin-bottom:16px;display:grid;place-items:center;color:#7b8ea0;font-size:12px;text-align:center}
     .qf-builder-context-image-preview img{width:100%;height:100%;display:block;object-fit:cover}
     .insight-visual.qf-context-upload-host{padding:0!important;overflow:hidden!important;display:block!important}
     .insight-visual.qf-context-upload-host .qf-context-upload-image{width:100%;height:100%;display:block;object-fit:cover}
@@ -116,6 +223,27 @@ function ensureStyles() {
   document.head.appendChild(style);
 }
 
+function renderImageInto(container: HTMLElement, imageUrl: string, emptyText: string, onError?: () => void) {
+  container.innerHTML = '';
+  if (!imageUrl) {
+    const span = document.createElement('span');
+    span.textContent = emptyText;
+    container.appendChild(span);
+    return;
+  }
+
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  img.alt = 'Prévia da imagem da tela de contexto';
+  img.onload = () => setStatus('Imagem carregada ✓ Você pode pré-visualizar ou salvar o rascunho.');
+  img.onerror = () => {
+    container.innerHTML = '<span>Não foi possível carregar esta imagem. Confira se a URL abre a imagem diretamente.</span>';
+    setStatus('A URL existe, mas a imagem não pôde ser carregada.', true);
+    onError?.();
+  };
+  container.appendChild(img);
+}
+
 function renderBuilderCanvasImage(imageUrl: string) {
   const canvas = document.querySelector<HTMLElement>('.canvas-inner');
   if (!canvas) return;
@@ -129,9 +257,10 @@ function renderBuilderCanvasImage(imageUrl: string) {
     preview.className = 'qf-builder-context-image-preview';
     canvas.prepend(preview);
   }
-  const existing = preview.querySelector<HTMLImageElement>('img');
-  if (existing?.getAttribute('src') === imageUrl) return;
-  preview.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="Imagem da tela de contexto" />`;
+  const current = preview.dataset.url;
+  if (current === imageUrl && preview.querySelector('img')) return;
+  preview.dataset.url = imageUrl;
+  renderImageInto(preview, imageUrl, 'Sem imagem');
 }
 
 function closeContextPreview() {
@@ -143,14 +272,10 @@ function openContextPreview() {
   if (!sourceField) return;
   const parsed = parseSource(sourceField.textarea.value);
   const urlInput = document.querySelector<HTMLInputElement>('.qf-context-image-url');
-  const imageUrl = urlInput?.value.trim() || parsed.imageUrl;
+  const imageUrl = (urlInput?.value || parsed.imageUrl).trim();
 
   if (!isValidImageUrl(imageUrl)) {
-    const status = document.querySelector<HTMLElement>('.qf-context-image-status');
-    if (status) {
-      status.textContent = 'Corrija a URL antes de abrir a prévia.';
-      status.classList.add('error');
-    }
+    setStatus('Corrija a URL antes de abrir a prévia.', true);
     return;
   }
 
@@ -172,9 +297,7 @@ function openContextPreview() {
       </div>
       <div class="qf-context-preview-stage">
         <div class="insight-view">
-          <div class="insight-visual qf-context-upload-host">
-            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="Imagem da tela de contexto" />` : '<span class="qf-preview-placeholder">Sem imagem configurada</span>'}
-          </div>
+          <div class="insight-visual qf-context-upload-host qf-context-modal-image"></div>
           ${eyebrow ? `<small>${escapeHtml(eyebrow)}</small>` : ''}
           <h1>${escapeHtml(title || 'Título da tela')}</h1>
           ${body ? `<p>${escapeHtml(body)}</p>` : ''}
@@ -190,6 +313,8 @@ function openContextPreview() {
   });
   overlay.querySelector('.qf-context-preview-close')?.addEventListener('click', closeContextPreview);
   document.body.appendChild(overlay);
+  const modalImage = overlay.querySelector<HTMLElement>('.qf-context-modal-image');
+  if (modalImage) renderImageInto(modalImage, imageUrl, 'Sem imagem configurada');
 }
 
 function ensureBuilderEditor() {
@@ -206,30 +331,32 @@ function ensureBuilderEditor() {
     return;
   }
 
-  const { panel, label, textarea } = sourceField;
+  restoreDraftIfNeeded();
+
+  const refreshedSourceField = findSourceField();
+  if (!refreshedSourceField) return;
+  const { panel, label, textarea } = refreshedSourceField;
   const parsed = parseSource(textarea.value);
-  renderBuilderCanvasImage(parsed.imageUrl);
 
   label.style.display = 'none';
   textarea.style.display = 'none';
   textarea.dataset.qfRawSource = 'true';
 
   let editor = panel.querySelector<HTMLElement>('.qf-context-image-editor');
-  let proxy = panel.querySelector<HTMLTextAreaElement>('.qf-context-source-proxy');
-
   if (!editor) {
     editor = document.createElement('div');
     editor.className = 'qf-context-image-editor';
     editor.innerHTML = `
       <label>URL da imagem</label>
       <div class="qf-context-image-box">
-        <input class="qf-context-image-url" type="url" placeholder="https://trentim.com/wp-content/uploads/.../imagem.webp" />
+        <input class="qf-context-image-url" type="url" placeholder="https://trentim.com/wp-content/uploads/.../imagem.png" />
         <div class="qf-context-image-preview"><span>Nenhuma imagem configurada</span></div>
         <div class="qf-context-image-actions">
           <button class="btn qf-context-image-preview-btn" type="button">Pré-visualizar tela</button>
+          <button class="btn qf-context-image-save-btn" type="button">Salvar rascunho</button>
           <button class="btn qf-context-image-remove" type="button">Limpar URL</button>
         </div>
-        <small class="qf-context-image-help">Cole a URL direta da imagem do WordPress. Use “Pré-visualizar tela” para conferir o encaixe antes de publicar.</small>
+        <small class="qf-context-image-help">Cole a URL direta de uma imagem pública do WordPress (PNG, JPG ou WebP). Salvar rascunho guarda esta tela sem publicar.</small>
         <small class="qf-context-image-status"></small>
       </div>
     `;
@@ -240,27 +367,29 @@ function ensureBuilderEditor() {
     proxyLabel.textContent = 'Fonte';
     panel.insertBefore(proxyLabel, label);
 
-    proxy = document.createElement('textarea');
+    const proxy = document.createElement('textarea');
     proxy.className = 'qf-context-source-proxy';
     panel.insertBefore(proxy, label);
   }
 
   const preview = editor.querySelector<HTMLElement>('.qf-context-image-preview');
-  const status = editor.querySelector<HTMLElement>('.qf-context-image-status');
   const urlInput = editor.querySelector<HTMLInputElement>('.qf-context-image-url');
   const previewButton = editor.querySelector<HTMLButtonElement>('.qf-context-image-preview-btn');
+  const saveButton = editor.querySelector<HTMLButtonElement>('.qf-context-image-save-btn');
   const removeButton = editor.querySelector<HTMLButtonElement>('.qf-context-image-remove');
-  proxy = panel.querySelector<HTMLTextAreaElement>('.qf-context-source-proxy');
+  const proxy = panel.querySelector<HTMLTextAreaElement>('.qf-context-source-proxy');
 
   if (urlInput && document.activeElement !== urlInput && urlInput.value !== parsed.imageUrl) {
     urlInput.value = parsed.imageUrl;
   }
 
-  if (preview) {
-    preview.innerHTML = parsed.imageUrl
-      ? `<img src="${escapeHtml(parsed.imageUrl)}" alt="Prévia da imagem" />`
-      : '<span>Nenhuma imagem configurada</span>';
+  const previewUrl = urlInput?.value.trim() || parsed.imageUrl;
+  if (preview && preview.dataset.url !== previewUrl) {
+    preview.dataset.url = previewUrl;
+    renderImageInto(preview, previewUrl, 'Nenhuma imagem configurada');
   }
+  renderBuilderCanvasImage(previewUrl);
+
   if (proxy && document.activeElement !== proxy && proxy.value !== parsed.source) proxy.value = parsed.source;
 
   if (proxy && proxy.dataset.qfBound !== 'true') {
@@ -269,7 +398,7 @@ function ensureBuilderEditor() {
       const currentRaw = findSourceField()?.textarea;
       if (!currentRaw) return;
       const currentImage = parseSource(currentRaw.value).imageUrl;
-      setReactTextareaValue(currentRaw, composeSource(proxy!.value, currentImage));
+      setReactFieldValue(currentRaw, composeSource(proxy.value, currentImage));
     });
   }
 
@@ -282,20 +411,17 @@ function ensureBuilderEditor() {
       const nextUrl = urlInput.value.trim();
 
       if (!isValidImageUrl(nextUrl)) {
-        if (status) {
-          status.textContent = 'Use uma URL completa começando com http:// ou https://';
-          status.classList.add('error');
-        }
+        setStatus('Use uma URL completa começando com http:// ou https://', true);
         return;
       }
 
-      if (status) {
-        status.classList.remove('error');
-        status.textContent = nextUrl ? 'URL configurada ✓ Você já pode pré-visualizar antes de publicar.' : '';
+      setReactFieldValue(current, composeSource(currentParsed.source, nextUrl));
+      if (preview) {
+        preview.dataset.url = nextUrl;
+        renderImageInto(preview, nextUrl, 'Nenhuma imagem configurada');
       }
-      setReactTextareaValue(current, composeSource(currentParsed.source, nextUrl));
       renderBuilderCanvasImage(nextUrl);
-      requestAnimationFrame(ensureBuilderEditor);
+      if (!nextUrl) setStatus('URL removida. Você pode salvar o rascunho.');
     };
     urlInput.addEventListener('input', applyUrl);
     urlInput.addEventListener('change', applyUrl);
@@ -306,20 +432,25 @@ function ensureBuilderEditor() {
     previewButton.addEventListener('click', openContextPreview);
   }
 
+  if (saveButton && saveButton.dataset.qfBound !== 'true') {
+    saveButton.dataset.qfBound = 'true';
+    saveButton.addEventListener('click', saveCurrentDraft);
+  }
+
   if (removeButton && removeButton.dataset.qfBound !== 'true') {
     removeButton.dataset.qfBound = 'true';
     removeButton.addEventListener('click', () => {
       const current = findSourceField()?.textarea;
       if (!current) return;
       const currentParsed = parseSource(current.value);
-      setReactTextareaValue(current, currentParsed.source);
+      setReactFieldValue(current, currentParsed.source);
       if (urlInput) urlInput.value = '';
-      renderBuilderCanvasImage('');
-      if (status) {
-        status.classList.remove('error');
-        status.textContent = 'URL removida. Clique em Publicar para aplicar.';
+      if (preview) {
+        preview.dataset.url = '';
+        renderImageInto(preview, '', 'Nenhuma imagem configurada');
       }
-      requestAnimationFrame(ensureBuilderEditor);
+      renderBuilderCanvasImage('');
+      setStatus('URL removida. Clique em Salvar rascunho para guardar a alteração.');
     });
   }
 }
@@ -345,7 +476,12 @@ function applyPublicContextImages() {
     if (visual.dataset.qfContextImageUrl !== imageUrl || !visual.querySelector('.qf-context-upload-image')) {
       visual.dataset.qfContextImageUrl = imageUrl;
       visual.classList.add('qf-context-upload-host');
-      visual.innerHTML = `<img class="qf-context-upload-image" src="${escapeHtml(imageUrl)}" alt="Imagem da tela de contexto" />`;
+      visual.innerHTML = '';
+      const img = document.createElement('img');
+      img.className = 'qf-context-upload-image';
+      img.src = imageUrl;
+      img.alt = 'Imagem da tela de contexto';
+      visual.appendChild(img);
     }
 
     if (sourceNote) {
