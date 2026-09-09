@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps, resetSteps, hasCustomSteps } from '../lib/stepsStore';
@@ -7,6 +7,14 @@ import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
 const INTRO_TITLE = 'Se torne um mestre do cloud certificado.';
 const INTRO_QUESTION = 'Você já usa o cloud?';
 const LEGACY_INTRO_TITLE = 'Descubra seu nível de maturidade em IA na Gestão de Projetos';
+const FLOW_WIDTH_KEY='queroforms-builder-flow-width';
+const PROPS_WIDTH_KEY='queroforms-builder-props-width';
+
+function readPanelWidth(key:string, fallback:number){
+  if(typeof window==='undefined') return fallback;
+  const value=Number(window.localStorage.getItem(key));
+  return Number.isFinite(value) && value>0 ? value : fallback;
+}
 
 function normalizeIntro(items: Step[]){
   return items.map(s=>s.kind==='intro' && s.id==='intro'
@@ -40,6 +48,8 @@ export default function Builder(){
   const [publishError,setPublishError]=useState('');
   const [publishing,setPublishing]=useState(false);
   const [customized,setCustomized]=useState(hasCustomSteps());
+  const [flowWidth,setFlowWidth]=useState(()=>readPanelWidth(FLOW_WIDTH_KEY,260));
+  const [propsWidth,setPropsWidth]=useState(()=>readPanelWidth(PROPS_WIDTH_KEY,380));
   const step=steps[sel];
 
   useEffect(()=>{
@@ -51,6 +61,36 @@ export default function Builder(){
     });
     return ()=>{active=false};
   },[]);
+
+  useEffect(()=>{ window.localStorage.setItem(FLOW_WIDTH_KEY,String(Math.round(flowWidth))); },[flowWidth]);
+  useEffect(()=>{ window.localStorage.setItem(PROPS_WIDTH_KEY,String(Math.round(propsWidth))); },[propsWidth]);
+
+  const startResize=(side:'flow'|'props',e:ReactPointerEvent<HTMLDivElement>)=>{
+    if(window.innerWidth<=1080) return;
+    e.preventDefault();
+    const startX=e.clientX;
+    const initialFlow=flowWidth;
+    const initialProps=propsWidth;
+    document.body.classList.add('builder-resizing');
+
+    const onMove=(ev:PointerEvent)=>{
+      const delta=ev.clientX-startX;
+      if(side==='flow') setFlowWidth(Math.max(210,Math.min(520,initialFlow+delta)));
+      else setPropsWidth(Math.max(260,Math.min(560,initialProps-delta)));
+    };
+    const onUp=()=>{
+      document.body.classList.remove('builder-resizing');
+      window.removeEventListener('pointermove',onMove);
+      window.removeEventListener('pointerup',onUp);
+    };
+    window.addEventListener('pointermove',onMove);
+    window.addEventListener('pointerup',onUp,{once:true});
+  };
+
+  const resetPanelWidths=()=>{
+    setFlowWidth(260);
+    setPropsWidth(380);
+  };
 
   const update=(patch: Partial<Step>)=>{
     setSteps(prev=>prev.map((s,i)=>i===sel?{...s,...patch} as Step:s));
@@ -121,13 +161,14 @@ export default function Builder(){
       <div className="head-actions">
         {savedMsg && <span className="conn ok" style={{alignSelf:'center',marginRight:8}}>{savedMsg}</span>}
         {publishError && <span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>{publishError}</span>}
+        <button className="btn" onClick={resetPanelWidths} title="Volta as colunas ao tamanho inicial">Redefinir colunas</button>
         <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Pré-visualizar</a>
         <button className="btn" onClick={restore} title="Volta às perguntas originais do código">Restaurar padrão</button>
         <button className="btn dark" onClick={publish} disabled={publishing}>{publishing?'Publicando...':'Publicar'}</button>
       </div>
     </header>
     {customized && <p className="muted" style={{margin:'-10px 0 18px'}}>Publicado: quem acessar o link do diagnóstico, em qualquer dispositivo, já vê essa versão.</p>}
-    <div className="builder-grid">
+    <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
       <section className="steps-panel">
         <div className="steps-title">Fluxo <span>{steps.length} telas</span></div>
         {steps.map((s,i)=><div className={`step-item ${i===sel?'active':''}`} key={s.id} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
@@ -138,6 +179,8 @@ export default function Builder(){
           <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>
         </div>)}
       </section>
+
+      <div className="panel-resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar painel de fluxo" title="Arraste para ajustar o tamanho" onPointerDown={e=>startResize('flow',e)}><span/></div>
 
       <section className="builder-canvas">
         <div className="canvas-phone">
@@ -171,6 +214,8 @@ export default function Builder(){
           </div>
         </div>
       </section>
+
+      <div className="panel-resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar painel de propriedades" title="Arraste para ajustar o tamanho" onPointerDown={e=>startResize('props',e)}><span/></div>
 
       <aside className="props-panel">
         <h3>Propriedades</h3>
@@ -234,6 +279,8 @@ export default function Builder(){
         {step.kind==='result' && <p className="muted">A tela de resultado é composta a partir das respostas e não tem campos de texto fixos aqui.</p>}
       </aside>
     </div>
+
+    <div className="builder-resize-hint">↔ Arraste as divisórias entre os painéis para ajustar os tamanhos. Sua preferência fica salva neste navegador.</div>
 
     {deleteIdx!==null && <div style={{position:'fixed',inset:0,background:'rgba(15,30,50,.45)',display:'grid',placeItems:'center',zIndex:50}} onClick={cancelDelete}>
       <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:16,padding:28,width:380,display:'flex',flexDirection:'column',gap:12}}>
