@@ -1,6 +1,3 @@
-import { supabase } from './lib/supabase';
-
-const BUCKET = 'survey-assets';
 const MARKER_RE = /\s*\[\[QF_IMAGE:([^\]]+)\]\]\s*/;
 const STYLE_ID = 'qf-context-image-editor-styles';
 
@@ -14,8 +11,9 @@ function parseSource(raw: string) {
 
 function composeSource(source: string, imageUrl: string) {
   const clean = source.trim();
-  if (!imageUrl) return clean;
-  return `${clean}${clean ? '\n' : ''}[[QF_IMAGE:${imageUrl}]]`;
+  const url = imageUrl.trim();
+  if (!url) return clean;
+  return `${clean}${clean ? '\n' : ''}[[QF_IMAGE:${url}]]`;
 }
 
 function setReactTextareaValue(textarea: HTMLTextAreaElement, value: string) {
@@ -25,20 +23,13 @@ function setReactTextareaValue(textarea: HTMLTextAreaElement, value: string) {
   textarea.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function storagePathFromUrl(url: string) {
-  const marker = `/storage/v1/object/public/${BUCKET}/`;
-  const pos = url.indexOf(marker);
-  if (pos < 0) return '';
-  return decodeURIComponent(url.slice(pos + marker.length).split('?')[0]);
-}
-
-async function removeStorageObject(url: string) {
-  const path = storagePathFromUrl(url);
-  if (!path) return;
+function isValidImageUrl(value: string) {
+  if (!value.trim()) return true;
   try {
-    await supabase.storage.from(BUCKET).remove([path]);
+    const url = new URL(value.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
-    // Removing an old asset is best-effort; the screen update should still succeed.
+    return false;
   }
 }
 
@@ -63,13 +54,16 @@ function ensureStyles() {
   style.textContent = `
     .qf-context-image-editor{margin:14px 0 4px}
     .qf-context-image-editor>label{display:block;font-size:13px;font-weight:700;margin:0 0 7px}
-    .qf-context-image-box{border:1.5px dashed #9fc4e8;background:#f7fbff;border-radius:14px;padding:12px}
-    .qf-context-image-preview{height:132px;border-radius:11px;background:#eaf4fd;overflow:hidden;display:grid;place-items:center;color:#7b8ea0;font-size:12px;margin-bottom:10px}
+    .qf-context-image-box{border:1px solid #d7e2eb;background:#f8fbfe;border-radius:14px;padding:12px}
+    .qf-context-image-url{width:100%;padding:10px 11px;border:1px solid #cfdce7;border-radius:10px;font:inherit;color:#17324d;background:#fff}
+    .qf-context-image-url:focus{outline:2px solid rgba(20,121,208,.15);border-color:#78aeda}
+    .qf-context-image-preview{height:132px;border-radius:11px;background:#eaf4fd;overflow:hidden;display:grid;place-items:center;color:#7b8ea0;font-size:12px;margin:10px 0}
     .qf-context-image-preview img{width:100%;height:100%;object-fit:cover;display:block}
     .qf-context-image-actions{display:flex;gap:7px;flex-wrap:wrap}
     .qf-context-image-actions .btn{padding:8px 11px}
     .qf-context-image-help{display:block;color:#8a99a8;font-size:11px;line-height:1.4;margin-top:8px}
-    .qf-context-image-status{display:block;color:#1479d0;font-size:11px;font-weight:700;margin-top:7px}
+    .qf-context-image-status{display:block;color:#1479d0;font-size:11px;font-weight:700;margin-top:7px;min-height:16px}
+    .qf-context-image-status.error{color:#b93838}
     .qf-context-source-proxy{width:100%;min-height:68px;margin-bottom:2px}
     .qf-builder-context-image-preview{width:100%;height:190px;border-radius:16px;overflow:hidden;background:#eef7ff;margin-bottom:16px}
     .qf-builder-context-image-preview img{width:100%;height:100%;display:block;object-fit:cover}
@@ -93,7 +87,7 @@ function renderBuilderCanvasImage(imageUrl: string) {
     canvas.prepend(preview);
   }
   const existing = preview.querySelector<HTMLImageElement>('img');
-  if (existing?.src === imageUrl) return;
+  if (existing?.getAttribute('src') === imageUrl) return;
   preview.innerHTML = `<img src="${imageUrl}" alt="Imagem da tela de contexto" />`;
 }
 
@@ -125,14 +119,14 @@ function ensureBuilderEditor() {
     editor = document.createElement('div');
     editor.className = 'qf-context-image-editor';
     editor.innerHTML = `
-      <label>Imagem da tela</label>
+      <label>URL da imagem</label>
       <div class="qf-context-image-box">
-        <div class="qf-context-image-preview"><span>Nenhuma imagem enviada</span></div>
+        <input class="qf-context-image-url" type="url" placeholder="https://trentim.com/wp-content/uploads/.../imagem.webp" />
+        <div class="qf-context-image-preview"><span>Nenhuma imagem configurada</span></div>
         <div class="qf-context-image-actions">
-          <label class="btn" style="cursor:pointer">Enviar imagem<input class="qf-context-image-input" type="file" accept="image/png,image/jpeg,image/webp" hidden /></label>
-          <button class="btn qf-context-image-remove" type="button">Remover</button>
+          <button class="btn qf-context-image-remove" type="button">Limpar URL</button>
         </div>
-        <small class="qf-context-image-help">PNG, JPG ou WebP, até 5 MB. A imagem ocupa o retângulo superior desta tela quando você clicar em Publicar.</small>
+        <small class="qf-context-image-help">Cole aqui a URL direta de uma imagem pública do WordPress. Nenhum arquivo será enviado para o Supabase.</small>
         <small class="qf-context-image-status"></small>
       </div>
     `;
@@ -150,14 +144,18 @@ function ensureBuilderEditor() {
 
   const preview = editor.querySelector<HTMLElement>('.qf-context-image-preview');
   const status = editor.querySelector<HTMLElement>('.qf-context-image-status');
-  const fileInput = editor.querySelector<HTMLInputElement>('.qf-context-image-input');
+  const urlInput = editor.querySelector<HTMLInputElement>('.qf-context-image-url');
   const removeButton = editor.querySelector<HTMLButtonElement>('.qf-context-image-remove');
   proxy = panel.querySelector<HTMLTextAreaElement>('.qf-context-source-proxy');
+
+  if (urlInput && document.activeElement !== urlInput && urlInput.value !== parsed.imageUrl) {
+    urlInput.value = parsed.imageUrl;
+  }
 
   if (preview) {
     preview.innerHTML = parsed.imageUrl
       ? `<img src="${parsed.imageUrl}" alt="Prévia da imagem" />`
-      : '<span>Nenhuma imagem enviada</span>';
+      : '<span>Nenhuma imagem configurada</span>';
   }
   if (proxy && document.activeElement !== proxy && proxy.value !== parsed.source) proxy.value = parsed.source;
 
@@ -171,51 +169,32 @@ function ensureBuilderEditor() {
     });
   }
 
-  if (fileInput && fileInput.dataset.qfBound !== 'true') {
-    fileInput.dataset.qfBound = 'true';
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
-      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-        if (status) status.textContent = 'Use uma imagem PNG, JPG ou WebP.';
-        fileInput.value = '';
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        if (status) status.textContent = 'A imagem precisa ter no máximo 5 MB.';
-        fileInput.value = '';
-        return;
-      }
-
+  if (urlInput && urlInput.dataset.qfBound !== 'true') {
+    urlInput.dataset.qfBound = 'true';
+    const applyUrl = () => {
       const current = findSourceField()?.textarea;
       if (!current) return;
-      const previous = parseSource(current.value);
-      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-      const uuid = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const path = `gp-ia/context/${uuid}.${ext}`;
+      const currentParsed = parseSource(current.value);
+      const nextUrl = urlInput.value.trim();
 
-      if (status) status.textContent = 'Enviando imagem...';
-      const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-        cacheControl: '3600',
-        contentType: file.type,
-        upsert: false,
-      });
-      if (error) {
-        console.error(error);
-        if (status) status.textContent = 'Não consegui enviar a imagem. Tente novamente.';
-        fileInput.value = '';
+      if (!isValidImageUrl(nextUrl)) {
+        if (status) {
+          status.textContent = 'Use uma URL completa começando com http:// ou https://';
+          status.classList.add('error');
+        }
         return;
       }
 
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      const imageUrl = data.publicUrl;
-      setReactTextareaValue(current, composeSource(previous.source, imageUrl));
-      renderBuilderCanvasImage(imageUrl);
-      if (previous.imageUrl && previous.imageUrl !== imageUrl) void removeStorageObject(previous.imageUrl);
-      if (status) status.textContent = 'Imagem enviada ✓ Clique em Publicar para aplicar.';
-      fileInput.value = '';
+      if (status) {
+        status.classList.remove('error');
+        status.textContent = nextUrl ? 'URL configurada ✓ Clique em Publicar para aplicar.' : '';
+      }
+      setReactTextareaValue(current, composeSource(currentParsed.source, nextUrl));
+      renderBuilderCanvasImage(nextUrl);
       requestAnimationFrame(ensureBuilderEditor);
-    });
+    };
+    urlInput.addEventListener('input', applyUrl);
+    urlInput.addEventListener('change', applyUrl);
   }
 
   if (removeButton && removeButton.dataset.qfBound !== 'true') {
@@ -223,11 +202,14 @@ function ensureBuilderEditor() {
     removeButton.addEventListener('click', () => {
       const current = findSourceField()?.textarea;
       if (!current) return;
-      const parsedCurrent = parseSource(current.value);
-      setReactTextareaValue(current, parsedCurrent.source);
+      const currentParsed = parseSource(current.value);
+      setReactTextareaValue(current, currentParsed.source);
+      if (urlInput) urlInput.value = '';
       renderBuilderCanvasImage('');
-      if (parsedCurrent.imageUrl) void removeStorageObject(parsedCurrent.imageUrl);
-      if (status) status.textContent = 'Imagem removida. Clique em Publicar para aplicar.';
+      if (status) {
+        status.classList.remove('error');
+        status.textContent = 'URL removida. Clique em Publicar para aplicar.';
+      }
       requestAnimationFrame(ensureBuilderEditor);
     });
   }
