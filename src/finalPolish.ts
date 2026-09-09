@@ -1,4 +1,5 @@
 const SALARY_MULTIPLIERS = [1, 1.35, 1.70, 2.05] as const;
+const GENDER_KEY = 'queroforms-gender';
 
 function parseCurrency(text: string) {
   const digits = text.replace(/\D/g, '');
@@ -12,6 +13,17 @@ function formatCurrency(value: number) {
     currency: 'BRL',
     maximumFractionDigits: 0,
   });
+}
+
+function captureGenderFromClick(event: MouseEvent) {
+  const target = event.target as Element | null;
+  const choice = target?.closest<HTMLButtonElement>('.photo-choice');
+  if (!choice) return;
+
+  const label = choice.querySelector('span')?.textContent?.trim().toLowerCase();
+  if (label === 'masculino' || label === 'feminino') {
+    window.localStorage.setItem(GENDER_KEY, label);
+  }
 }
 
 function softenAlmostThereStat() {
@@ -79,6 +91,66 @@ function installSalaryContextProjection() {
   });
 }
 
+function installMarketValueVisual() {
+  document.querySelectorAll<HTMLElement>('.insight-view').forEach(view => {
+    const eyebrow = view.querySelector('small')?.textContent?.trim().toLowerCase();
+    if (eyebrow !== 'mercado de projetos') return;
+
+    const visual = view.querySelector<HTMLElement>('.insight-visual');
+    if (!visual) return;
+
+    const gender = window.localStorage.getItem(GENDER_KEY) === 'feminino' ? 'feminino' : 'masculino';
+    if (visual.dataset.marketGender === gender) return;
+
+    const isFemale = gender === 'feminino';
+    const avatar = isFemale ? '/avatars/woman.webp' : '/avatars/man.webp';
+    const headline = isFemale ? 'VOCÊ MESMA. <span>MAIS VALORIZADA.</span>' : 'VOCÊ MESMO. <span>MAIS VALORIZADO.</span>';
+
+    visual.dataset.marketGender = gender;
+    visual.classList.add('qf-market-value-host');
+    visual.innerHTML = `
+      <div class="qf-market-value-compare" role="img" aria-label="Comparação entre o mesmo profissional sem e com habilidades em inteligência artificial">
+        <article class="qf-profile-card qf-profile-before">
+          <div class="qf-profile-card-head">
+            <div>
+              <strong>VOCÊ</strong>
+              <span class="qf-status qf-rejected">✕ REJEITADO</span>
+            </div>
+            <img src="${avatar}" alt="" />
+          </div>
+          <div class="qf-profile-copy-lines"><i></i><i></i><i></i></div>
+          <div class="qf-profile-separator"></div>
+          <label>Experiência</label>
+          <div class="qf-profile-bar"><i style="width:88%"></i></div>
+          <label>Habilidades em IA</label>
+          <div class="qf-profile-bar qf-profile-bar-empty"><i></i></div>
+          <div class="qf-profile-blocks"><i></i><i></i><i></i></div>
+        </article>
+
+        <div class="qf-market-arrow" aria-hidden="true">→</div>
+
+        <article class="qf-profile-card qf-profile-after">
+          <div class="qf-profile-card-head">
+            <div>
+              <strong>VOCÊ + IA</strong>
+              <span class="qf-status qf-approved">✓ APROVADO</span>
+            </div>
+            <img src="${avatar}" alt="" />
+          </div>
+          <div class="qf-profile-copy-lines"><i></i><i></i><i></i></div>
+          <div class="qf-profile-separator"></div>
+          <label>Experiência</label>
+          <div class="qf-profile-bar"><i style="width:88%"></i></div>
+          <label>Habilidades em IA</label>
+          <div class="qf-profile-bar qf-profile-bar-ai"><i style="width:96%"><b>COMPETÊNCIA ADICIONADA</b></i></div>
+          <div class="qf-profile-blocks"><i></i><i></i><i></i></div>
+        </article>
+      </div>
+      <div class="qf-market-value-headline">${headline}</div>
+    `;
+  });
+}
+
 function updateSalaryProjection() {
   const chart = document.querySelector<HTMLElement>('.result-view .salary-chart');
   if (!chart) return;
@@ -105,10 +177,12 @@ function updateSalaryProjection() {
 function applyFinalPolish() {
   softenAlmostThereStat();
   installSalaryContextProjection();
+  installMarketValueVisual();
   updateSalaryProjection();
 }
 
 function startFinalPolish() {
+  document.addEventListener('click', captureGenderFromClick);
   applyFinalPolish();
 
   let scheduled = false;
