@@ -14,6 +14,7 @@ import './styles/global.css';
 import './styles/introCertificate.css';
 import './styles/builderResponsive.css';
 import './styles/finalPolish.css';
+import './styles/aiCloud.css';
 import './finalPolish';
 
 function Admin({children}:{children:React.ReactNode}){
