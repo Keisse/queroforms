@@ -4,6 +4,23 @@ import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps, resetSteps, hasCustomSteps } from '../lib/stepsStore';
 import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
 
+const INTRO_TITLE = 'Se torne um mestre do cloud certificado.';
+const INTRO_QUESTION = 'Você já usa o cloud?';
+const LEGACY_INTRO_TITLE = 'Descubra seu nível de maturidade em IA na Gestão de Projetos';
+
+function normalizeIntro(items: Step[]){
+  return items.map(s=>s.kind==='intro' && s.id==='intro'
+    ? {...s,title:s.title===LEGACY_INTRO_TITLE?INTRO_TITLE:s.title,body:s.body.startsWith('Em poucos minutos')?INTRO_QUESTION:s.body}
+    : s);
+}
+
+function introHeading(title:string){
+  const marker='cloud certificado.';
+  const pos=title.toLowerCase().indexOf(marker);
+  if(pos<0) return title;
+  return <>{title.slice(0,pos)}<span style={{color:'#1479d0'}}>{title.slice(pos)}</span></>;
+}
+
 function labelFor(s: Step){
   return s.kind==='question' ? s.title
     : s.kind==='insight' ? 'Tela de contexto'
@@ -16,7 +33,7 @@ function labelFor(s: Step){
 }
 
 export default function Builder(){
-  const [steps,setSteps]=useState<Step[]>(()=>loadSteps());
+  const [steps,setSteps]=useState<Step[]>(()=>normalizeIntro(loadSteps()));
   const [loading,setLoading]=useState(true);
   const [sel,setSel]=useState(0);
   const [savedMsg,setSavedMsg]=useState('');
@@ -29,7 +46,7 @@ export default function Builder(){
     let active=true;
     fetchPublishedSteps('gp-ia').then(remote=>{
       if(!active) return;
-      if(remote) setSteps(remote);
+      if(remote) setSteps(normalizeIntro(remote));
       setLoading(false);
     });
     return ()=>{active=false};
@@ -70,7 +87,7 @@ export default function Builder(){
   };
   const restore=()=>{
     resetSteps();
-    const defaults=loadSteps();
+    const defaults=normalizeIntro(loadSteps());
     setSteps(defaults);
     setSel(0);
     setCustomized(false);
@@ -136,10 +153,14 @@ export default function Builder(){
               <p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>
               {step.stat && <div className="option-card"><b>{step.stat}</b></div>}
             </>}
-            {step.kind==='intro' && <>
-              <h2>{step.title}</h2>
-              <p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>
-            </>}
+            {step.kind==='intro' && <div className="builder-intro-preview">
+              <div className="builder-certificate-image-wrap">
+                <img src="https://trentim.com/wp-content/uploads/2026/09/Imagem-do-Certificado.png" alt="Certificado Gestão de Projetos com IA - Formação Mestre GP" />
+              </div>
+              <h2>{introHeading(step.title)}</h2>
+              <p className="builder-intro-question">{step.body}</p>
+              <div className="builder-intro-choices"><div>Sim <span>→</span></div><div>Não <span>→</span></div></div>
+            </div>}
             {step.kind==='branch' && <>
               <h2>{Object.values(step.variants)[0]?.title}</h2>
               <p style={{textAlign:'center',color:'#7a8b9c'}}>Varia conforme a resposta anterior</p>
@@ -191,10 +212,9 @@ export default function Builder(){
         {step.kind==='intro' && <>
           <label>Título</label>
           <textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
-          <label>Texto</label>
+          <label>Pergunta</label>
           <textarea value={step.body} onChange={e=>update({body:e.target.value} as Partial<Step>)}/>
-          <label>Botão</label>
-          <textarea value={step.cta} onChange={e=>update({cta:e.target.value} as Partial<Step>)}/>
+          <small style={{color:'#8a99a8',display:'block',marginTop:10}}>A imagem do certificado e os botões Sim/Não seguem o layout visual da abertura.</small>
         </>}
 
         {step.kind==='branch' && <>
