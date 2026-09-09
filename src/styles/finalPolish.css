@@ -161,6 +161,170 @@
   animation: qf-projection-up .38s ease forwards 1.68s;
 }
 
+/* Visual personalizado da tela Mercado de projetos. */
+.insight-view .insight-visual.qf-market-value-host {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  padding: 26px 28px 20px;
+  overflow: hidden;
+}
+
+.qf-market-value-compare {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.qf-profile-card {
+  min-width: 0;
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(191, 210, 228, .72);
+  border-radius: 16px;
+  padding: 16px 14px 13px;
+  box-shadow: 0 10px 24px rgba(35, 73, 108, .08);
+  text-align: left;
+}
+
+.qf-profile-before { transform: rotate(-1.8deg); }
+.qf-profile-after { transform: rotate(1.8deg); }
+
+.qf-profile-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.qf-profile-card-head strong {
+  display: block;
+  color: #102546;
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.qf-profile-card-head img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #edf1f5;
+}
+
+.qf-status {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.qf-rejected { color: #e34231; }
+.qf-approved { color: #23a33f; }
+
+.qf-profile-copy-lines {
+  margin: 11px 0 9px;
+}
+
+.qf-profile-copy-lines i {
+  display: block;
+  width: 46%;
+  height: 6px;
+  margin-bottom: 6px;
+  border-radius: 999px;
+  background: #e9edf2;
+}
+
+.qf-profile-copy-lines i:nth-child(2) { width: 38%; }
+.qf-profile-copy-lines i:nth-child(3) { width: 29%; }
+
+.qf-profile-separator {
+  height: 1px;
+  margin: 10px 0 11px;
+  background: #edf1f4;
+}
+
+.qf-profile-card label {
+  display: block;
+  margin: 8px 0 5px;
+  color: #2a405b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.qf-profile-bar {
+  height: 9px;
+  overflow: visible;
+  border-radius: 999px;
+  background: #eaf0f6;
+}
+
+.qf-profile-bar > i {
+  display: block;
+  height: 100%;
+  position: relative;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #176fda, #2f8bf0);
+}
+
+.qf-profile-bar-empty > i {
+  width: 10%;
+  background: #e2e8ef;
+}
+
+.qf-profile-bar-ai b {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: #2f8bf0;
+  color: #fff;
+  font-size: 6px;
+  line-height: 1;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+.qf-profile-blocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.qf-profile-blocks i {
+  height: 28px;
+  border-radius: 7px;
+  background: #f1f4f7;
+}
+
+.qf-market-arrow {
+  display: grid;
+  place-items: center;
+  color: #2581e6;
+  font-size: 42px;
+  font-weight: 800;
+}
+
+.qf-market-value-headline {
+  color: #0d2342;
+  font-size: clamp(20px, 3vw, 34px);
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -.025em;
+  text-align: center;
+}
+
+.qf-market-value-headline span {
+  color: #2581e6;
+}
+
 /* Mantem o mesmo bloco de texto, apenas na posicao antes ocupada pelo insight do PMBOK. */
 .result-view > .result-kicker { order: 10; }
 .result-view > h1 { order: 20; }
@@ -187,6 +351,33 @@
   .qf-projection-axis-label { font-size: 11px; }
   .qf-callout-title { font-size: 10px; }
   .qf-callout-value { font-size: 11px; }
+
+  .insight-view .insight-visual.qf-market-value-host {
+    padding: 18px 12px 15px;
+    gap: 12px;
+  }
+
+  .qf-market-value-compare {
+    grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .qf-profile-card {
+    padding: 11px 9px 10px;
+    border-radius: 13px;
+  }
+
+  .qf-profile-card-head strong { font-size: 12px; }
+  .qf-status { font-size: 9px; margin-top: 6px; }
+  .qf-profile-card-head img { width: 43px; height: 43px; }
+  .qf-profile-card label { font-size: 8px; }
+  .qf-profile-copy-lines i { height: 4px; margin-bottom: 4px; }
+  .qf-profile-bar { height: 7px; }
+  .qf-profile-blocks { gap: 4px; margin-top: 8px; }
+  .qf-profile-blocks i { height: 19px; }
+  .qf-profile-bar-ai b { display: none; }
+  .qf-market-arrow { font-size: 27px; }
+  .qf-market-value-headline { font-size: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
