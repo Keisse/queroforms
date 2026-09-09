@@ -68,7 +68,10 @@ export default function PublicQuiz(){
   if(!steps) return <div className="quiz-wrap"><div className="quiz-stage" style={{textAlign:'center',paddingTop:100,color:'#7a8b9c'}}>Carregando diagnóstico...</div></div>;
 
   const step=steps[idx];
-  const progress=Math.round(((idx+1)/steps.length)*100);
+  const questionCount=steps.filter(s=>s.kind==='question').length;
+  const questionNumber=steps.slice(0,idx+1).filter(s=>s.kind==='question').length;
+  const progress=questionCount?Math.round((questionNumber/questionCount)*100):0;
+  const questionCounter=step.kind==='question'?`${questionNumber}/${questionCount}`:'';
   const next=()=>setIdx(i=>Math.min(i+1,steps.length-1));
   const back=()=>setIdx(i=>Math.max(i-1,0));
 
@@ -110,7 +113,7 @@ export default function PublicQuiz(){
   };
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">Diagnóstico de Maturidade</div><div className="counter">{step.kind==='intro'?'':`${idx+1}/${steps.length}`}</div></div>
+    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">Diagnóstico de Maturidade</div><div className="counter">{questionCounter}</div></div>
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
       {step.kind==='branch' && (()=>{
