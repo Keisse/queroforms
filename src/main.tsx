@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import { getSession, onAuthChange } from './lib/auth';
 import './styles/global.css';
 import './styles/introCertificate.css';
+import './styles/builderResponsive.css';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
