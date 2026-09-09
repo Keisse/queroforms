@@ -1,5 +1,5 @@
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps, resetSteps, hasCustomSteps } from '../lib/stepsStore';
 import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
@@ -9,6 +9,18 @@ const INTRO_QUESTION = 'Você já usa o cloud?';
 const LEGACY_INTRO_TITLE = 'Descubra seu nível de maturidade em IA na Gestão de Projetos';
 const FLOW_WIDTH_KEY='queroforms-builder-flow-width';
 const PROPS_WIDTH_KEY='queroforms-builder-props-width';
+
+type NewScreenType='single'|'multi'|'scale'|'insight'|'email'|'name'|'processing';
+
+const NEW_SCREEN_OPTIONS:{type:NewScreenType;icon:string;title:string;description:string}[]=[
+  {type:'single',icon:'◉',title:'Pergunta — escolha única',description:'Uma resposta entre várias opções.'},
+  {type:'multi',icon:'☑',title:'Pergunta — múltipla escolha',description:'Permite selecionar mais de uma opção.'},
+  {type:'scale',icon:'↔',title:'Pergunta — escala',description:'Escala de 1 a 5 para medir intensidade.'},
+  {type:'insight',icon:'✦',title:'Tela de contexto',description:'Título, texto, destaque e fonte.'},
+  {type:'email',icon:'@',title:'Captura de e-mail',description:'Solicita o e-mail do participante.'},
+  {type:'name',icon:'Aa',title:'Captura de nome',description:'Solicita o nome do participante.'},
+  {type:'processing',icon:'◌',title:'Processamento',description:'Tela de transição antes do resultado.'},
+];
 
 function readPanelWidth(key:string, fallback:number){
   if(typeof window==='undefined') return fallback;
@@ -40,6 +52,29 @@ function labelFor(s: Step){
     : 'Resultado';
 }
 
+function createNewStep(type:NewScreenType):Step{
+  const stamp=`${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+  if(type==='single') return {
+    id:`question-${stamp}`,kind:'question',title:'Nova pergunta',input:'single',options:[
+      {label:'Opção 1',value:`option-1-${stamp}`},{label:'Opção 2',value:`option-2-${stamp}`}
+    ]
+  };
+  if(type==='multi') return {
+    id:`question-${stamp}`,kind:'question',title:'Nova pergunta',subtitle:'Selecione todas que se aplicam',input:'multi',options:[
+      {label:'Opção 1',value:`option-1-${stamp}`},{label:'Opção 2',value:`option-2-${stamp}`}
+    ]
+  };
+  if(type==='scale') return {
+    id:`question-${stamp}`,kind:'question',title:'Nova pergunta em escala',input:'scale',options:[
+      {label:'Nada',value:'1',score:1},{label:'Pouco',value:'2',score:2},{label:'Mais ou menos',value:'3',score:3},{label:'Bastante',value:'4',score:4},{label:'Muito',value:'5',score:5}
+    ]
+  };
+  if(type==='insight') return {id:`insight-${stamp}`,kind:'insight',eyebrow:'Contexto',title:'Novo contexto',body:'Adicione aqui o texto desta tela.',visual:'sparkle'};
+  if(type==='email') return {id:`email-${stamp}`,kind:'email',title:'Qual é o seu melhor e-mail?'};
+  if(type==='name') return {id:`name-${stamp}`,kind:'name',title:'Como podemos te chamar?'};
+  return {id:`processing-${stamp}`,kind:'processing',title:'Estamos preparando seu resultado...'};
+}
+
 export default function Builder(){
   const [steps,setSteps]=useState<Step[]>(()=>normalizeIntro(loadSteps()));
   const [loading,setLoading]=useState(true);
@@ -50,6 +85,7 @@ export default function Builder(){
   const [customized,setCustomized]=useState(hasCustomSteps());
   const [flowWidth,setFlowWidth]=useState(()=>readPanelWidth(FLOW_WIDTH_KEY,260));
   const [propsWidth,setPropsWidth]=useState(()=>readPanelWidth(PROPS_WIDTH_KEY,380));
+  const [addOpen,setAddOpen]=useState(false);
   const step=steps[sel];
 
   useEffect(()=>{
@@ -109,6 +145,16 @@ export default function Builder(){
     if(step.kind!=='question') return;
     if(step.options.length<=1) return;
     update({options: step.options.filter((_,i)=>i!==optIdx)} as Partial<Step>);
+  };
+  const addScreen=(type:NewScreenType)=>{
+    const newStep=createNewStep(type);
+    const resultIndex=steps.findIndex(s=>s.kind==='result');
+    let insertAt=step.kind==='result'?sel:sel+1;
+    if(resultIndex>=0) insertAt=Math.min(insertAt,resultIndex);
+    const next=[...steps.slice(0,insertAt),newStep,...steps.slice(insertAt)];
+    setSteps(next);
+    setSel(insertAt);
+    setAddOpen(false);
   };
   const publish=async()=>{
     setPublishing(true); setPublishError('');
@@ -171,13 +217,19 @@ export default function Builder(){
     <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
       <section className="steps-panel">
         <div className="steps-title">Fluxo <span>{steps.length} telas</span></div>
-        {steps.map((s,i)=><div className={`step-item ${i===sel?'active':''}`} key={s.id} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
-          <span onClick={()=>setSel(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
-            <span className="step-num">{i+1}</span>
-            <div><b>{labelFor(s)}</b><small>{s.kind}</small></div>
-          </span>
-          <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>
-        </div>)}
+        <div className="steps-list">
+          {steps.map((s,i)=><div className={`step-item ${i===sel?'active':''}`} key={s.id} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
+            <span onClick={()=>setSel(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
+              <span className="step-num">{i+1}</span>
+              <div><b>{labelFor(s)}</b><small>{s.kind}</small></div>
+            </span>
+            <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>
+          </div>)}
+        </div>
+        <div className="builder-add-screen-wrap">
+          <button className="btn builder-add-screen" onClick={()=>setAddOpen(true)}><Plus size={16}/> Adicionar tela</button>
+          <small>Será inserida depois da tela selecionada.</small>
+        </div>
       </section>
 
       <div className="panel-resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar painel de fluxo" title="Arraste para ajustar o tamanho" onPointerDown={e=>startResize('flow',e)}><span/></div>
@@ -281,6 +333,22 @@ export default function Builder(){
     </div>
 
     <div className="builder-resize-hint">↔ Arraste as divisórias entre os painéis para ajustar os tamanhos. Sua preferência fica salva neste navegador.</div>
+
+    {addOpen && <div className="builder-add-overlay" onClick={()=>setAddOpen(false)}>
+      <div className="builder-add-modal" onClick={e=>e.stopPropagation()}>
+        <div className="builder-add-modal-head">
+          <div><small>Nova tela</small><h3>O que você quer adicionar?</h3></div>
+          <button className="btn" onClick={()=>setAddOpen(false)}>✕</button>
+        </div>
+        <p className="muted">A nova tela será inserida depois de <b>{sel+1}. {labelFor(step)}</b>. Se o resultado estiver selecionado, ela entra imediatamente antes dele.</p>
+        <div className="builder-screen-types">
+          {NEW_SCREEN_OPTIONS.map(item=><button key={item.type} className="builder-screen-type" onClick={()=>addScreen(item.type)}>
+            <span>{item.icon}</span>
+            <div><b>{item.title}</b><small>{item.description}</small></div>
+          </button>)}
+        </div>
+      </div>
+    </div>}
 
     {deleteIdx!==null && <div style={{position:'fixed',inset:0,background:'rgba(15,30,50,.45)',display:'grid',placeItems:'center',zIndex:50}} onClick={cancelDelete}>
       <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:16,padding:28,width:380,display:'flex',flexDirection:'column',gap:12}}>
