@@ -1,0 +1,54 @@
+/* Ajustes finais: preserva o visual existente e acrescenta somente movimento/ordem. */
+
+@keyframes qf-process-bar-in {
+  from { transform: scaleX(0); opacity: .58; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes qf-result-button-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+.processing-view .process-lines i {
+  transform-origin: left center;
+  animation: qf-process-bar-in 1.15s cubic-bezier(.22,.8,.32,1) both;
+}
+
+.processing-view .process-lines > div:nth-of-type(2) i {
+  animation-delay: .18s;
+}
+
+.processing-view .process-lines > div:nth-of-type(3) i {
+  animation-delay: .36s;
+}
+
+.processing-view .primary.big {
+  transform-origin: center;
+  animation: qf-result-button-pulse 1.85s ease-in-out infinite;
+}
+
+/* Mantem o mesmo bloco de texto, apenas na posicao antes ocupada pelo insight do PMBOK. */
+.result-view > .result-kicker { order: 10; }
+.result-view > h1 { order: 20; }
+.result-view > .score-card { order: 30; }
+.result-view > .dimension-card { order: 40; }
+.result-view > .salary-card { order: 50; }
+.result-view > .result-copy { order: 60; }
+.result-view > .offer-card { order: 70; }
+
+.result-view > .pmi-card {
+  display: none !important;
+}
+
+/* Na projecao salarial, fica somente a fonte abaixo do grafico. */
+.result-view .salary-note {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .processing-view .process-lines i,
+  .processing-view .primary.big {
+    animation: none;
+  }
+}
