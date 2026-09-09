@@ -77,6 +77,24 @@ export default function Builder(){
     setTimeout(()=>setSavedMsg(''),3500);
   };
 
+  const [deleteIdx,setDeleteIdx]=useState<number|null>(null);
+  const [confirmText,setConfirmText]=useState('');
+
+  const requestDelete=(i:number)=>{ setDeleteIdx(i); setConfirmText(''); };
+  const cancelDelete=()=>{ setDeleteIdx(null); setConfirmText(''); };
+  const confirmDelete=()=>{
+    if(deleteIdx===null || confirmText!=='EXCLUIR') return;
+    setSteps(prev=>prev.filter((_,i)=>i!==deleteIdx));
+    setSel(prev=>{
+      if(deleteIdx===null) return prev;
+      if(prev>deleteIdx) return prev-1;
+      if(prev===deleteIdx) return Math.max(0,deleteIdx-1);
+      return prev;
+    });
+    setDeleteIdx(null);
+    setConfirmText('');
+  };
+
   if(loading) return <p className="muted">Carregando perguntas publicadas...</p>;
 
   return <>
@@ -94,9 +112,12 @@ export default function Builder(){
     <div className="builder-grid">
       <section className="steps-panel">
         <div className="steps-title">Fluxo <span>{steps.length} telas</span></div>
-        {steps.map((s,i)=><div className={`step-item ${i===sel?'active':''}`} key={s.id} onClick={()=>setSel(i)} style={{cursor:'pointer'}}>
-          <span className="step-num">{i+1}</span>
-          <div><b>{labelFor(s)}</b><small>{s.kind}</small></div>
+        {steps.map((s,i)=><div className={`step-item ${i===sel?'active':''}`} key={s.id} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
+          <span onClick={()=>setSel(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1}}>
+            <span className="step-num">{i+1}</span>
+            <div><b>{labelFor(s)}</b><small>{s.kind}</small></div>
+          </span>
+          <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'4px 8px',fontSize:12}}>✕</button>
         </div>)}
       </section>
 
@@ -192,5 +213,17 @@ export default function Builder(){
         {step.kind==='result' && <p className="muted">A tela de resultado é composta a partir das respostas e não tem campos de texto fixos aqui.</p>}
       </aside>
     </div>
+
+    {deleteIdx!==null && <div style={{position:'fixed',inset:0,background:'rgba(15,30,50,.45)',display:'grid',placeItems:'center',zIndex:50}} onClick={cancelDelete}>
+      <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:16,padding:28,width:380,display:'flex',flexDirection:'column',gap:12}}>
+        <h3 style={{margin:0}}>Excluir esta tela?</h3>
+        <p className="muted" style={{margin:0}}>Você está prestes a excluir "<b>{labelFor(steps[deleteIdx])}</b>". Essa ação não pode ser desfeita depois de publicar. Digite <b>EXCLUIR</b> para confirmar.</p>
+        <input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder="EXCLUIR" style={{padding:12,border:'1px solid #d0dbe3',borderRadius:10}}/>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn" onClick={cancelDelete}>Cancelar</button>
+          <button className="btn dark" disabled={confirmText!=='EXCLUIR'} onClick={confirmDelete} style={confirmText!=='EXCLUIR'?{opacity:.5,cursor:'not-allowed'}:{background:'#c0392b',borderColor:'#c0392b'}}>Excluir tela</button>
+        </div>
+      </div>
+    </div>}
   </>
 }
