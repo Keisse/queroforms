@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps, resetSteps, hasCustomSteps } from '../lib/stepsStore';
 import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
@@ -117,7 +118,7 @@ export default function Builder(){
             <span className="step-num">{i+1}</span>
             <div><b>{labelFor(s)}</b><small>{s.kind}</small></div>
           </span>
-          <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'4px 8px',fontSize:12}}>✕</button>
+          <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();requestDelete(i);}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>
         </div>)}
       </section>
 
