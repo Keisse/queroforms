@@ -15,8 +15,22 @@ function clearLegacyLocalDrafts() {
   }
 }
 
+function syncContextSaveLabels() {
+  const button = document.querySelector<HTMLButtonElement>('.qf-context-image-save-btn');
+  if (button && button.textContent !== 'Salvar edição') button.textContent = 'Salvar edição';
+
+  const help = document.querySelector<HTMLElement>('.qf-context-image-help');
+  if (help) {
+    help.textContent = 'Cole a URL direta de uma imagem pública do WordPress (PNG, JPG ou WebP). Salvar edição guarda esta tela somente neste navegador. Clique em Publicar para enviar ao Supabase e atualizar a página pública.';
+  }
+}
+
 function installScreenDraftBridge() {
   clearLegacyLocalDrafts();
+  syncContextSaveLabels();
+
+  const observer = new MutationObserver(syncContextSaveLabels);
+  observer.observe(document.body, { childList: true, subtree: true });
 
   document.addEventListener('click', event => {
     const target = event.target instanceof Element
