@@ -24,32 +24,36 @@ function ensurePreResultStyles() {
     .insight-view.qf-pre-result-guide-view{text-align:left!important}
     .insight-view.qf-pre-result-guide-view>.insight-visual{
       position:relative!important;
-      height:260px!important;
-      padding:0!important;
+      height:300px!important;
+      padding:24px!important;
       overflow:hidden!important;
       display:block!important;
       border-radius:28px!important;
-      background:#073c4b!important;
-      border:1px solid #073c4b;
+      background:linear-gradient(145deg,#eef7ff 0%,#e8f3fd 100%)!important;
+      border:1px solid #dceaf5!important;
     }
     .qf-pre-result-placeholder{
-      position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);
-      align-items:stretch;background:#073c4b;color:#fff;padding:34px 30px;
+      width:100%;height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;align-items:stretch;
     }
     .qf-pre-result-stat{
-      min-width:0;padding:0 24px;display:flex;flex-direction:column;justify-content:flex-start;
+      min-width:0;background:#fff;border:1px solid #d7e7f5;border-radius:20px;
+      padding:22px 20px;display:flex;flex-direction:column;justify-content:flex-start;
+      box-shadow:0 8px 22px rgba(31,111,195,.06);
     }
-    .qf-pre-result-stat:first-child{padding-left:0}
-    .qf-pre-result-stat:last-child{padding-right:0}
-    .qf-pre-result-stat+.qf-pre-result-stat{border-left:2px solid rgba(255,255,255,.82)}
+    .qf-pre-result-stat-icon{
+      width:38px;height:38px;border-radius:12px;background:#edf6ff;color:#1479d0;
+      display:grid;place-items:center;font-size:18px;margin-bottom:16px;
+    }
     .qf-pre-result-stat-number{
-      display:block;font-size:48px;line-height:1;font-weight:500;letter-spacing:-.035em;
-      color:#0085ad;margin-bottom:16px;
+      display:block;font-size:46px;line-height:1;font-weight:850;letter-spacing:-.035em;
+      color:#1479d0;margin-bottom:12px;
     }
+    .qf-pre-result-stat-number.compact{font-size:38px;line-height:1.02}
     .qf-pre-result-stat-copy{
-      display:block;font-size:20px;line-height:1.23;font-weight:750;color:#fff;
+      display:block;font-size:16px;line-height:1.32;font-weight:700;color:#173a5d;
     }
-    .qf-pre-result-stat-copy sup{font-size:10px;vertical-align:super;margin-left:1px}
+    .qf-pre-result-stat-copy sup{font-size:9px;vertical-align:super;margin-left:1px}
     .insight-view.qf-pre-result-guide-view>small{
       display:inline-flex!important;align-items:center!important;width:auto!important;margin:18px 0 14px!important;
       padding:8px 12px!important;border-radius:10px!important;background:#eef6fd!important;color:#1479d0!important;
@@ -61,24 +65,27 @@ function ensurePreResultStyles() {
     .insight-view.qf-pre-result-guide-view>p{text-align:left!important;margin-left:0!important;margin-right:0!important;max-width:820px!important}
     .insight-view.qf-pre-result-guide-view>.primary.big{margin-top:26px!important}
     .qf-pre-result-builder-placeholder{
-      width:100%;height:190px;border-radius:16px;background:#073c4b;
-      border:1px solid #073c4b;margin-bottom:16px;position:relative;overflow:hidden;
+      width:100%;height:210px;border-radius:16px;background:linear-gradient(145deg,#eef7ff,#e8f3fd);
+      border:1px solid #dceaf5;margin-bottom:16px;position:relative;overflow:hidden;padding:14px;
     }
-    .qf-pre-result-builder-placeholder .qf-pre-result-placeholder{padding:20px 18px}
-    .qf-pre-result-builder-placeholder .qf-pre-result-stat{padding:0 12px}
-    .qf-pre-result-builder-placeholder .qf-pre-result-stat:first-child{padding-left:0}
-    .qf-pre-result-builder-placeholder .qf-pre-result-stat:last-child{padding-right:0}
-    .qf-pre-result-builder-placeholder .qf-pre-result-stat-number{font-size:31px;margin-bottom:9px}
-    .qf-pre-result-builder-placeholder .qf-pre-result-stat-copy{font-size:12px;line-height:1.2}
+    .qf-pre-result-builder-placeholder .qf-pre-result-placeholder{gap:9px}
+    .qf-pre-result-builder-placeholder .qf-pre-result-stat{padding:12px 10px;border-radius:12px}
+    .qf-pre-result-builder-placeholder .qf-pre-result-stat-icon{width:25px;height:25px;border-radius:8px;font-size:12px;margin-bottom:8px}
+    .qf-pre-result-builder-placeholder .qf-pre-result-stat-number{font-size:29px;margin-bottom:7px}
+    .qf-pre-result-builder-placeholder .qf-pre-result-stat-number.compact{font-size:24px}
+    .qf-pre-result-builder-placeholder .qf-pre-result-stat-copy{font-size:10px;line-height:1.2}
     @media(max-width:760px){
-      .insight-view.qf-pre-result-guide-view>.insight-visual{height:360px!important;border-radius:22px!important}
-      .qf-pre-result-placeholder{grid-template-columns:1fr;padding:20px 22px}
-      .qf-pre-result-stat{padding:14px 0;display:grid;grid-template-columns:92px 1fr;align-items:center;gap:10px}
-      .qf-pre-result-stat:first-child{padding-top:0}
-      .qf-pre-result-stat:last-child{padding-bottom:0}
-      .qf-pre-result-stat+.qf-pre-result-stat{border-left:0;border-top:1px solid rgba(255,255,255,.6)}
-      .qf-pre-result-stat-number{font-size:38px;margin:0}
-      .qf-pre-result-stat-copy{font-size:15px;line-height:1.25}
+      .insight-view.qf-pre-result-guide-view>.insight-visual{
+        height:470px!important;border-radius:22px!important;padding:16px!important;
+      }
+      .qf-pre-result-placeholder{grid-template-columns:1fr;gap:10px}
+      .qf-pre-result-stat{
+        padding:14px 16px;border-radius:16px;display:grid;
+        grid-template-columns:38px 92px 1fr;align-items:center;gap:10px;
+      }
+      .qf-pre-result-stat-icon{width:34px;height:34px;border-radius:10px;margin:0;font-size:15px}
+      .qf-pre-result-stat-number,.qf-pre-result-stat-number.compact{font-size:31px;margin:0}
+      .qf-pre-result-stat-copy{font-size:13px;line-height:1.25}
       .insight-view.qf-pre-result-guide-view>small{margin-top:16px!important}
     }
   `;
@@ -88,15 +95,18 @@ function ensurePreResultStyles() {
 const PRE_RESULT_STATS_HTML = `
   <div class="qf-pre-result-placeholder" aria-label="Dados sobre inteligência artificial e gestão de projetos">
     <div class="qf-pre-result-stat">
+      <span class="qf-pre-result-stat-icon" aria-hidden="true">⚙️</span>
       <span class="qf-pre-result-stat-number">80%</span>
       <span class="qf-pre-result-stat-copy">das tarefas de gestão de projetos serão executadas por IA até 2030<sup>1</sup></span>
     </div>
     <div class="qf-pre-result-stat">
+      <span class="qf-pre-result-stat-icon" aria-hidden="true">↗</span>
       <span class="qf-pre-result-stat-number">86%</span>
       <span class="qf-pre-result-stat-copy">das empresas classificam IA e big data como competências prioritárias para sua força de trabalho<sup>2</sup></span>
     </div>
     <div class="qf-pre-result-stat">
-      <span class="qf-pre-result-stat-number">Apenas 1%</span>
+      <span class="qf-pre-result-stat-icon" aria-hidden="true">✦</span>
+      <span class="qf-pre-result-stat-number compact">Apenas 1%</span>
       <span class="qf-pre-result-stat-copy">das organizações acreditam ter alcançado maturidade em GenAI, segundo pesquisa do PMI</span>
     </div>
   </div>
@@ -115,7 +125,10 @@ function applyPreResultPublicScreen() {
     view.classList.add('qf-pre-result-guide-view');
 
     const visual = view.querySelector<HTMLElement>('.insight-visual');
-    if (visual) renderPreResultPlaceholder(visual);
+    if (visual) {
+      visual.querySelector('.qf-pre-result-placeholder')?.remove();
+      renderPreResultPlaceholder(visual);
+    }
 
     const h1 = view.querySelector<HTMLHeadingElement>('h1');
     if (h1 && !h1.dataset.qfPreResultStyled) {
