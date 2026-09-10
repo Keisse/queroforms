@@ -22,13 +22,11 @@ import './styles/certificateHotfix.css';
 import './styles/answerEmojiFallback.css';
 import './styles/builderHeaderCleanup.css';
 
-// Os aprimoramentos abaixo alteram o DOM da experiência pública.
-// Eles não são carregados no Builder para manter o editor leve e estável.
+// Scripts que manipulam o DOM da experiência pública só entram no diagnóstico.
+// O Builder fica isolado e 100% React, sem MutationObservers globais.
 if (window.location.pathname.startsWith('/d/')) {
   void Promise.all([
-    import('./finalPolish'),
-    import('./focusValueImage'),
-    import('./modernProjectImage'),
+    import('./publicLegacyVisuals'),
     import('./contextImageUpload'),
     import('./introImageEditor'),
     import('./almostThereAiVisual'),
