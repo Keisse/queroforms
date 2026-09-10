@@ -19,6 +19,7 @@ import './styles/contextCompact.css';
 import './styles/title28.css';
 import './styles/photoChoiceButtons.css';
 import './styles/certificateHotfix.css';
+import './styles/answerEmojiFallback.css';
 import './finalPolish';
 import './focusValueImage';
 import './modernProjectImage';
