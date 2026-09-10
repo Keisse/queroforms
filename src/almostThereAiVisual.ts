@@ -1,3 +1,5 @@
+export {};
+
 const STYLE_ID = 'qf-almost-there-ai-visual-styles';
 
 function normalizeText(value: string) {
