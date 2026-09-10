@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { AppShell } from './components/AppShell';
 import Dashboard from './pages/Dashboard';
-import Builder from './pages/Builder';
+import Builder from './pages/BuilderV2';
 import PublicQuiz from './pages/PublicQuiz';
 import Placeholder from './pages/Placeholder';
 import Settings from './pages/Settings';
@@ -26,7 +26,6 @@ import './focusValueImage';
 import './modernProjectImage';
 import './contextImageUpload';
 import './contextDraftDatabaseBridge';
-import './builderAutoPublish';
 import './almostThereAiVisual';
 import './preResultGuideScreen';
 
