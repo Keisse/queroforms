@@ -25,6 +25,7 @@ import './focusValueImage';
 import './modernProjectImage';
 import './contextImageUpload';
 import './contextDraftDatabaseBridge';
+import './builderAutoPublish';
 import './almostThereAiVisual';
 import './preResultGuideScreen';
 
