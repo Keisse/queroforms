@@ -50,7 +50,6 @@ function ensurePreResultStyles() {
       display:block;font-size:38px;line-height:1;font-weight:700;letter-spacing:-.03em;
       color:#1479d0;margin-bottom:10px;
     }
-    .qf-pre-result-stat-number.compact{font-size:32px;line-height:1.03}
     .qf-pre-result-stat-copy{
       display:block;font-size:13px;line-height:1.34;font-weight:400;color:#173a5d;
     }
@@ -73,7 +72,6 @@ function ensurePreResultStyles() {
     .qf-pre-result-builder-placeholder .qf-pre-result-stat{padding:10px 9px;border-radius:12px}
     .qf-pre-result-builder-placeholder .qf-pre-result-stat-icon{width:23px;height:23px;border-radius:7px;font-size:11px;margin-bottom:7px}
     .qf-pre-result-builder-placeholder .qf-pre-result-stat-number{font-size:24px;margin-bottom:6px;font-weight:700}
-    .qf-pre-result-builder-placeholder .qf-pre-result-stat-number.compact{font-size:21px}
     .qf-pre-result-builder-placeholder .qf-pre-result-stat-copy{font-size:9px;line-height:1.25;font-weight:400}
     @media(max-width:760px){
       .insight-view.qf-pre-result-guide-view>.insight-visual{
@@ -86,7 +84,6 @@ function ensurePreResultStyles() {
       }
       .qf-pre-result-stat-icon{width:30px;height:30px;border-radius:9px;margin:0;font-size:14px}
       .qf-pre-result-stat-number{font-size:27px;margin:0;font-weight:700}
-      .qf-pre-result-stat-number.compact{font-size:17px;line-height:1.05;margin:0;font-weight:700;white-space:nowrap;letter-spacing:-.02em}
       .qf-pre-result-stat-copy{font-size:12px;line-height:1.28;font-weight:400}
       .insight-view.qf-pre-result-guide-view>small{margin-top:16px!important}
     }
@@ -108,7 +105,7 @@ const PRE_RESULT_STATS_HTML = `
     </div>
     <div class="qf-pre-result-stat">
       <span class="qf-pre-result-stat-icon" aria-hidden="true">✦</span>
-      <span class="qf-pre-result-stat-number compact">Apenas 1%</span>
+      <span class="qf-pre-result-stat-number">1%</span>
       <span class="qf-pre-result-stat-copy">das organizações acreditam ter alcançado maturidade em GenAI, segundo pesquisa do PMI</span>
     </div>
   </div>
