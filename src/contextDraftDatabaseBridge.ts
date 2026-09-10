@@ -11,11 +11,11 @@ function clearLegacyLocalDrafts() {
   try {
     window.localStorage.removeItem(LEGACY_CONTEXT_DRAFT_KEY);
   } catch {
-    // O banco agora é a fonte oficial do rascunho.
+    // O rascunho atual da tela passa a ser controlado pelo Builder.
   }
 }
 
-function installDatabaseDraftBridge() {
+function installScreenDraftBridge() {
   clearLegacyLocalDrafts();
 
   document.addEventListener('click', event => {
@@ -27,23 +27,23 @@ function installDatabaseDraftBridge() {
     event.preventDefault();
     event.stopImmediatePropagation();
 
-    const databaseSaveButton = document.querySelector<HTMLButtonElement>('[data-qf-save-draft="true"]');
-    if (!databaseSaveButton) {
-      setContextStatus('Não encontrei o botão de salvar rascunho do editor.', true);
+    const saveScreenButton = document.querySelector<HTMLButtonElement>('[data-qf-save-screen="true"]');
+    if (!saveScreenButton) {
+      setContextStatus('Não encontrei o botão de salvar edição desta tela.', true);
       return;
     }
-    if (databaseSaveButton.disabled) {
+    if (saveScreenButton.disabled) {
       setContextStatus('Aguarde a operação atual terminar para salvar novamente.');
       return;
     }
 
-    setContextStatus('Salvando rascunho no banco...');
-    databaseSaveButton.click();
+    saveScreenButton.click();
+    setContextStatus('Edição salva como rascunho neste navegador ✓');
   }, true);
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', installDatabaseDraftBridge, { once: true });
+  document.addEventListener('DOMContentLoaded', installScreenDraftBridge, { once: true });
 } else {
-  installDatabaseDraftBridge();
+  installScreenDraftBridge();
 }
