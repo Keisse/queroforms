@@ -1,0 +1,16 @@
+.answer:has(> span:first-child:empty){
+  grid-template-columns:1fr auto;
+}
+
+.answer>span:first-child:empty{
+  display:none;
+}
+
+.answer:has(> span:first-child:empty) .answer-label{
+  min-width:0;
+  text-align:left;
+}
+
+.scale-row .answer:has(> span:first-child:empty){
+  display:flex;
+}
