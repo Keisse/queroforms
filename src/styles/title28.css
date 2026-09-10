@@ -1,0 +1,14 @@
+/* Padroniza os títulos principais das perguntas e telas de contexto. */
+.question-view > h1,
+.insight-view > h1 {
+  font-size: 28px !important;
+  line-height: 1.16 !important;
+}
+
+@media (max-width: 760px) {
+  .question-view > h1,
+  .insight-view > h1 {
+    font-size: 28px !important;
+    line-height: 1.16 !important;
+  }
+}
