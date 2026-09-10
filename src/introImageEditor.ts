@@ -40,21 +40,8 @@ function ensureStyles(){
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
-    .certificate-image-wrap,.builder-certificate-image-wrap{
-      background:none!important;
-      background-image:none!important;
-      overflow:hidden!important;
-    }
-    .certificate-image,.builder-certificate-image-wrap img{
-      position:static!important;
-      inset:auto!important;
-      display:block!important;
-      width:100%!important;
-      height:100%!important;
-      object-fit:cover!important;
-      opacity:1!important;
-      pointer-events:auto!important;
-    }
+    .certificate-image-wrap,.builder-certificate-image-wrap{background:none!important;background-image:none!important;overflow:hidden!important}
+    .certificate-image,.builder-certificate-image-wrap img{position:static!important;inset:auto!important;display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;opacity:1!important;pointer-events:auto!important}
     .qf-intro-image-editor{margin:0 0 14px;padding:12px;border:1px solid #d7e2eb;border-radius:14px;background:#f8fbfe}
     .qf-intro-image-editor label{display:block;font-size:13px;font-weight:700;margin:0 0 7px}
     .qf-intro-image-editor input,.qf-intro-image-editor textarea{width:100%;box-sizing:border-box;border:1px solid #cfdce7;border-radius:10px;background:#fff;color:#17324d;font:inherit;padding:10px 11px}
@@ -85,14 +72,14 @@ function findQuestionField(){
 }
 
 function renderPreview(container:HTMLElement,url:string){
-  container.innerHTML='';
   const finalUrl = url.trim() || FALLBACK_IMAGE;
+  if(container.dataset.url === finalUrl && container.querySelector('img')) return;
+  container.dataset.url = finalUrl;
+  container.innerHTML='';
   const img = document.createElement('img');
   img.src = finalUrl;
   img.alt = 'Prévia da imagem da tela inicial';
-  img.onerror = ()=>{
-    container.innerHTML='<span>Não foi possível carregar esta imagem.</span>';
-  };
+  img.onerror = ()=>{ container.innerHTML='<span>Não foi possível carregar esta imagem.</span>'; };
   container.appendChild(img);
 }
 
@@ -143,7 +130,7 @@ function ensureBuilderEditor(){
       <label>URL da imagem da Tela 1</label>
       <input class="qf-intro-image-url" type="url" placeholder="https://trentim.com/wp-content/uploads/.../certificado.webp" />
       <div class="qf-intro-image-preview"></div>
-      <small class="qf-intro-image-help">Cole a URL direta da imagem. Depois clique em <b>Salvar edição desta tela</b> para guardar no navegador e em <b>Publicar</b> para enviar ao Supabase e atualizar o formulário público.</small>
+      <small class="qf-intro-image-help">Cole a URL direta da imagem. Depois clique em <b>Salvar edição desta tela</b> para guardar no navegador e em <b>Publicar</b> para atualizar o formulário público.</small>
       <small class="qf-intro-image-status"></small>
     `;
     panel.insertBefore(editor,label);
@@ -156,25 +143,19 @@ function ensureBuilderEditor(){
 
   if(proxy && document.activeElement!==proxy && proxy.value!==parsed.body) proxy.value=parsed.body;
   if(urlInput && document.activeElement!==urlInput && urlInput.value!==parsed.imageUrl) urlInput.value=parsed.imageUrl;
-  if(preview && preview.dataset.url!==(parsed.imageUrl||FALLBACK_IMAGE)){
-    preview.dataset.url=parsed.imageUrl||FALLBACK_IMAGE;
-    renderPreview(preview,parsed.imageUrl);
-  }
+  if(preview) renderPreview(preview,parsed.imageUrl);
 
   const apply = ()=>{
     if(!proxy || !urlInput) return;
     const imageUrl = urlInput.value.trim();
     if(!isValidImageUrl(imageUrl)){
-      if(status){ status.textContent='Use uma URL completa iniciando com http:// ou https://'; status.classList.add('error'); }
+      if(status){status.textContent='Use uma URL completa iniciando com http:// ou https://';status.classList.add('error');}
       return;
     }
-    if(status){ status.textContent='Alteração pronta para salvar nesta tela.'; status.classList.remove('error'); }
+    if(status){status.textContent='Alteração pronta para salvar nesta tela.';status.classList.remove('error');}
     const next = composeIntroBody(proxy.value,imageUrl);
     if(field.value!==next) setReactFieldValue(field,next);
-    if(preview){
-      preview.dataset.url=imageUrl||FALLBACK_IMAGE;
-      renderPreview(preview,imageUrl);
-    }
+    if(preview) renderPreview(preview,imageUrl);
     updateBuilderCanvas(next);
   };
 
@@ -200,7 +181,6 @@ function applyPublicIntroImage(){
 
   const domText = question.textContent || '';
   let parsed:{body:string;imageUrl:string};
-
   if(INTRO_IMAGE_MARKER.test(domText)){
     parsed = parseIntroBody(domText);
     card.dataset.qfIntroCleanBody=parsed.body;
@@ -218,24 +198,46 @@ function applyPublicIntroImage(){
   if(img.getAttribute('src')!==nextSrc) img.src=nextSrc;
 }
 
-function apply(){
+function scheduleBuilderRefresh(){
+  window.setTimeout(()=>requestAnimationFrame(ensureBuilderEditor),0);
+  window.setTimeout(()=>requestAnimationFrame(ensureBuilderEditor),120);
+}
+
+function startBuilder(){
   ensureStyles();
-  ensureBuilderEditor();
+  let attempts = 0;
+  const timer = window.setInterval(()=>{
+    attempts += 1;
+    ensureBuilderEditor();
+    if(document.querySelector('.props-panel') || attempts >= 24) window.clearInterval(timer);
+  },200);
+
+  document.addEventListener('click',event=>{
+    if(event.target instanceof Element && event.target.closest('.step-item')) scheduleBuilderRefresh();
+  },true);
+}
+
+function startPublic(){
+  ensureStyles();
   applyPublicIntroImage();
+  let attempts = 0;
+  const timer = window.setInterval(()=>{
+    attempts += 1;
+    applyPublicIntroImage();
+    const stage = document.querySelector('.quiz-stage');
+    if(stage){
+      window.clearInterval(timer);
+      const observer = new MutationObserver(()=>requestAnimationFrame(applyPublicIntroImage));
+      observer.observe(stage,{childList:true,subtree:true});
+    }else if(attempts >= 24){
+      window.clearInterval(timer);
+    }
+  },200);
 }
 
 function start(){
-  apply();
-  let scheduled=false;
-  const observer=new MutationObserver(()=>{
-    if(scheduled) return;
-    scheduled=true;
-    requestAnimationFrame(()=>{
-      scheduled=false;
-      apply();
-    });
-  });
-  observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+  if(window.location.pathname.startsWith('/builder/')) startBuilder();
+  else if(window.location.pathname.startsWith('/d/')) startPublic();
 }
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true});
