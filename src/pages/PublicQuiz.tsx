@@ -25,7 +25,6 @@ export default function PublicQuiz(){
   const [email,setEmail]=useState('');
   const [name,setName]=useState('');
   const [saving,setSaving]=useState(false);
-  const [saveError,setSaveError]=useState('');
 
   useEffect(()=>{
     let active=true;
@@ -90,26 +89,36 @@ export default function PublicQuiz(){
     next();
   };
 
-  const saveLead=async()=>{
-    setSaving(true); setSaveError('');
-    try{
-      const qs = new URLSearchParams(window.location.search);
-      const payload={
-        survey_slug:'gp-ia', name, email, score:result.pct, level:result.level,
-        dimension_scores:result.dimensions, answers,
-        source:qs.get('source') || qs.get('utm_source') || 'direct',
-        utm_source:qs.get('utm_source'), utm_medium:qs.get('utm_medium'),
-        utm_campaign:qs.get('utm_campaign'), utm_content:qs.get('utm_content'),
-        utm_term:qs.get('utm_term'), landing_url:window.location.href,
-        referrer:document.referrer || null, user_agent:navigator.userAgent
-      };
-      const {error}=await supabase.from('submissions').insert(payload);
-      if(error) throw error;
-      next();
-    } catch(err){
-      console.error(err);
-      setSaveError('Não conseguimos salvar seu diagnóstico agora. Tente novamente em alguns instantes.');
-    } finally{setSaving(false)}
+  const saveLead=()=>{
+    if(saving) return;
+    setSaving(true);
+
+    const qs = new URLSearchParams(window.location.search);
+    const payload={
+      survey_slug:'gp-ia', name, email, score:result.pct, level:result.level,
+      dimension_scores:result.dimensions, answers,
+      source:qs.get('source') || qs.get('utm_source') || 'direct',
+      utm_source:qs.get('utm_source'), utm_medium:qs.get('utm_medium'),
+      utm_campaign:qs.get('utm_campaign'), utm_content:qs.get('utm_content'),
+      utm_term:qs.get('utm_term'), landing_url:window.location.href,
+      referrer:document.referrer || null, user_agent:navigator.userAgent
+    };
+
+    // O resultado pertence ao usuário e não pode ficar bloqueado por rede/banco.
+    // Avançamos imediatamente e persistimos a submissão em segundo plano.
+    next();
+
+    if(!supabaseEnabled){
+      setSaving(false);
+      return;
+    }
+
+    void supabase.from('submissions').insert(payload)
+      .then(({error})=>{
+        if(error) console.error('Falha ao salvar submissão do diagnóstico:', error);
+      })
+      .catch(err=>console.error('Falha inesperada ao salvar submissão do diagnóstico:', err))
+      .finally(()=>setSaving(false));
   };
 
   return <div className="quiz-wrap">
@@ -157,7 +166,7 @@ export default function PublicQuiz(){
         <button className="primary big" onClick={next}>Continuar</button></div>}
       {step.kind==='processing' && <div className="processing-view"><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" onClick={next}>Ver resultado</button></div>}
       {step.kind==='email' && <div className="field-view"><h1>{step.title}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!email.includes('@')} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
-      {step.kind==='name' && <div className="field-view"><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button>{saveError&&<div className="save-error">{saveError}</div>}<small>{supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
+      {step.kind==='name' && <div className="field-view"><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button><small>{supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
       {step.kind==='result' && <Result name={name} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined}/>} 
     </div>
   </div>
