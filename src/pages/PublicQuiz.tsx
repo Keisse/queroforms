@@ -113,12 +113,16 @@ export default function PublicQuiz(){
       return;
     }
 
-    void supabase.from('submissions').insert(payload)
-      .then(({error})=>{
+    void (async()=>{
+      try{
+        const {error}=await supabase.from('submissions').insert(payload);
         if(error) console.error('Falha ao salvar submissão do diagnóstico:', error);
-      })
-      .catch(err=>console.error('Falha inesperada ao salvar submissão do diagnóstico:', err))
-      .finally(()=>setSaving(false));
+      } catch(err: unknown){
+        console.error('Falha inesperada ao salvar submissão do diagnóstico:', err);
+      } finally{
+        setSaving(false);
+      }
+    })();
   };
 
   return <div className="quiz-wrap">
