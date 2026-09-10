@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 726" role="img" aria-labelledby="title desc">
+  <title id="title">Certificado Mestre em Gestão de Projetos com Inteligência Artificial</title>
+  <desc id="desc">Certificado em tons de azul, branco e dourado com selo dourado à direita.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dff1ff"/>
+      <stop offset="1" stop-color="#cfe8fb"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffef9"/>
+      <stop offset="1" stop-color="#fffdf5"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffc84b"/>
+      <stop offset=".5" stop-color="#e9a41b"/>
+      <stop offset="1" stop-color="#cc7f08"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#2c6596" flood-opacity=".18"/>
+    </filter>
+    <filter id="medalShadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#8e5b08" flood-opacity=".24"/>
+    </filter>
+    <pattern id="waves" width="220" height="50" patternUnits="userSpaceOnUse">
+      <path d="M0 33 C55 3 110 63 165 33 S275 3 330 33" fill="none" stroke="#d9e4ee" stroke-width="1.2" opacity=".42"/>
+      <path d="M0 41 C55 11 110 71 165 41 S275 11 330 41" fill="none" stroke="#d9e4ee" stroke-width="1" opacity=".28"/>
+    </pattern>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="726" rx="40" fill="url(#bg)"/>
+
+  <g transform="rotate(-2.2 540 355)" filter="url(#shadow)">
+    <rect x="42" y="28" width="1016" height="658" rx="18" fill="url(#paper)"/>
+    <rect x="65" y="50" width="970" height="614" rx="8" fill="none" stroke="#e9a41b" stroke-width="3"/>
+    <rect x="78" y="63" width="944" height="588" rx="6" fill="none" stroke="#f2b63a" stroke-width="1.5"/>
+
+    <path d="M78 108 Q112 106 116 65" fill="none" stroke="#e9a41b" stroke-width="2.5"/>
+    <path d="M1022 108 Q988 106 984 65" fill="none" stroke="#e9a41b" stroke-width="2.5"/>
+    <path d="M78 606 Q112 608 116 650" fill="none" stroke="#e9a41b" stroke-width="2.5"/>
+    <path d="M1022 606 Q988 608 984 650" fill="none" stroke="#e9a41b" stroke-width="2.5"/>
+
+    <rect x="82" y="505" width="845" height="128" fill="url(#waves)" opacity=".66"/>
+
+    <g transform="translate(550 120)" fill="#e9a41b">
+      <ellipse cx="-46" cy="3" rx="7" ry="17" transform="rotate(-36 -46 3)"/>
+      <ellipse cx="-31" cy="-15" rx="6" ry="15" transform="rotate(-24 -31 -15)"/>
+      <ellipse cx="-13" cy="-26" rx="5" ry="13" transform="rotate(-12 -13 -26)"/>
+      <ellipse cx="46" cy="3" rx="7" ry="17" transform="rotate(36 46 3)"/>
+      <ellipse cx="31" cy="-15" rx="6" ry="15" transform="rotate(24 31 -15)"/>
+      <ellipse cx="13" cy="-26" rx="5" ry="13" transform="rotate(12 13 -26)"/>
+      <path d="M-18 7 L18 7 L12 22 L-12 22 Z"/>
+      <path d="M-13 4 L-3 -8 L2 4 L12 -7 L18 4 Z"/>
+    </g>
+
+    <line x1="166" y1="167" x2="414" y2="167" stroke="#e9a41b" stroke-width="2"/>
+    <line x1="686" y1="167" x2="934" y2="167" stroke="#e9a41b" stroke-width="2"/>
+    <text x="550" y="177" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" letter-spacing="9" fill="#bd7509">CERTIFICADO</text>
+
+    <text x="550" y="270" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="800" fill="#082f6e">Mestre em Gestão de Projetos</text>
+    <text x="550" y="330" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="800" fill="#082f6e">com Inteligência Artificial</text>
+    <text x="550" y="389" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="400" fill="#2f5591">Uma Jornada fundamentada nas boas práticas do PMI</text>
+
+    <line x1="352" y1="505" x2="466" y2="505" stroke="#2f86e5" stroke-width="3"/>
+    <line x1="634" y1="505" x2="748" y2="505" stroke="#2f86e5" stroke-width="3"/>
+    <text x="505" y="517" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="31" fill="#2584e8">★</text>
+    <text x="550" y="522" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="47" fill="#315895">★</text>
+    <text x="595" y="517" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="31" fill="#2584e8">★</text>
+  </g>
+
+  <g transform="translate(915 520)" filter="url(#medalShadow)">
+    <path d="M-52 88 L-20 180 L16 145 L48 183 L60 84 Z" fill="#e9a41b"/>
+    <path d="M-16 93 L4 171 L26 149 L45 166 L36 91 Z" fill="#f6b62e" opacity=".72"/>
+    <circle cx="0" cy="0" r="104" fill="url(#gold)"/>
+    <circle cx="0" cy="0" r="88" fill="none" stroke="#ffe28a" stroke-width="5"/>
+    <circle cx="0" cy="0" r="71" fill="#d89213" opacity=".36"/>
+    <path d="M0 -45 L13 -14 L47 -11 L21 10 L29 43 L0 25 L-29 43 L-21 10 L-47 -11 L-13 -14 Z" fill="#fff1bf"/>
+    <g fill="none" stroke="#fff1bf" stroke-width="4" stroke-linecap="round">
+      <path d="M-50 28 C-76 11 -76 -23 -58 -47"/>
+      <path d="M50 28 C76 11 76 -23 58 -47"/>
+    </g>
+    <g fill="#fff1bf">
+      <ellipse cx="-62" cy="-35" rx="5" ry="12" transform="rotate(-35 -62 -35)"/>
+      <ellipse cx="-70" cy="-13" rx="5" ry="12" transform="rotate(-52 -70 -13)"/>
+      <ellipse cx="-67" cy="10" rx="5" ry="12" transform="rotate(-70 -67 10)"/>
+      <ellipse cx="62" cy="-35" rx="5" ry="12" transform="rotate(35 62 -35)"/>
+      <ellipse cx="70" cy="-13" rx="5" ry="12" transform="rotate(52 70 -13)"/>
+      <ellipse cx="67" cy="10" rx="5" ry="12" transform="rotate(70 67 10)"/>
+    </g>
+  </g>
+</svg>
