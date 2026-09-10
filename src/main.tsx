@@ -16,6 +16,7 @@ import './styles/builderResponsive.css';
 import './styles/finalPolish.css';
 import './styles/aiCloud.css';
 import './styles/contextCompact.css';
+import './styles/title28.css';
 import './finalPolish';
 import './focusValueImage';
 import './modernProjectImage';
