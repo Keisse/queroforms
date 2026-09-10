@@ -1,42 +1,42 @@
-.certificate-image-wrap::before{
-  content:""!important;
-  position:absolute!important;
-  left:49%!important;
-  top:50%!important;
-  transform:translate(-50%,-50%) rotate(-4deg)!important;
-  transform-origin:center!important;
-  z-index:5!important;
-  width:66%!important;
-  height:43%!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-  background-color:#fffef9!important;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 660 250'%3E%3Crect width='660' height='250' fill='%23fffef9'/%3E%3Ctext x='330' y='36' text-anchor='middle' font-family='Arial,sans-serif' font-size='13' font-weight='700' letter-spacing='4' fill='%23b98722'%3ECERTIFICADO%3C/text%3E%3Ctext x='330' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-size='35' font-weight='700' fill='%2315385d'%3EMestre em Gestão de Projetos%3C/text%3E%3Ctext x='330' y='133' text-anchor='middle' font-family='Arial,sans-serif' font-size='35' font-weight='700' fill='%2315385d'%3Ecom Inteligência Artificial%3C/text%3E%3Ctext x='330' y='178' text-anchor='middle' font-family='Arial,sans-serif' font-size='15' font-weight='500' fill='%2355718e'%3EUma Jornada fundamentada nas boas práticas do PMI%3C/text%3E%3Cline x1='190' y1='217' x2='278' y2='217' stroke='%232f86e5' stroke-width='2'/%3E%3Ctext x='330' y='225' text-anchor='middle' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%232f86e5'%3E★ ★ ★%3C/text%3E%3Cline x1='382' y1='217' x2='470' y2='217' stroke='%232f86e5' stroke-width='2'/%3E%3C/svg%3E")!important;
-  background-repeat:no-repeat!important;
-  background-position:center!important;
-  background-size:100% 100%!important;
-  pointer-events:none!important;
+.certificate-image-wrap{
+  width:100%!important;
+  position:relative!important;
+  overflow:hidden!important;
+  border-radius:26px!important;
+  background:transparent!important;
 }
 
+.certificate-image{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:430px!important;
+  object-fit:contain!important;
+  opacity:1!important;
+  border-radius:26px!important;
+}
+
+.certificate-image-wrap::before,
 .certificate-image-wrap::after{
   content:none!important;
   display:none!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
 }
 
 @media(max-width:700px){
-  .certificate-image-wrap::before{
-    width:68%!important;
-    height:44%!important;
-    top:50%!important;
+  .certificate-image-wrap,
+  .certificate-image{
+    max-height:360px!important;
+    border-radius:20px!important;
   }
 }
 
 @media(max-width:480px){
-  .certificate-image-wrap::before{
-    width:70%!important;
-    height:45%!important;
-    top:50%!important;
+  .certificate-image-wrap,
+  .certificate-image{
+    max-height:300px!important;
+    border-radius:16px!important;
   }
 }
