@@ -85,7 +85,8 @@ function ensurePreResultStyles() {
         grid-template-columns:34px 78px 1fr;align-items:center;gap:9px;
       }
       .qf-pre-result-stat-icon{width:30px;height:30px;border-radius:9px;margin:0;font-size:14px}
-      .qf-pre-result-stat-number,.qf-pre-result-stat-number.compact{font-size:27px;margin:0;font-weight:700}
+      .qf-pre-result-stat-number{font-size:27px;margin:0;font-weight:700}
+      .qf-pre-result-stat-number.compact{font-size:17px;line-height:1.05;margin:0;font-weight:700;white-space:nowrap;letter-spacing:-.02em}
       .qf-pre-result-stat-copy{font-size:12px;line-height:1.28;font-weight:400}
       .insight-view.qf-pre-result-guide-view>small{margin-top:16px!important}
     }
