@@ -54,7 +54,7 @@ end $$;
 drop policy if exists "public can insert submissions" on public.submissions;
 create policy "public can insert submissions"
 on public.submissions for insert
-to anon
+to anon, authenticated
 with check (true);
 
 drop policy if exists "authenticated can read submissions" on public.submissions;
