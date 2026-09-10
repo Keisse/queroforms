@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { AppShell } from './components/AppShell';
 import Dashboard from './pages/Dashboard';
-import Builder from './pages/BuilderV2';
+import Builder from './pages/BuilderStable';
 import PublicQuiz from './pages/PublicQuiz';
 import Placeholder from './pages/Placeholder';
 import Settings from './pages/Settings';
@@ -21,14 +21,20 @@ import './styles/photoChoiceButtons.css';
 import './styles/certificateHotfix.css';
 import './styles/answerEmojiFallback.css';
 import './styles/builderHeaderCleanup.css';
-import './finalPolish';
-import './focusValueImage';
-import './modernProjectImage';
-import './contextImageUpload';
-import './contextDraftDatabaseBridge';
-import './introImageEditor';
-import './almostThereAiVisual';
-import './preResultGuideScreen';
+
+// Os aprimoramentos abaixo alteram o DOM da experiência pública.
+// Eles não são carregados no Builder para manter o editor leve e estável.
+if (window.location.pathname.startsWith('/d/')) {
+  void Promise.all([
+    import('./finalPolish'),
+    import('./focusValueImage'),
+    import('./modernProjectImage'),
+    import('./contextImageUpload'),
+    import('./introImageEditor'),
+    import('./almostThereAiVisual'),
+    import('./preResultGuideScreen'),
+  ]);
+}
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
@@ -40,14 +46,21 @@ function Admin({children}:{children:React.ReactNode}){
   if(!session) return <Navigate to="/login" replace/>;
   return <AppShell>{children}</AppShell>;
 }
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><Routes>
-  <Route path="/login" element={<Login/>}/>
-  <Route path="/" element={<Admin><Dashboard/></Admin>}/>
-  <Route path="/builder/gp-ia" element={<Admin><Builder/></Admin>}/>
-  <Route path="/contacts" element={<Admin><Placeholder title="Contatos"/></Admin>}/>
-  <Route path="/responses" element={<Admin><Placeholder title="Respostas"/></Admin>}/>
-  <Route path="/analytics" element={<Admin><Placeholder title="Análises"/></Admin>}/>
-  <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
-  <Route path="/settings" element={<Admin><Settings/></Admin>}/>
-  <Route path="/d/gp-ia" element={<PublicQuiz/>}/>
-</Routes></BrowserRouter></React.StrictMode>)
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login/>}/>
+        <Route path="/" element={<Admin><Dashboard/></Admin>}/>
+        <Route path="/builder/gp-ia" element={<Admin><Builder/></Admin>}/>
+        <Route path="/contacts" element={<Admin><Placeholder title="Contatos"/></Admin>}/>
+        <Route path="/responses" element={<Admin><Placeholder title="Respostas"/></Admin>}/>
+        <Route path="/analytics" element={<Admin><Placeholder title="Análises"/></Admin>}/>
+        <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
+        <Route path="/settings" element={<Admin><Settings/></Admin>}/>
+        <Route path="/d/gp-ia" element={<PublicQuiz/>}/>
+      </Routes>
+    </BrowserRouter>
+  </React.StrictMode>
+);
