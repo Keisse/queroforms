@@ -17,6 +17,7 @@ import './styles/finalPolish.css';
 import './styles/aiCloud.css';
 import './styles/contextCompact.css';
 import './styles/title28.css';
+import './styles/photoChoiceButtons.css';
 import './finalPolish';
 import './focusValueImage';
 import './modernProjectImage';
