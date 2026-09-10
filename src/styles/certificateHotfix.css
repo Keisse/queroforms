@@ -1,4 +1,5 @@
-.certificate-image-wrap{
+.certificate-image-wrap,
+.builder-certificate-image-wrap{
   width:100%!important;
   aspect-ratio:4/3!important;
   position:relative!important;
@@ -11,7 +12,8 @@
   background-color:transparent!important;
 }
 
-.certificate-image{
+.certificate-image,
+.builder-certificate-image-wrap img{
   position:absolute!important;
   inset:0!important;
   width:100%!important;
@@ -22,7 +24,9 @@
 }
 
 .certificate-image-wrap::before,
-.certificate-image-wrap::after{
+.certificate-image-wrap::after,
+.builder-certificate-image-wrap::before,
+.builder-certificate-image-wrap::after{
   content:none!important;
   display:none!important;
   background:none!important;
@@ -31,9 +35,11 @@
 }
 
 @media(max-width:700px){
-  .certificate-image-wrap{border-radius:20px!important}
+  .certificate-image-wrap,
+  .builder-certificate-image-wrap{border-radius:20px!important}
 }
 
 @media(max-width:480px){
-  .certificate-image-wrap{border-radius:16px!important}
+  .certificate-image-wrap,
+  .builder-certificate-image-wrap{border-radius:16px!important}
 }
