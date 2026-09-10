@@ -15,6 +15,7 @@ import './styles/introCertificate.css';
 import './styles/builderResponsive.css';
 import './styles/finalPolish.css';
 import './styles/aiCloud.css';
+import './styles/contextCompact.css';
 import './finalPolish';
 import './focusValueImage';
 import './modernProjectImage';
