@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BarChart3, Braces, ClipboardList, PencilRuler, PlugZap } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import Analytics from './Analytics';
@@ -11,6 +12,44 @@ const sections: { id: BuilderSection; label: string; icon: typeof PencilRuler }[
   { id: 'responses', label: 'Respostas', icon: ClipboardList },
   { id: 'integrations', label: 'Integrações', icon: PlugZap },
 ];
+
+function AutoPersistDeletedScreen() {
+  useEffect(() => {
+    let handling = false;
+    const deletedMessage = 'Tela removida. Clique em Salvar edição desta tela para guardar esta alteração localmente.';
+
+    const persistDeletion = () => {
+      if (handling || !document.body.textContent?.includes(deletedMessage)) return;
+
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'));
+      const saveButton = buttons.find(button => button.textContent?.trim().startsWith('Salvar edição desta tela'));
+
+      if (saveButton && !saveButton.disabled) {
+        handling = true;
+        saveButton.click();
+        window.setTimeout(() => { handling = false; }, 80);
+        return;
+      }
+
+      // A tela de resultado não possui botão de salvar. Se ela ficar selecionada após
+      // uma exclusão, selecionamos uma tela editável para persistir a estrutura inteira.
+      const editableStep = Array.from(document.querySelectorAll<HTMLElement>('.step-item')).find(item =>
+        !item.textContent?.toLowerCase().includes('resultadoresult'),
+      );
+      const selectable = editableStep
+        ? Array.from(editableStep.children).find(child => child.tagName === 'SPAN' && !child.classList.contains('builder-step-handle')) as HTMLElement | undefined
+        : undefined;
+      selectable?.click();
+    };
+
+    const observer = new MutationObserver(persistDeletion);
+    observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+    persistDeletion();
+    return () => observer.disconnect();
+  }, []);
+
+  return null;
+}
 
 function IntegrationsPanel() {
   return <div className="builder-integrations">
@@ -69,6 +108,7 @@ export default function BuilderPage(){
     </nav>
 
     <div className={active === 'build' ? '' : 'builder-section-hidden'} aria-hidden={active !== 'build'}>
+      <AutoPersistDeletedScreen/>
       <BuilderStable/>
     </div>
 
