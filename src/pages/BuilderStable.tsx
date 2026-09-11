@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type DragEvent as ReactDragEvent, type Po
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps } from '../lib/stepsStore';
-import { fetchPublishedSteps, publishSteps } from '../lib/surveyConfig';
+import { fetchBuilderSteps, publishSteps, saveDraftSteps } from '../lib/surveyConfig';
 
 const LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v2';
 const FLOW_WIDTH_KEY = 'queroforms-builder-flow-width';
@@ -38,7 +38,6 @@ function loadLocalDraft():Step[]|null{
     return Array.isArray(parsed)&&parsed.length ? parsed as Step[] : null;
   }catch{return null;}
 }
-
 function saveLocalDraft(steps:Step[]){window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify(steps));}
 function clearLocalDraft(){window.localStorage.removeItem(LOCAL_DRAFT_KEY);}
 function sameSteps(a:Step[],b:Step[]){return JSON.stringify(a)===JSON.stringify(b);}
@@ -91,6 +90,7 @@ export default function BuilderStable(){
   const [savedMsg,setSavedMsg]=useState('');
   const [publishError,setPublishError]=useState('');
   const [publishing,setPublishing]=useState(false);
+  const [savingDraft,setSavingDraft]=useState(false);
   const [localDraftExists,setLocalDraftExists]=useState(false);
   const [flowWidth,setFlowWidth]=useState(()=>readPanelWidth(FLOW_WIDTH_KEY,260));
   const [propsWidth,setPropsWidth]=useState(()=>readPanelWidth(PROPS_WIDTH_KEY,380));
@@ -103,12 +103,17 @@ export default function BuilderStable(){
   useEffect(()=>{
     let active=true;
     const local=loadLocalDraft();
-    fetchPublishedSteps('gp-ia').then(remote=>{
+    fetchBuilderSteps('gp-ia').then(remote=>{
       if(!active) return;
-      const base=local||remote||loadSteps();
+      const base=remote||local||loadSteps();
+      if(remote){
+        clearLocalDraft();
+        setLocalDraftExists(false);
+      }else{
+        setLocalDraftExists(Boolean(local));
+      }
       setSteps(base);
       setSavedDraft(base);
-      setLocalDraftExists(Boolean(local));
       setLoading(false);
     });
     return()=>{active=false;};
@@ -197,7 +202,7 @@ export default function BuilderStable(){
     setSel(nextSelected>=0?nextSelected:insertAt);
     setDraggedStepId(null);
     setDropTarget(null);
-    setSavedMsg('Ordem alterada. Salve a edição antes de publicar.');
+    setSavedMsg('Ordem alterada. Salve a edição ou publique para gravar no banco.');
   };
 
   const addScreen=(type:NewScreenType)=>{
@@ -210,37 +215,46 @@ export default function BuilderStable(){
     setSteps(next);
     setSel(insertAt);
     setAddOpen(false);
-    setSavedMsg('Nova tela criada. Salve a edição desta tela para guardar no navegador.');
+    setSavedMsg('Nova tela criada. Salve a edição ou publique para gravar no banco.');
   };
 
-  const saveCurrentScreen=()=>{
-    if(!step) return;
+  const saveCurrentScreen=async()=>{
+    if(!step||savingDraft) return;
     const savedById=new Map(savedDraft.map(item=>[item.id,item]));
     const nextDraft=steps.map(item=>item.id===step.id?item:(savedById.get(item.id)||item));
-    setSavedDraft(nextDraft);
-    saveLocalDraft(nextDraft);
-    setLocalDraftExists(true);
-    setSavedMsg(`Tela ${sel+1} salva como rascunho neste navegador ✓`);
+    setSavingDraft(true);
     setPublishError('');
-    window.setTimeout(()=>setSavedMsg(''),3500);
+    try{
+      await saveDraftSteps('gp-ia',nextDraft);
+      setSavedDraft(nextDraft);
+      saveLocalDraft(nextDraft);
+      setLocalDraftExists(true);
+      setSavedMsg(`Tela ${sel+1} salva no banco como rascunho ✓`);
+    }catch{
+      saveLocalDraft(nextDraft);
+      setLocalDraftExists(true);
+      setPublishError('Não consegui salvar este rascunho no Supabase. Mantive uma cópia local para não perder a edição.');
+    }finally{
+      setSavingDraft(false);
+      window.setTimeout(()=>setSavedMsg(''),3500);
+    }
   };
 
   const publish=async()=>{
-    if(hasUnsavedChanges){
-      setPublishError('Há alterações ainda não salvas. Salve a edição de cada tela alterada antes de publicar.');
-      return;
-    }
-    if(!savedDraft.length) return;
+    if(!steps.length||publishing) return;
     setPublishing(true);
     setPublishError('');
     try{
-      await publishSteps('gp-ia',savedDraft);
-      saveSteps(savedDraft);
+      await publishSteps('gp-ia',steps);
+      setSavedDraft(steps);
+      saveSteps(steps);
       clearLocalDraft();
       setLocalDraftExists(false);
       setSavedMsg('Publicado no Supabase ✓ página pública atualizada');
     }catch{
-      setPublishError('Não consegui publicar no Supabase. Seu rascunho continua salvo neste navegador.');
+      saveLocalDraft(steps);
+      setLocalDraftExists(true);
+      setPublishError('Não consegui publicar no Supabase. Mantive uma cópia local das alterações.');
     }finally{
       setPublishing(false);
       window.setTimeout(()=>setSavedMsg(''),4000);
@@ -254,10 +268,10 @@ export default function BuilderStable(){
     setSel(Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1)));
     setDeleteIdx(null);
     setConfirmText('');
-    setSavedMsg('Tela removida. Salve uma edição antes de publicar.');
+    setSavedMsg('Tela removida. Salve a edição ou publique para gravar no banco.');
   };
 
-  if(loading) return <p className="muted">Carregando versão publicada e rascunho local...</p>;
+  if(loading) return <p className="muted">Carregando rascunho do Supabase...</p>;
   if(!step) return <p className="muted">Não foi possível carregar o formulário.</p>;
 
   const intro=step.kind==='intro'?introData(step):null;
@@ -268,7 +282,7 @@ export default function BuilderStable(){
       <div><div className="crumb">Diagnósticos › GP com IA</div><h1>Editor do diagnóstico</h1></div>
       <div className="head-actions">
         {hasUnsavedChanges&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>Alterações não salvas</span>}
-        {!hasUnsavedChanges&&localDraftExists&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>Rascunho salvo no navegador ✓</span>}
+        {!hasUnsavedChanges&&localDraftExists&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>Rascunho salvo no banco ✓</span>}
         {savedMsg&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>{savedMsg}</span>}
         {publishError&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>{publishError}</span>}
         <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Pré-visualizar</a>
@@ -276,7 +290,7 @@ export default function BuilderStable(){
       </div>
     </header>
 
-    <p className="muted" style={{margin:'-10px 0 18px'}}>Salve cada tela no navegador. A página pública só muda quando você clicar em <b>Publicar</b>.</p>
+    <p className="muted" style={{margin:'-10px 0 18px'}}>Salvar edição grava o rascunho no Supabase sem alterar a página pública. <b>Publicar</b> grava todas as alterações atuais e atualiza a versão pública.</p>
 
     <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
       <section className="steps-panel">
@@ -297,7 +311,7 @@ export default function BuilderStable(){
         </div>
         <div className="builder-add-screen-wrap">
           <button className="btn builder-add-screen" onClick={()=>setAddOpen(true)}><Plus size={16}/> Adicionar tela</button>
-          <small>Arraste pelo ícone ⋮⋮ para reordenar. Depois salve a edição antes de publicar.</small>
+          <small>Arraste pelo ícone ⋮⋮ para reordenar. Salve como rascunho ou publique diretamente.</small>
         </div>
       </section>
 
@@ -354,8 +368,8 @@ export default function BuilderStable(){
         {step.kind==='result'&&<p className="muted">A tela de resultado é composta a partir das respostas.</p>}
 
         {step.kind!=='result'&&<div style={{marginTop:20,paddingTop:16,borderTop:'1px solid #e3eaf0'}}>
-          <button className="btn dark" onClick={saveCurrentScreen} style={{width:'100%',justifyContent:'center'}}>Salvar edição desta tela{currentScreenSaved?'':' *'}</button>
-          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está igual ao rascunho salvo no navegador.':'Esta tela tem alterações ainda não salvas no navegador.'}</small>
+          <button className="btn dark" disabled={savingDraft} onClick={saveCurrentScreen} style={{width:'100%',justifyContent:'center'}}>{savingDraft?'Salvando no banco...':`Salvar edição desta tela${currentScreenSaved?'':' *'}`}</button>
+          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está igual ao rascunho salvo no Supabase.':'Esta tela tem alterações ainda não salvas no Supabase.'}</small>
         </div>}
       </aside>
     </div>
