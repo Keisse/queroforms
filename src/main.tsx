@@ -24,6 +24,7 @@ import './styles/specialInsightVisuals.css';
 import './styles/quizResponsiveHardening.css';
 import './styles/salaryInsightAnimation.css';
 import './styles/adminAnalytics.css';
+import './styles/builderAnalytics.css';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
