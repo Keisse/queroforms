@@ -38,10 +38,6 @@ export async function fetchPublishedSurvey(slug: string): Promise<SurveySnapshot
   }
 }
 
-export async function fetchPublishedSteps(slug: string): Promise<Step[] | null> {
-  return (await fetchPublishedSurvey(slug))?.steps ?? null;
-}
-
 export async function fetchBuilderSnapshot(slug: string): Promise<SurveySnapshot | null> {
   try {
     const { data, error } = await supabase
@@ -61,33 +57,6 @@ export async function fetchBuilderSnapshot(slug: string): Promise<SurveySnapshot
   } catch {
     return null;
   }
-}
-
-export async function fetchBuilderSteps(slug: string): Promise<Step[] | null> {
-  return (await fetchBuilderSnapshot(slug))?.steps ?? null;
-}
-
-/**
- * Mantido temporariamente para compatibilidade com código legado.
- * O Builder atual salva rascunhos no navegador e só grava o banco ao publicar.
- */
-export async function saveDraftSteps(slug: string, steps: Step[]) {
-  const snapshot = await fetchBuilderSnapshot(slug);
-  if (!snapshot) throw new Error('Diagnóstico não encontrado.');
-  const { data, error } = await supabase
-    .from('surveys')
-    .select('config')
-    .eq('slug', slug)
-    .single();
-  if (error || !data) throw error || new Error('Diagnóstico não encontrado.');
-  const config = (data.config as SurveyConfig | null) || {};
-  const nextConfig: SurveyConfig = { ...config, draft_steps: steps };
-  const { error: updateError } = await supabase
-    .from('surveys')
-    .update({ config: nextConfig, updated_at: new Date().toISOString() })
-    .eq('slug', slug)
-    .eq('published_version', snapshot.version);
-  if (updateError) throw updateError;
 }
 
 export async function publishSteps(slug: string, steps: Step[], expectedVersion?: number) {
