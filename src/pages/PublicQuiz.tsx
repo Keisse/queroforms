@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BarChart3, Check, Sparkles, Users } from 'lucide-react';
 import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
-import { loadSteps } from '../lib/stepsStore';
 import { fetchPublishedSteps } from '../lib/surveyConfig';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 
@@ -14,12 +13,6 @@ function parseMarked(raw:string,re:RegExp){
   return {text:raw.replace(re,'').trim(),imageUrl:match?.[1]?.trim()||''};
 }
 
-function stepsFromSurveyRecord(record: unknown): Step[] | null {
-  const config = (record as { config?: Record<string, unknown> } | null)?.config;
-  const steps = config?.steps;
-  return Array.isArray(steps) && steps.length ? (steps as Step[]) : null;
-}
-
 function introHeading(title: string){
   const marker='cloud certificado.';
   const pos=title.toLowerCase().indexOf(marker);
@@ -27,52 +20,37 @@ function introHeading(title: string){
   return <>{title.slice(0,pos)}<span>{title.slice(pos)}</span></>;
 }
 
+function isValidEmail(value:string){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export default function PublicQuiz(){
   const [steps,setSteps]=useState<Step[]|null>(null);
+  const [loadError,setLoadError]=useState(false);
   const [idx,setIdx]=useState(0);
   const [answers,setAnswers]=useState<Record<string,string|string[]>>({});
   const [email,setEmail]=useState('');
   const [name,setName]=useState('');
   const [saving,setSaving]=useState(false);
+  const navigationLocked=useRef(false);
 
   useEffect(()=>{
     let active=true;
-
-    const applyPublishedSteps=(next:Step[]|null, fallback=false)=>{
+    fetchPublishedSteps('gp-ia').then(remote=>{
       if(!active) return;
-      const resolved=next ?? (fallback ? loadSteps() : null);
-      if(!resolved?.length) return;
-      setSteps(resolved);
-      setIdx(current=>Math.min(current,resolved.length-1));
-    };
-
-    const refresh=()=>{
-      fetchPublishedSteps('gp-ia').then(remote=>applyPublishedSteps(remote,true));
-    };
-
-    refresh();
-
-    const channel=supabase
-      .channel('public-survey-gp-ia')
-      .on(
-        'postgres_changes',
-        {event:'UPDATE',schema:'public',table:'surveys',filter:'slug=eq.gp-ia'},
-        payload=>applyPublishedSteps(stepsFromSurveyRecord(payload.new))
-      )
-      .subscribe();
-
-    const onFocus=()=>refresh();
-    window.addEventListener('focus',onFocus);
-
-    return ()=>{
-      active=false;
-      window.removeEventListener('focus',onFocus);
-      void supabase.removeChannel(channel);
-    };
+      if(!remote?.length){
+        setLoadError(true);
+        return;
+      }
+      setSteps(remote);
+      setLoadError(false);
+    });
+    return()=>{active=false;};
   },[]);
 
   const result=useMemo(()=>steps?scoreResult(steps,answers):{pct:0,level:1,dimensions:{} as Record<string,number>},[steps,answers]);
 
+  if(loadError) return <div className="quiz-wrap"><div className="quiz-stage" style={{textAlign:'center',paddingTop:100,color:'#52667a'}}><h1 style={{fontSize:28}}>Não foi possível carregar o diagnóstico.</h1><p>Para evitar mostrar uma versão diferente da publicada, o formulário não usa conteúdo local quando o banco está indisponível.</p><button className="primary big" onClick={()=>window.location.reload()}>Tentar novamente</button></div></div>;
   if(!steps) return <div className="quiz-wrap"><div className="quiz-stage" style={{textAlign:'center',paddingTop:100,color:'#7a8b9c'}}>Carregando diagnóstico...</div></div>;
 
   const step=steps[idx];
@@ -82,16 +60,25 @@ export default function PublicQuiz(){
   const questionNumber=steps.slice(0,idx+1).filter(s=>s.kind==='question').length;
   const progress=questionCount?Math.round((questionNumber/questionCount)*100):0;
   const questionCounter=step.kind==='question'?`${questionNumber}/${questionCount}`:'';
-  const next=()=>setIdx(i=>Math.min(i+1,steps.length-1));
-  const back=()=>setIdx(i=>Math.max(i-1,0));
+
+  const navigate=(delta:1|-1)=>{
+    if(navigationLocked.current) return;
+    navigationLocked.current=true;
+    setIdx(i=>Math.max(0,Math.min(i+delta,steps.length-1)));
+    window.setTimeout(()=>{navigationLocked.current=false;},260);
+  };
+  const next=()=>navigate(1);
+  const back=()=>navigate(-1);
 
   const select=(s:Extract<Step,{kind:'question'}>, value:string)=>{
     if(s.input==='multi'){
-      const cur=Array.isArray(answers[s.id])?answers[s.id] as string[]:[];
-      setAnswers({...answers,[s.id]:cur.includes(value)?cur.filter(v=>v!==value):[...cur,value]});
+      setAnswers(current=>{
+        const cur=Array.isArray(current[s.id])?current[s.id] as string[]:[];
+        return {...current,[s.id]:cur.includes(value)?cur.filter(v=>v!==value):[...cur,value]};
+      });
     } else {
-      setAnswers({...answers,[s.id]:value});
-      setTimeout(next,180);
+      setAnswers(current=>({...current,[s.id]:value}));
+      window.setTimeout(next,180);
     }
   };
 
@@ -106,7 +93,7 @@ export default function PublicQuiz(){
 
     const qs = new URLSearchParams(window.location.search);
     const payload={
-      survey_slug:'gp-ia', name, email, score:result.pct, level:result.level,
+      survey_slug:'gp-ia', name:name.trim(), email:email.trim(), score:result.pct, level:result.level,
       dimension_scores:result.dimensions, answers,
       source:qs.get('source') || qs.get('utm_source') || 'direct',
       utm_source:qs.get('utm_source'), utm_medium:qs.get('utm_medium'),
@@ -170,7 +157,7 @@ export default function PublicQuiz(){
         </div>
       </div>}
       {step.kind==='question' && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{o.label}</span></button>})}</div></div>}
-      {step.kind==='question' && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{o.label}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" onClick={next}>Continuar</button>}</div>}
+      {step.kind==='question' && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{o.label}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
       {step.kind==='insight' && insight && <div className="insight-view" data-step-id={step.id}><div className={`insight-visual ${insight.imageUrl?'qf-context-upload-host':''}`}>{insight.imageUrl?<img className="qf-context-upload-image" src={insight.imageUrl} alt="Imagem da tela de contexto"/>:step.visual==='chart'?<BarChart3 size={54}/>:step.visual==='people'?<Users size={54}/>:<Sparkles size={54}/>}</div><small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p>
         {step.chart && <div className="insight-chart">{step.chart.map(bar=><div className="insight-bar-row" key={bar.label}><div className="insight-bar-meta"><span>{bar.label}</span><b>{bar.suffix}</b></div><div className="insight-bar-track"><i className={bar.highlight?'highlight':''} style={{width:`${bar.value}%`}}/></div></div>)}</div>}
         {step.icons && <div className="insight-icons">{step.icons.map(item=><div className="insight-icon-row" key={item.text}><span>{item.emoji}</span><p>{item.text}</p></div>)}</div>}
@@ -178,9 +165,9 @@ export default function PublicQuiz(){
         {insight.text&&<div className="source-note">Fonte: {insight.text}</div>}
         <button className="primary big" onClick={next}>Continuar</button></div>}
       {step.kind==='processing' && <div className="processing-view" data-step-id={step.id}><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" onClick={next}>Ver resultado</button></div>}
-      {step.kind==='email' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!email.includes('@')} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
-      {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button><small>{supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
-      {step.kind==='result' && <Result name={name} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined}/>} 
+      {step.kind==='email' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!isValidEmail(email)} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
+      {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name.trim() || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button><small>{supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
+      {step.kind==='result' && <Result name={name.trim()} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined}/>} 
     </div>
   </div>
 }
