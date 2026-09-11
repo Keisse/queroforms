@@ -27,16 +27,23 @@
 }
 
 .builder-step-handle{
-  width:26px;
-  min-width:26px;
-  height:32px;
+  width:42px;
+  min-width:42px;
+  height:38px;
   display:grid;
   place-items:center;
-  border-radius:8px;
+  border-radius:10px;
   color:#6e8296;
   cursor:grab;
   user-select:none;
+  touch-action:none;
   transition:background .15s ease,color .15s ease,transform .15s ease;
+}
+
+.builder-step-handle svg{
+  width:18px;
+  height:18px;
+  pointer-events:none;
 }
 
 .builder-step-handle:hover{
@@ -75,7 +82,7 @@
   position:absolute;
   left:8px;
   right:8px;
-  height:3px;
+  height:4px;
   border-radius:999px;
   background:#0f65b6;
   box-shadow:0 0 0 2px rgba(15,101,182,.10);
