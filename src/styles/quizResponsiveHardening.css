@@ -1,0 +1,107 @@
+.quiz-wrap{
+  min-height:100vh;
+  min-height:100dvh;
+  overflow-x:hidden;
+}
+
+.quiz-stage{
+  width:100%;
+}
+
+@supports (padding: env(safe-area-inset-bottom)){
+  .quiz-stage{
+    padding-bottom:calc(50px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width:600px){
+  .quiz-top{
+    padding-left:12px;
+    padding-right:12px;
+    column-gap:8px;
+  }
+
+  .quiz-logo{
+    min-width:0;
+    text-align:center;
+    font-size:14px;
+    line-height:1.2;
+  }
+
+  .counter{
+    min-width:36px;
+  }
+
+  .scale-row{
+    grid-template-columns:repeat(5,minmax(56px,1fr));
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    padding-bottom:4px;
+  }
+
+  .scale-row .answer{
+    min-width:56px;
+  }
+
+  .salary-chart{
+    gap:6px;
+  }
+
+  .salary-value{
+    font-size:11px;
+    white-space:nowrap;
+  }
+
+  .salary-col small{
+    font-size:11px;
+    text-align:center;
+  }
+
+  .offer-card,
+  .dimension-card,
+  .pmi-card,
+  .salary-card,
+  .score-card{
+    max-width:100%;
+    overflow:hidden;
+  }
+}
+
+@media (max-width:430px){
+  .quiz-stage{
+    padding-top:26px;
+    padding-left:12px;
+    padding-right:12px;
+  }
+
+  .intro-card h1,
+  .question-view h1,
+  .insight-view h1,
+  .processing-view h1,
+  .field-view h1,
+  .result-view>h1{
+    font-size:28px;
+    overflow-wrap:anywhere;
+  }
+
+  .answer{
+    width:100%;
+    min-width:0;
+  }
+
+  .answer-label{
+    overflow-wrap:anywhere;
+  }
+
+  .photo-choice-row{
+    gap:10px;
+  }
+
+  .photo-choice{
+    min-width:0;
+  }
+
+  .cloud-orbit{
+    max-width:100%;
+  }
+}
