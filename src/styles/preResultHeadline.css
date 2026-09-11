@@ -14,6 +14,19 @@
   text-transform:none!important;
 }
 
+.insight-view[data-step-id="insight-demand"] .insight-bar-track{
+  display:none!important;
+}
+
+.insight-view[data-step-id="insight-demand"] .insight-bar-meta{
+  margin-bottom:0!important;
+  align-items:center;
+}
+
+.insight-view[data-step-id="insight-demand"] .insight-chart{
+  padding:20px 22px!important;
+}
+
 @media(max-width:760px){
   .insight-view.qf-pre-result-guide-view>small{
     font-size:25px!important;
