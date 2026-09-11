@@ -8,6 +8,7 @@ import Diagnostics from './pages/Diagnostics';
 import Analytics from './pages/Analytics';
 import Builder from './pages/BuilderPage';
 import PublicQuiz from './pages/PublicQuiz';
+import Contacts from './pages/Contacts';
 import Placeholder from './pages/Placeholder';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
@@ -31,6 +32,7 @@ import './styles/salaryInsightAnimation.css';
 import './styles/adminAnalytics.css';
 import './styles/builderAnalytics.css';
 import './styles/diagnostics.css';
+import './styles/contacts.css';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
@@ -52,7 +54,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<Admin><Dashboard/></Admin>}/>
         <Route path="/diagnostics" element={<Admin><Diagnostics/></Admin>}/>
         <Route path="/builder/gp-ia" element={<Admin><Builder/></Admin>}/>
-        <Route path="/contacts" element={<Admin><Placeholder title="Contatos"/></Admin>}/>
+        <Route path="/contacts" element={<Admin><Contacts/></Admin>}/>
         <Route path="/responses" element={<Admin><Navigate to="/analytics?tab=responses" replace/></Admin>}/>
         <Route path="/analytics" element={<Admin><Analytics/></Admin>}/>
         <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
