@@ -76,7 +76,6 @@ export const gpIaSteps: Step[] = [
   { id:'q18', kind:'question', title:'Você usa IA para comparar cenários antes de tomar decisões?', input:'scale', dimension:'decisao', options:scale },
   { id:'q19', kind:'question', title:'Você usa IA para priorizar tarefas, riscos ou decisões?', input:'scale', dimension:'decisao', options:scale },
   { id:'q20', kind:'question', title:'Você consegue explicar para outra pessoa um processo de uso de IA que você criou?', input:'scale', dimension:'processo', options:scale },
-
   { id:'insight-ethics', kind:'insight', eyebrow:'Uso responsável', title:'Maturidade em IA também é saber onde estão os riscos.', body:'O Guia PMBOK® dedica um apêndice inteiro ao uso ético da IA em projetos. Antes de acelerar o uso, vale conhecer os pontos que a própria comunidade PMI recomenda vigiar.', icons:[{emoji:'⚖️',text:'Viés: dados de treinamento podem distorcer resultados'},{emoji:'🔒',text:'Privacidade: informações sensíveis exigem cuidado extra'},{emoji:'🧑‍⚖️',text:'Responsabilidade: a decisão final continua sendo humana'}], source:'Guia PMBOK®, 8ª edição, Apêndice X3.3' , visual:'people' },
 
   { id:'q21', kind:'question', title:'Onde você mais gostaria de usar IA na Gestão de Projetos?', subtitle:'Selecione todas que se aplicam', input:'multi', dimension:'interesse', options:[
@@ -105,6 +104,7 @@ export const gpIaSteps: Step[] = [
   { id:'email', kind:'email', title:'Seu diagnóstico está quase pronto. Qual e-mail devemos usar para liberar o resultado?' },
   { id:'name', kind:'name', title:'E como podemos chamar você?' },
   { id:'processing', kind:'processing', title:'Gerando seu diagnóstico de maturidade em IA...' },
+  { id:'insight-pre-result-guide', kind:'insight', eyebrow:'487+ pessoas aprenderam IA conosco', title:'Você não está sozinho. Vamos tornar a IA simples juntos.', body:'Criamos um guia de 300 páginas com base em fundamentos sólidos e tendências orientadas pelo PMI para que você vença a barreira da Gestão de Projetos com IA.', visual:'sparkle' },
   { id:'result', kind:'result' }
 ];
 
