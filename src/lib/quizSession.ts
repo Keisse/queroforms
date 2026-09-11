@@ -25,11 +25,20 @@ type BuilderDraft = {
   baseVersion?: number;
 };
 
-const PROGRESS_KEY = 'qf_gp_ia_progress_v1';
-const PENDING_SUBMISSIONS_KEY = 'qf_gp_ia_pending_submissions_v1';
-const BUILDER_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v3';
 const RETRY_DELAYS_MS = [0, 700, 1800] as const;
 const MAX_PENDING_SUBMISSIONS = 10;
+
+function activeSurveySlug(fallback = 'gp-ia') {
+  if (typeof window === 'undefined') return fallback;
+  const querySlug = new URLSearchParams(window.location.search).get('survey');
+  if (querySlug) return querySlug;
+  const match = window.location.pathname.match(/^\/(?:builder|d)\/([^/?#]+)/);
+  return match?.[1] ? decodeURIComponent(match[1]) : fallback;
+}
+
+function progressKey(){ return `qf_${activeSurveySlug().replace(/[^a-z0-9_-]/gi,'_')}_progress_v1`; }
+function pendingKey(){ return `qf_${activeSurveySlug().replace(/[^a-z0-9_-]/gi,'_')}_pending_submissions_v1`; }
+function builderDraftKey(){ return activeSurveySlug()==='gp-ia' ? 'qf_gp_ia_builder_screen_draft_v3' : `qf_${activeSurveySlug().replace(/[^a-z0-9_-]/gi,'_')}_builder_screen_draft_v3`; }
 
 function readJson<T>(key: string): T | null {
   try {
@@ -49,7 +58,7 @@ function writeJson(key: string, value: unknown) {
 }
 
 export function readQuizProgress(): QuizProgress | null {
-  const progress = readJson<Partial<QuizProgress>>(PROGRESS_KEY);
+  const progress = readJson<Partial<QuizProgress>>(progressKey());
   if (!progress || !progress.attemptId || !Number.isFinite(progress.surveyVersion) || !Number.isFinite(progress.idx)) return null;
   if (!progress.answers || typeof progress.answers !== 'object') return null;
   const frozenSteps = Array.isArray(progress.steps) && progress.steps.length ? progress.steps as Step[] : undefined;
@@ -66,35 +75,40 @@ export function readQuizProgress(): QuizProgress | null {
 }
 
 export function saveQuizProgress(progress: Omit<QuizProgress, 'updatedAt'>) {
-  writeJson(PROGRESS_KEY, {...progress, updatedAt: new Date().toISOString()});
+  writeJson(progressKey(), {...progress, updatedAt: new Date().toISOString()});
 }
 
 export function clearQuizProgress() {
   try {
-    window.localStorage.removeItem(PROGRESS_KEY);
+    window.localStorage.removeItem(progressKey());
   } catch {
     // Nada a fazer.
   }
 }
 
 export function readBuilderDraftPreview(publishedVersion: number): Step[] | null {
-  const draft = readJson<BuilderDraft>(BUILDER_DRAFT_KEY);
+  const draft = readJson<BuilderDraft>(builderDraftKey());
   if (!draft || Number(draft.baseVersion) !== publishedVersion || !Array.isArray(draft.steps) || !draft.steps.length) return null;
   return draft.steps;
 }
 
+function normalizePayload(payload: SubmissionPayload): SubmissionPayload {
+  return {...payload, survey_slug: activeSurveySlug(payload.survey_slug)};
+}
+
 function readPendingSubmissions(): SubmissionPayload[] {
-  const value = readJson<SubmissionPayload[]>(PENDING_SUBMISSIONS_KEY);
+  const value = readJson<SubmissionPayload[]>(pendingKey());
   return Array.isArray(value) ? value.filter(item => item && typeof item.attempt_id === 'string') : [];
 }
 
 function writePendingSubmissions(items: SubmissionPayload[]) {
-  writeJson(PENDING_SUBMISSIONS_KEY, items.slice(-MAX_PENDING_SUBMISSIONS));
+  writeJson(pendingKey(), items.slice(-MAX_PENDING_SUBMISSIONS));
 }
 
 export function enqueueSubmission(payload: SubmissionPayload) {
-  const queue = readPendingSubmissions().filter(item => item.attempt_id !== payload.attempt_id);
-  queue.push(payload);
+  const normalized = normalizePayload(payload);
+  const queue = readPendingSubmissions().filter(item => item.attempt_id !== normalized.attempt_id);
+  queue.push(normalized);
   writePendingSubmissions(queue);
 }
 
@@ -108,11 +122,12 @@ function wait(ms: number) {
 
 export async function submitWithRetry(payload: SubmissionPayload): Promise<boolean> {
   if (!supabaseEnabled) return false;
+  const normalized = normalizePayload(payload);
 
   for (const delay of RETRY_DELAYS_MS) {
     if (delay) await wait(delay);
     try {
-      const {error} = await supabase.from('submissions').insert(payload);
+      const {error} = await supabase.from('submissions').insert(normalized);
       if (!error || error.code === '23505') return true;
       console.error('Falha ao salvar submissão do diagnóstico:', error);
     } catch (error: unknown) {
