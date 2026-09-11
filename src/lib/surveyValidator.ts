@@ -2,6 +2,7 @@ import type { Step } from '../data/gpIa';
 
 const REQUIRED_KINDS: Step['kind'][] = ['intro', 'branch', 'email', 'name', 'processing', 'result'];
 const PROTECTED_KINDS = new Set<Step['kind']>(REQUIRED_KINDS);
+const PRE_RESULT_STEP_ID = 'insight-pre-result-guide';
 
 export type SurveyValidation = {
   valid: boolean;
@@ -9,7 +10,7 @@ export type SurveyValidation = {
 };
 
 export function isProtectedStructuralStep(step: Step) {
-  return PROTECTED_KINDS.has(step.kind);
+  return PROTECTED_KINDS.has(step.kind) || step.id === PRE_RESULT_STEP_ID;
 }
 
 export function validateSurveyStructure(steps: Step[]): SurveyValidation {
@@ -48,6 +49,7 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
   const nameIndex = steps.findIndex(step => step.kind === 'name');
   const processingIndex = steps.findIndex(step => step.kind === 'processing');
   const resultIndex = steps.findIndex(step => step.kind === 'result');
+  const preResultIndex = steps.findIndex(step => step.id === PRE_RESULT_STEP_ID);
 
   if (emailIndex >= 0 && nameIndex >= 0 && emailIndex > nameIndex) {
     errors.push('A captura de e-mail precisa vir antes da captura de nome.');
@@ -57,6 +59,12 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
   }
   if (processingIndex >= 0 && resultIndex >= 0 && processingIndex > resultIndex) {
     errors.push('O processamento precisa vir antes do resultado.');
+  }
+  if (preResultIndex >= 0 && resultIndex >= 0 && preResultIndex !== resultIndex - 1) {
+    errors.push('A tela de preparação do resultado precisa ficar imediatamente antes do resultado.');
+  }
+  if (preResultIndex >= 0 && processingIndex >= 0 && processingIndex > preResultIndex) {
+    errors.push('A tela de preparação do resultado precisa vir depois do processamento.');
   }
 
   return { valid: errors.length === 0, errors: [...new Set(errors)] };
