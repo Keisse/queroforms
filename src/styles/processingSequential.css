@@ -22,15 +22,15 @@
 }
 
 .processing-view .process-lines > div:nth-of-type(1) > i {
-  animation: qf-processing-fill 1.45s linear forwards;
+  animation: qf-processing-fill 1.45s linear both;
 }
 
 .processing-view .process-lines > div:nth-of-type(2) > i {
-  animation: qf-processing-fill 1.45s linear 1.71s forwards;
+  animation: qf-processing-fill 1.45s linear 1.71s both;
 }
 
 .processing-view .process-lines > div:nth-of-type(3) > i {
-  animation: qf-processing-fill 1.45s linear 3.42s forwards;
+  animation: qf-processing-fill 1.45s linear 3.42s both;
 }
 
 .processing-view .process-lines > p:nth-of-type(2),
