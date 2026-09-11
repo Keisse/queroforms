@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, Search, Users, X } from 'lucide-react';
+import QuestionAnalytics from '../components/QuestionAnalytics';
 import { Step } from '../data/gpIa';
 import { fetchSubmissions, fetchSurveyVersionSteps, Submission } from '../lib/adminData';
 
@@ -17,6 +18,12 @@ const dimensionNames: Record<string, string> = {
   comunicacao: 'Comunicação',
   automacao: 'Automação',
   confianca: 'Confiança',
+};
+
+type AnalyticsProps = {
+  embedded?: boolean;
+  view?: 'overview' | 'responses';
+  onOpenResponses?: () => void;
 };
 
 function formatDate(value: string) {
@@ -101,7 +108,7 @@ function exportCsv(rows: Submission[], versions: Record<number, Step[]>) {
   URL.revokeObjectURL(url);
 }
 
-export default function Analytics() {
+export default function Analytics({ embedded = false, view, onOpenResponses }: AnalyticsProps = {}) {
   const [tab, setTab] = useState<'overview' | 'responses'>(() =>
     new URLSearchParams(window.location.search).get('tab') === 'responses' ? 'responses' : 'overview',
   );
@@ -114,6 +121,7 @@ export default function Analytics() {
   const [levelFilter, setLevelFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const currentTab = view || tab;
 
   useEffect(() => {
     let active = true;
@@ -172,28 +180,36 @@ export default function Analytics() {
   }, [rows]);
 
   const changeTab = (next: 'overview' | 'responses') => {
+    if (view) return;
     setTab(next);
     const url = next === 'responses' ? '/analytics?tab=responses' : '/analytics';
     window.history.replaceState(null, '', url);
+  };
+
+  const openResponses = () => {
+    if (onOpenResponses) onOpenResponses();
+    else changeTab('responses');
   };
 
   if (loading) return <div className="analytics-loading">Carregando dados do diagnóstico...</div>;
   if (error) return <div className="analytics-error"><b>Não foi possível carregar os dados.</b><span>{error}</span></div>;
 
   return <>
-    <header className="page-head analytics-head">
+    {!embedded && <header className="page-head analytics-head">
       <div><div className="crumb">Keisse › My workspace</div><h1>Análises</h1><p>Resultados e respostas do Diagnóstico de Maturidade em IA para Gestão de Projetos.</p></div>
       <button className="btn" onClick={() => exportCsv(filtered, versions)} disabled={!filtered.length}><Download size={17}/> Exportar CSV</button>
-    </header>
+    </header>}
 
-    <div className="analytics-tabs">
-      <button className={tab === 'overview' ? 'active' : ''} onClick={() => changeTab('overview')}><BarChart3 size={17}/> Visão geral</button>
-      <button className={tab === 'responses' ? 'active' : ''} onClick={() => changeTab('responses')}><Users size={17}/> Respostas individuais</button>
-    </div>
+    {!embedded && !view && <div className="analytics-tabs">
+      <button className={currentTab === 'overview' ? 'active' : ''} onClick={() => changeTab('overview')}><BarChart3 size={17}/> Visão geral</button>
+      <button className={currentTab === 'responses' ? 'active' : ''} onClick={() => changeTab('responses')}><Users size={17}/> Respostas individuais</button>
+    </div>}
+
+    {embedded && <div className="analytics-embedded-toolbar"><span>{totalCount} resposta{totalCount === 1 ? '' : 's'} concluída{totalCount === 1 ? '' : 's'}</span><button className="btn" onClick={() => exportCsv(filtered, versions)} disabled={!filtered.length}><Download size={16}/> Exportar CSV</button></div>}
 
     {truncated && <div className="analytics-notice">Existem {totalCount} respostas. Esta versão do painel carrega as 2.000 mais recentes para análise detalhada.</div>}
 
-    {tab === 'overview' && <div className="analytics-overview">
+    {currentTab === 'overview' && <div className="analytics-overview">
       <section className="metric-grid">
         <article className="metric-card"><span>Respostas concluídas</span><strong>{totalCount}</strong><small>Submissões gravadas no Supabase</small></article>
         <article className="metric-card"><span>Score médio</span><strong>{averageScore}%</strong><small>Média de maturidade das respostas carregadas</small></article>
@@ -221,8 +237,10 @@ export default function Analytics() {
         </article>
       </section>
 
+      <QuestionAnalytics rows={rows} versions={versions}/>
+
       <section className="analysis-card recent-card">
-        <div className="analysis-card-head"><div><small>Atividade recente</small><h2>Últimas respostas</h2></div><button className="text-button" onClick={() => changeTab('responses')}>Ver todas</button></div>
+        <div className="analysis-card-head"><div><small>Atividade recente</small><h2>Últimas respostas</h2></div><button className="text-button" onClick={openResponses}>Ver todas</button></div>
         <div className="response-table compact">
           <div className="response-table-row response-table-head"><span>Lead</span><span>Score</span><span>Nível</span><span>Origem</span><span>Data</span></div>
           {rows.slice(0, 5).map(row => <button className="response-table-row" key={row.id} onClick={() => setSelected(row)}><span><b>{row.name || 'Sem nome'}</b><small>{row.email || 'Sem e-mail'}</small></span><span>{row.score ?? '—'}%</span><span>{levelNames[row.level || 0] || '—'}</span><span>{row.source || 'direct'}</span><span>{formatDate(row.created_at)}</span></button>)}
@@ -231,7 +249,7 @@ export default function Analytics() {
       </section>
     </div>}
 
-    {tab === 'responses' && <section className="analysis-card responses-card">
+    {currentTab === 'responses' && <section className="analysis-card responses-card">
       <div className="responses-toolbar">
         <div className="search-box"><Search size={17}/><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar por nome, e-mail ou origem"/></div>
         <select value={levelFilter} onChange={event => setLevelFilter(event.target.value)}>
