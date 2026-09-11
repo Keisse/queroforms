@@ -504,11 +504,25 @@ export default function BuilderStable(){
       return;
     }
     const next=steps.filter((_,i)=>i!==deleteIdx);
-    setSteps(next);
-    setSel(Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1)));
-    setDeleteIdx(null);
-    setConfirmText('');
-    setSavedMsg('Tela removida. Clique em Salvar edição desta tela para guardar esta alteração localmente.');
+    const nextSelection=Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1));
+    try{
+      const revision=saveLocalDraft(next,baseVersion,localRevision);
+      setLocalRevision(revision);
+      setSteps(next);
+      setSavedDraft(next);
+      setLocalDraftExists(true);
+      setSel(nextSelection);
+      setDeleteIdx(null);
+      setConfirmText('');
+      if(!versionConflict) setPublishError('');
+      setSavedMsg('Tela removida e rascunho salvo neste navegador ✓');
+      window.setTimeout(()=>setSavedMsg(''),3500);
+    }catch{
+      setDeleteIdx(null);
+      setConfirmText('');
+      setLocalDraftConflict(true);
+      setPublishError('Outra aba alterou este rascunho. A exclusão não foi aplicada para evitar perda de trabalho. Recarregue o Builder.');
+    }
   };
 
   if(loading) return <p className="muted">Carregando versão publicada e rascunho local...</p>;
