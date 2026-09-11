@@ -1,4 +1,5 @@
 import type { Step } from '../data/gpIa';
+import { hasNameVariable } from './textVariables';
 
 const REQUIRED_KINDS: Step['kind'][] = ['intro', 'branch', 'email', 'name', 'processing', 'result'];
 const PROTECTED_KINDS = new Set<Step['kind']>(REQUIRED_KINDS);
@@ -29,6 +30,23 @@ function validateImageMarkers(raw: string | undefined, stepId: string, errors: s
       errors.push(`A tela ${stepId} possui uma URL de imagem inválida. Use uma URL http:// ou https://.`);
     }
   }
+}
+
+function stepUsesNameVariable(step: Step) {
+  if ('title' in step && hasNameVariable(step.title)) return true;
+
+  if (step.kind === 'intro') return hasNameVariable(step.body) || hasNameVariable(step.cta);
+  if (step.kind === 'branch') {
+    return Object.values(step.variants).some(variant => hasNameVariable(variant.title) || hasNameVariable(variant.body));
+  }
+  if (step.kind === 'question') {
+    return hasNameVariable(step.subtitle) || step.options.some(option => hasNameVariable(option.label));
+  }
+  if (step.kind === 'insight') {
+    return hasNameVariable(step.eyebrow) || hasNameVariable(step.body) || hasNameVariable(step.stat);
+  }
+
+  return false;
 }
 
 export function validateSurveyStructure(steps: Step[]): SurveyValidation {
@@ -120,8 +138,8 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
   const resultIndex = steps.findIndex(step => step.kind === 'result');
   const preResultIndex = steps.findIndex(step => step.id === PRE_RESULT_STEP_ID);
 
-  if (emailIndex >= 0 && nameIndex >= 0 && emailIndex > nameIndex) {
-    errors.push('A captura de e-mail precisa vir antes da captura de nome.');
+  if (emailIndex >= 0 && processingIndex >= 0 && emailIndex > processingIndex) {
+    errors.push('A captura de e-mail precisa vir antes do processamento.');
   }
   if (nameIndex >= 0 && processingIndex >= 0 && nameIndex > processingIndex) {
     errors.push('A captura de nome precisa vir antes do processamento.');
@@ -134,6 +152,14 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
   }
   if (preResultIndex >= 0 && processingIndex >= 0 && processingIndex > preResultIndex) {
     errors.push('A tela de preparação do resultado precisa vir depois do processamento.');
+  }
+
+  if (nameIndex >= 0) {
+    steps.forEach((step, index) => {
+      if (index < nameIndex && stepUsesNameVariable(step)) {
+        errors.push(`A tela ${step.id} usa {{nome}} antes da captura de nome.`);
+      }
+    });
   }
 
   return { valid: errors.length === 0, errors: [...new Set(errors)] };
