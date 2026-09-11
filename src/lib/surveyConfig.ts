@@ -90,11 +90,18 @@ export async function saveDraftSteps(slug: string, steps: Step[]) {
   if (updateError) throw updateError;
 }
 
-export async function publishSteps(slug: string, steps: Step[], expectedVersion: number) {
+export async function publishSteps(slug: string, steps: Step[], expectedVersion?: number) {
+  let version = expectedVersion;
+  if (version === undefined) {
+    const snapshot = await fetchBuilderSnapshot(slug);
+    if (!snapshot) throw new Error('Diagnóstico não encontrado.');
+    version = snapshot.version;
+  }
+
   const { data, error } = await supabase.rpc('publish_survey', {
     p_slug: slug,
     p_steps: steps,
-    p_expected_version: expectedVersion,
+    p_expected_version: version,
   });
 
   if (error) {
@@ -109,7 +116,7 @@ export async function publishSteps(slug: string, steps: Step[], expectedVersion:
   if (!row) throw new Error('A publicação não retornou confirmação do Supabase.');
 
   return {
-    version: Number((row as { version?: number }).version) || expectedVersion + 1,
+    version: Number((row as { version?: number }).version) || version + 1,
     updatedAt: String((row as { updated_at?: string }).updated_at || ''),
   };
 }
