@@ -17,39 +17,74 @@ const scaleStep: Step = {
   ],
 };
 
+const singleStep: Step = {
+  id: 'single-test',
+  kind: 'question',
+  title: 'Escolha de teste',
+  input: 'single',
+  dimension: 'teste',
+  options: [
+    { label: 'Nunca', value: '0', score: 0 },
+    { label: 'As vezes', value: '1', score: 1 },
+    { label: 'Frequentemente', value: '2', score: 2 },
+    { label: 'Sempre', value: '3', score: 3 },
+  ],
+};
+
 const multiStep: Step = {
   id: 'multi-test',
   kind: 'question',
   title: 'Multipla de teste',
   input: 'multi',
-  dimension: 'teste',
+  dimension: 'perfil',
   options: [
     { label: 'A', value: 'a' },
     { label: 'B', value: 'b' },
     { label: 'C', value: 'c' },
     { label: 'D', value: 'd' },
-    { label: 'E', value: 'e' },
+    { label: 'Nenhuma', value: 'none' },
   ],
 };
 
-test('caracterizacao: menor valor da escala 1..5 gera 20%', () => {
+test('menor valor de uma escala pontuada normaliza para 0%', () => {
   const result = scoreResult([scaleStep], { 'scale-test': '1' });
-  assert.equal(result.pct, 20);
-  assert.equal(result.dimensions.teste, 20);
+  assert.equal(result.pct, 0);
+  assert.equal(result.dimensions.teste, 0);
 });
 
-test('caracterizacao: multi pontua pela quantidade selecionada', () => {
-  assert.equal(scoreResult([multiStep], { 'multi-test': ['a'] }).pct, 25);
-  assert.equal(scoreResult([multiStep], { 'multi-test': ['a', 'b', 'c', 'd'] }).pct, 100);
-  assert.equal(scoreResult([multiStep], { 'multi-test': ['a', 'b', 'c', 'd', 'e'] }).pct, 100);
+test('maior valor de uma escala pontuada normaliza para 100%', () => {
+  const result = scoreResult([scaleStep], { 'scale-test': '5' });
+  assert.equal(result.pct, 100);
+  assert.equal(result.dimensions.teste, 100);
 });
 
-test('caracterizacao: projecao salarial principal termina em 1.50x no terceiro ano', () => {
+test('perguntas multi sem score explicito nao alteram maturidade', () => {
+  assert.equal(scoreResult([multiStep], { 'multi-test': ['a'] }).pct, 0);
+  assert.equal(scoreResult([multiStep], { 'multi-test': ['a', 'b', 'c', 'd'] }).pct, 0);
+  assert.equal(scoreResult([multiStep], { 'multi-test': ['none'] }).pct, 0);
+});
+
+test('pergunta pontuada sem resposta continua no denominador como zero', () => {
+  const result = scoreResult([scaleStep, singleStep], { 'scale-test': '5' });
+  assert.equal(result.pct, 50);
+});
+
+test('duas perguntas no maximo produzem 100%', () => {
+  const result = scoreResult([scaleStep, singleStep], { 'scale-test': '5', 'single-test': '3' });
+  assert.equal(result.pct, 100);
+  assert.equal(result.dimensions.teste, 100);
+});
+
+test('projecao salarial principal termina em 1.50x no terceiro ano', () => {
   assert.deepEqual(projectSalary(10_000).map(item => item.value), [10_000, 12_200, 13_200, 15_000]);
 });
 
-test('caracterizacao: mesmas respostas produzem o mesmo resultado', () => {
-  const steps = [scaleStep, multiStep];
-  const answers = { 'scale-test': '4', 'multi-test': ['a', 'b'] };
-  assert.deepEqual(scoreResult(steps, answers), scoreResult(steps, answers));
+test('mesmas respostas produzem exatamente o mesmo resultado', () => {
+  const steps = [scaleStep, singleStep, multiStep];
+  const answers = { 'scale-test': '4', 'single-test': '2', 'multi-test': ['a', 'b'] };
+  const expected = scoreResult(steps, answers);
+
+  for (let i = 0; i < 100; i += 1) {
+    assert.deepEqual(scoreResult(steps, answers), expected);
+  }
 });
