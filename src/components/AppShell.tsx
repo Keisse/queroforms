@@ -1,12 +1,11 @@
-import { BarChart3, ContactRound, FileQuestion, LogOut, Settings, Workflow, Database } from 'lucide-react';
+import { BarChart3, ContactRound, FileQuestion, LogOut, Settings, Workflow } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import React from 'react';
 import { signOut } from '../lib/auth';
 
 const items = [
-  ['/','Diagnósticos',FileQuestion],
+  ['/','Dashboard',FileQuestion],
   ['/contacts','Contatos',ContactRound],
-  ['/responses','Respostas',Database],
   ['/analytics','Análises',BarChart3],
   ['/workflows','Workflows',Workflow],
   ['/settings','Configurações',Settings],
