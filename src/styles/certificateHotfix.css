@@ -5,10 +5,7 @@
   position:relative!important;
   overflow:hidden!important;
   border-radius:26px!important;
-  background-image:url('/certificado-final.svg')!important;
-  background-repeat:no-repeat!important;
-  background-position:center!important;
-  background-size:contain!important;
+  background:none!important;
   background-color:transparent!important;
 }
 
@@ -19,8 +16,8 @@
   width:100%!important;
   height:100%!important;
   object-fit:contain!important;
-  opacity:0!important;
-  pointer-events:none!important;
+  opacity:1!important;
+  pointer-events:auto!important;
 }
 
 .certificate-image-wrap::before,
