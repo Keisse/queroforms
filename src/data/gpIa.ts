@@ -77,7 +77,7 @@ export const gpIaSteps: Step[] = [
   { id:'q19', kind:'question', title:'Você usa IA para priorizar tarefas, riscos ou decisões?', input:'scale', dimension:'decisao', options:scale },
   { id:'q20', kind:'question', title:'Você consegue explicar para outra pessoa um processo de uso de IA que você criou?', input:'scale', dimension:'processo', options:scale },
 
-  { id:'insight-ethics', kind:'insight', eyebrow:'Uso responsável', title:'Maturidade em IA também é saber onde estão os riscos.', body:'O Guia PMBOK® dedica um apêndice inteiro ao uso ético da IA em projetos. Antes de acelerar o uso, vale conhecer os pontos que a própria comunidade PMI recomenda vigiar.', icons:[{emoji:'⚖️',text:'Viés: dados de treinamento podem distorcer resultados'},{emoji:'🔒',text:'Privacidade: informações sensíveis exigem cuidado extra'},{emoji:'🧑\u200d⚖️',text:'Responsabilidade: a decisão final continua sendo humana'}], source:'Guia PMBOK®, 8ª edição, Apêndice X3.3' , visual:'people' },
+  { id:'insight-ethics', kind:'insight', eyebrow:'Uso responsável', title:'Maturidade em IA também é saber onde estão os riscos.', body:'O Guia PMBOK® dedica um apêndice inteiro ao uso ético da IA em projetos. Antes de acelerar o uso, vale conhecer os pontos que a própria comunidade PMI recomenda vigiar.', icons:[{emoji:'⚖️',text:'Viés: dados de treinamento podem distorcer resultados'},{emoji:'🔒',text:'Privacidade: informações sensíveis exigem cuidado extra'},{emoji:'🧑‍⚖️',text:'Responsabilidade: a decisão final continua sendo humana'}], source:'Guia PMBOK®, 8ª edição, Apêndice X3.3' , visual:'people' },
 
   { id:'q21', kind:'question', title:'Onde você mais gostaria de usar IA na Gestão de Projetos?', subtitle:'Selecione todas que se aplicam', input:'multi', dimension:'interesse', options:[
     {label:'Planejamento',value:'planejamento',emoji:'🗺️'},{label:'Cronogramas',value:'cronograma',emoji:'📅'},{label:'Riscos',value:'riscos',emoji:'🛡️'},{label:'Reuniões',value:'reunioes',emoji:'📝'},{label:'Relatórios',value:'relatorios',emoji:'📊'},{label:'Partes interessadas',value:'stakeholders',emoji:'💬'},{label:'Decisões',value:'decisoes',emoji:'🎯'},{label:'Automação',value:'automacao',emoji:'🤖'}]},
@@ -130,27 +130,42 @@ export function projectSalary(baseline: number) {
 }
 
 export function scoreResult(steps: Step[], answers: Record<string, string | string[]>) {
-  let score = 0; let max = 0;
-  const buckets: Record<string,{score:number;max:number}> = {};
+  let normalizedTotal = 0;
+  let scoreableQuestions = 0;
+  const buckets: Record<string,{score:number;count:number}> = {};
+
   for (const step of steps) {
-    if (step.kind !== 'question') continue;
-    const val = answers[step.id];
-    if (!val) continue;
-    let qScore = 0; let qMax = 0;
-    if (Array.isArray(val)) { qScore = Math.min(val.length, 4); qMax = 4; }
-    else {
-      const op = step.options.find(o => o.value === val);
-      if (op?.score !== undefined) { qScore = op.score; qMax = Math.max(...step.options.map(o => o.score ?? 0), 1); }
-    }
-    score += qScore; max += qMax;
-    if (step.dimension && qMax > 0) {
-      const b = buckets[step.dimension] ?? {score:0,max:0};
-      b.score += qScore; b.max += qMax; buckets[step.dimension] = b;
+    if (step.kind !== 'question' || step.input === 'multi') continue;
+
+    const scoredOptions = step.options.filter((option): option is Option & { score: number } => typeof option.score === 'number');
+    if (scoredOptions.length < 2) continue;
+
+    const minScore = Math.min(...scoredOptions.map(option => option.score));
+    const maxScore = Math.max(...scoredOptions.map(option => option.score));
+    if (maxScore <= minScore) continue;
+
+    scoreableQuestions += 1;
+
+    const value = answers[step.id];
+    const selected = typeof value === 'string' ? scoredOptions.find(option => option.value === value) : undefined;
+    const normalized = selected ? Math.max(0, Math.min(1, (selected.score - minScore) / (maxScore - minScore))) : 0;
+
+    normalizedTotal += normalized;
+
+    if (step.dimension) {
+      const bucket = buckets[step.dimension] ?? {score:0,count:0};
+      bucket.score += normalized;
+      bucket.count += 1;
+      buckets[step.dimension] = bucket;
     }
   }
-  const pct = max ? Math.round((score/max)*100) : 0;
+
+  const pct = scoreableQuestions ? Math.round((normalizedTotal / scoreableQuestions) * 100) : 0;
   const level = pct < 25 ? 1 : pct < 50 ? 2 : pct < 75 ? 3 : 4;
-  const dimensions = Object.fromEntries(Object.entries(buckets).map(([key,b]) => [key, b.max ? Math.round((b.score/b.max)*100) : 0]));
+  const dimensions = Object.fromEntries(
+    Object.entries(buckets).map(([key,bucket]) => [key, bucket.count ? Math.round((bucket.score / bucket.count) * 100) : 0])
+  );
+
   return { pct, level, dimensions };
 }
 
