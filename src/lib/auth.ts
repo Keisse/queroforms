@@ -9,9 +9,19 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+function hasAdminRole(session: Session | null) {
+  return session?.user?.app_metadata?.role === 'admin';
+}
+
 export async function getSession(): Promise<Session | null> {
   const { data } = await supabase.auth.getSession();
-  return data.session;
+  const current = data.session;
+  if (!current || hasAdminRole(current)) return current;
+
+  // App metadata de autorização pode mudar no servidor. Uma atualização da sessão
+  // traz as claims atuais sem confiar em user_metadata editável pelo usuário.
+  const refreshed = await supabase.auth.refreshSession();
+  return refreshed.data.session ?? current;
 }
 
 export function onAuthChange(cb: (session: Session | null) => void) {
