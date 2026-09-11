@@ -19,11 +19,17 @@ import {
 
 const INTRO_IMAGE_RE = /\s*\[\[QF_INTRO_IMAGE:([^\]]+)\]\]\s*/;
 const CONTEXT_IMAGE_RE = /\s*\[\[QF_IMAGE:([^\]]+)\]\]\s*/;
+const CONTEXT_HIDE_IMAGE_RE = /\s*\[\[QF_HIDE_IMAGE\]\]\s*/;
 const INTRO_FALLBACK_IMAGE = 'https://trentim.com/wp-content/uploads/2026/09/Imagem-do-Certificado.png';
 
 function parseMarked(raw:string,re:RegExp){
   const match=raw.match(re);
   return {text:raw.replace(re,'').trim(),imageUrl:match?.[1]?.trim()||''};
+}
+function parseContextMarked(raw:string){
+  const marked=parseMarked(raw,CONTEXT_IMAGE_RE);
+  const hideImage=CONTEXT_HIDE_IMAGE_RE.test(raw);
+  return {text:marked.text.replace(CONTEXT_HIDE_IMAGE_RE,'').trim(),imageUrl:marked.imageUrl,hideImage};
 }
 
 function introHeading(title: string){
@@ -143,7 +149,7 @@ export default function PublicQuiz(){
 
   const step=steps[idx];
   const intro=step.kind==='intro'?parseMarked(step.body,INTRO_IMAGE_RE):null;
-  const insight=step.kind==='insight'?parseMarked(step.source||'',CONTEXT_IMAGE_RE):null;
+  const insight=step.kind==='insight'?parseContextMarked(step.source||''):null;
   const questionCount=steps.filter(s=>s.kind==='question').length;
   const questionNumber=steps.slice(0,idx+1).filter(s=>s.kind==='question').length;
   const progress=steps.length>1?Math.round((idx/(steps.length-1))*100):100;
@@ -264,7 +270,7 @@ export default function PublicQuiz(){
       </div>}
       {step.kind==='question' && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{o.label}</span></button>})}</div></div>}
       {step.kind==='question' && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{o.label}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
-      {step.kind==='insight' && insight && <div className={`insight-view ${step.id==='insight-pre-result-guide'?'qf-pre-result-guide-view':''}`} data-step-id={step.id}><InsightVisual step={step} imageUrl={insight.imageUrl}/><small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p>
+      {step.kind==='insight' && insight && <div className={`insight-view ${step.id==='insight-pre-result-guide'?'qf-pre-result-guide-view':''}`} data-step-id={step.id}>{!insight.hideImage&&<InsightVisual step={step} imageUrl={insight.imageUrl}/>}<small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p>
         {step.chart && <div className="insight-chart">{step.chart.map(bar=><div className="insight-bar-row" key={bar.label}><div className="insight-bar-meta"><span>{bar.label}</span><b>{bar.suffix}</b></div><div className="insight-bar-track"><i className={bar.highlight?'highlight':''} style={{width:`${bar.value}%`}}/></div></div>)}</div>}
         {step.icons && <div className="insight-icons">{step.icons.map(item=><div className="insight-icon-row" key={item.text}><span>{item.emoji}</span><p>{item.text}</p></div>)}</div>}
         {step.stat && <div className="stat-box">{step.stat}</div>}

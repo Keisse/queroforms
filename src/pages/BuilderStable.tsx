@@ -11,6 +11,7 @@ const FLOW_WIDTH_KEY = 'queroforms-builder-flow-width';
 const PROPS_WIDTH_KEY = 'queroforms-builder-props-width';
 const INTRO_IMAGE_RE = /\s*\[\[QF_INTRO_IMAGE:([^\]]+)\]\]\s*/;
 const CONTEXT_IMAGE_RE = /\s*\[\[QF_IMAGE:([^\]]+)\]\]\s*/;
+const CONTEXT_HIDE_IMAGE_RE = /\s*\[\[QF_HIDE_IMAGE\]\]\s*/;
 const INTRO_FALLBACK_IMAGE = 'https://trentim.com/wp-content/uploads/2026/09/Imagem-do-Certificado.png';
 
 type NewScreenType = 'single'|'multi'|'scale'|'insight'|'email'|'name'|'processing';
@@ -91,7 +92,16 @@ function composeMarked(text:string,imageUrl:string,tag:'QF_INTRO_IMAGE'|'QF_IMAG
   return url ? `${clean}${clean?'\n':''}[[${tag}:${url}]]` : clean;
 }
 function introData(step:Extract<Step,{kind:'intro'}>){return parseMarked(step.body,INTRO_IMAGE_RE);}
-function insightSource(step:Extract<Step,{kind:'insight'}>){return parseMarked(step.source||'',CONTEXT_IMAGE_RE);}
+function insightSource(step:Extract<Step,{kind:'insight'}>){
+  const source=step.source||'';
+  const marked=parseMarked(source,CONTEXT_IMAGE_RE);
+  const hideImage=CONTEXT_HIDE_IMAGE_RE.test(source);
+  return {text:marked.text.replace(CONTEXT_HIDE_IMAGE_RE,'').trim(),imageUrl:marked.imageUrl,hideImage};
+}
+function composeInsightSource(text:string,imageUrl:string,hideImage:boolean){
+  const marked=composeMarked(text,imageUrl,'QF_IMAGE');
+  return hideImage ? `${marked}${marked?'\n':''}[[QF_HIDE_IMAGE]]` : marked;
+}
 
 function labelFor(s:Step){
   return s.kind==='question'?s.title
@@ -582,7 +592,7 @@ export default function BuilderStable(){
           <div className="mini-progress"><span style={{width:`${Math.round(((sel+1)/steps.length)*100)}%`}}/></div>
           <div className="canvas-inner">
             {step.kind==='question'&&<><h2>{step.title}</h2>{step.subtitle&&<p style={{textAlign:'center',color:'#7a8b9c',marginTop:-8}}>{step.subtitle}</p>}{step.options.map(o=><div className="option-card" key={o.value}>{o.emoji?`${o.emoji} `:''}{o.label}</div>)}</>}
-            {step.kind==='insight'&&<>{insight?.imageUrl&&<ImagePreview src={insight.imageUrl} alt="Imagem da tela de contexto"/>}<h2>{step.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>{step.stat&&<div className="option-card"><b>{step.stat}</b></div>}</>}
+            {step.kind==='insight'&&<>{insight?.imageUrl&&!insight.hideImage&&<ImagePreview src={insight.imageUrl} alt="Imagem da tela de contexto"/>}<h2>{step.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>{step.stat&&<div className="option-card"><b>{step.stat}</b></div>}</>}
             {step.kind==='intro'&&intro&&<div className="builder-intro-preview"><div className="builder-certificate-image-wrap"><img src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Imagem da tela inicial"/></div><h2>{step.title}</h2><p className="builder-intro-question">{intro.text}</p><div className="builder-intro-choices"><div>Sim <span>→</span></div><div>Não <span>→</span></div></div></div>}
             {step.kind==='branch'&&<><h2>{Object.values(step.variants)[0]?.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>Varia conforme a resposta anterior</p></>}
             {(step.kind==='email'||step.kind==='name'||step.kind==='processing')&&<h2>{step.title}</h2>}
@@ -613,9 +623,11 @@ export default function BuilderStable(){
           <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
           <label>Texto</label><textarea value={step.body} onChange={e=>update({body:e.target.value} as Partial<Step>)}/>
           <label>Destaque (stat)</label><textarea value={step.stat||''} onChange={e=>update({stat:e.target.value} as Partial<Step>)}/>
-          <label>URL da imagem</label><input type="url" value={insight.imageUrl} placeholder="https://.../imagem.webp" onChange={e=>update({source:composeMarked(insight.text,e.target.value,'QF_IMAGE')} as Partial<Step>)}/>
+          <label>URL da imagem</label><input type="url" value={insight.imageUrl} placeholder="https://.../imagem.webp" onChange={e=>update({source:composeInsightSource(insight.text,e.target.value,insight.hideImage)} as Partial<Step>)}/>
+          <label style={{display:'flex',alignItems:'center',gap:10,margin:'12px 0 14px',cursor:'pointer',fontWeight:600}}><input type="checkbox" checked={insight.hideImage} onChange={e=>update({source:composeInsightSource(insight.text,insight.imageUrl,e.target.checked)} as Partial<Step>)} style={{width:18,height:18,margin:0,flex:'0 0 auto'}}/><span>Ocultar imagem nesta tela</span></label>
+          {insight.hideImage&&<small className="muted" style={{display:'block',margin:'-6px 0 12px'}}>A imagem continua configurada, mas não aparecerá no diagnóstico público.</small>}
           <ImagePreview src={insight.imageUrl} alt="Prévia da imagem da tela de contexto"/>
-          <label>Fonte</label><textarea value={insight.text} onChange={e=>update({source:composeMarked(e.target.value,insight.imageUrl,'QF_IMAGE')} as Partial<Step>)}/>
+          <label>Fonte</label><textarea value={insight.text} onChange={e=>update({source:composeInsightSource(e.target.value,insight.imageUrl,insight.hideImage)} as Partial<Step>)}/>
         </>}
 
         {step.kind==='intro'&&intro&&<>
