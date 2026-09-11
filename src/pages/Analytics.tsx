@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Download, Search, Users, X } from 'lucide-react';
+import { BarChart3, Download, Search, Trash2, Users, X } from 'lucide-react';
 import QuestionAnalytics from '../components/QuestionAnalytics';
 import { Step } from '../data/gpIa';
-import { fetchSubmissions, fetchSurveyVersionSteps, Submission } from '../lib/adminData';
+import { deleteSubmission, fetchSubmissions, fetchSurveyVersionSteps, Submission } from '../lib/adminData';
 
 const levelNames: Record<number, string> = {
   1: 'Explorador',
@@ -121,6 +121,8 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   const [levelFilter, setLevelFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
   const currentTab = view || tab;
 
   useEffect(() => {
@@ -191,6 +193,25 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
     else changeTab('responses');
   };
 
+  const removePerson = async (submission: Submission) => {
+    const label = submission.name || submission.email || 'este lead';
+    const confirmed = window.confirm(`Excluir ${label}?\n\nEsta ação remove definitivamente a pessoa e todas as respostas dela do Supabase. Não é possível desfazer.`);
+    if (!confirmed) return;
+
+    setDeletingId(submission.id);
+    setDeleteError('');
+    try {
+      await deleteSubmission(submission.id);
+      setRows(current => current.filter(row => row.id !== submission.id));
+      setTotalCount(current => Math.max(0, current - 1));
+      setSelected(current => current?.id === submission.id ? null : current);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Não foi possível excluir esta pessoa do Supabase.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) return <div className="analytics-loading">Carregando dados do diagnóstico...</div>;
   if (error) return <div className="analytics-error"><b>Não foi possível carregar os dados.</b><span>{error}</span></div>;
 
@@ -207,6 +228,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
 
     {embedded && <div className="analytics-embedded-toolbar"><span>{totalCount} resposta{totalCount === 1 ? '' : 's'} concluída{totalCount === 1 ? '' : 's'}</span><button className="btn" onClick={() => exportCsv(filtered, versions)} disabled={!filtered.length}><Download size={16}/> Exportar CSV</button></div>}
 
+    {deleteError && <div className="analytics-error" style={{marginBottom:16}}><b>Não foi possível excluir o lead.</b><span>{deleteError}</span></div>}
     {truncated && <div className="analytics-notice">Existem {totalCount} respostas. Esta versão do painel carrega as 2.000 mais recentes para análise detalhada.</div>}
 
     {currentTab === 'overview' && <div className="analytics-overview">
@@ -273,6 +295,15 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
         <div className="drawer-head"><div><small>Resposta individual · versão {selected.survey_version}</small><h2>{selected.name || 'Sem nome'}</h2><p>{selected.email || 'Sem e-mail'}</p></div><button onClick={() => setSelected(null)} aria-label="Fechar"><X size={20}/></button></div>
         <div className="drawer-kpis"><div><span>Score</span><b>{selected.score ?? '—'}%</b></div><div><span>Nível</span><b>{levelNames[selected.level || 0] || '—'}</b></div><div><span>Origem</span><b>{selected.source || 'direct'}</b></div></div>
         <div className="drawer-meta"><span>Respondido em {formatDate(selected.created_at)}</span>{selected.utm_campaign && <span>Campanha: {selected.utm_campaign}</span>}</div>
+        <button
+          className="btn"
+          onClick={() => void removePerson(selected)}
+          disabled={deletingId === selected.id}
+          style={{width:'100%',justifyContent:'center',margin:'16px 0',color:'#a93434',borderColor:'#efcaca',background:'#fff7f7'}}
+        >
+          <Trash2 size={17}/> {deletingId === selected.id ? 'Excluindo do Supabase...' : 'Excluir pessoa e respostas'}
+        </button>
+        <small style={{display:'block',margin:'-8px 0 18px',color:'#8a6b6b',lineHeight:1.4}}>A exclusão é definitiva e remove esta submissão diretamente do Supabase.</small>
         <div className="individual-answers">
           {answerRows(selected, versions[selected.survey_version] || []).map((item, index) => <article key={`${item.id}-${index}`}><small>Pergunta {index + 1}</small><h3>{item.question}</h3><p>{item.answer}</p></article>)}
         </div>
