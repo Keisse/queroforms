@@ -5,34 +5,51 @@ type InsightStep = Extract<Step,{kind:'insight'}>;
 
 function AlmostThereVisual(){
   return <div className="qf-almost-ai-scene" aria-hidden="true">
+    <div className="qf-almost-ai-grid"/>
     <div className="qf-almost-ai-halo"/>
-    <div className="qf-almost-ai-scan"/>
-    <div className="qf-almost-ai-ring r1"/>
-    <div className="qf-almost-ai-ring r2"/>
-    <div className="qf-almost-ai-core">IA</div>
+
+    <div className="qf-almost-ai-radar">
+      <div className="qf-almost-ai-ring r1"/>
+      <div className="qf-almost-ai-ring r2"/>
+      <div className="qf-almost-ai-ring r3"/>
+      <div className="qf-almost-ai-ring r4"/>
+      <div className="qf-almost-ai-axis axis-x"/>
+      <div className="qf-almost-ai-axis axis-y"/>
+      <div className="qf-almost-ai-scan"/>
+      <div className="qf-almost-ai-core"><span/></div>
+    </div>
 
     <div className="qf-almost-ai-line line-1"/>
     <div className="qf-almost-ai-line line-2"/>
     <div className="qf-almost-ai-line line-3"/>
     <div className="qf-almost-ai-line line-4"/>
+    <div className="qf-almost-ai-line line-5"/>
+    <div className="qf-almost-ai-line line-6"/>
 
     <div className="qf-almost-ai-node node-1"/>
     <div className="qf-almost-ai-node node-2"/>
     <div className="qf-almost-ai-node node-3"/>
     <div className="qf-almost-ai-node node-4"/>
+    <div className="qf-almost-ai-node node-5"/>
+    <div className="qf-almost-ai-node node-6"/>
+    <div className="qf-almost-ai-node node-7"/>
+    <div className="qf-almost-ai-node node-8"/>
 
     <div className="qf-almost-ai-chip live chip-1">interpretando dados</div>
-    <div className="qf-almost-ai-chip chip-2">confiança analisada</div>
+    <div className="qf-almost-ai-chip chip-2">confiança</div>
     <div className="qf-almost-ai-chip chip-3">uso atual</div>
-    <div className="qf-almost-ai-chip chip-4">decisão</div>
-    <div className="qf-almost-ai-chip chip-5">padrões em tempo real</div>
-
-    <div className="qf-almost-ai-bars">
-      <div className="qf-almost-ai-bar bar-1"/>
-      <div className="qf-almost-ai-bar bar-2"/>
-      <div className="qf-almost-ai-bar bar-3"/>
-      <div className="qf-almost-ai-bar bar-4"/>
-    </div>
+    <div className="qf-almost-ai-chip chip-4">aplicação prática</div>
+    <div className="qf-almost-ai-chip chip-5">capacidade de decisão</div>
+    <div className="qf-almost-ai-chip chip-6">estruturação</div>
+    <div className="qf-almost-ai-chip chip-7">planejamento</div>
+    <div className="qf-almost-ai-chip chip-8">riscos</div>
+    <div className="qf-almost-ai-chip chip-9">comunicação</div>
+    <div className="qf-almost-ai-chip chip-10">automação</div>
+    <div className="qf-almost-ai-chip chip-11">dados</div>
+    <div className="qf-almost-ai-chip chip-12">processos</div>
+    <div className="qf-almost-ai-chip chip-13">ferramentas</div>
+    <div className="qf-almost-ai-chip chip-14">prontidão</div>
+    <div className="qf-almost-ai-chip chip-15">interesses</div>
   </div>;
 }
 
@@ -109,7 +126,7 @@ export default function InsightVisual({step,imageUrl}:{step:InsightStep;imageUrl
   }
 
   if(step.id==='insight-4'){
-    return <div className="insight-visual qf-almost-there-ai-host" role="img" aria-label="Inteligência artificial interpretando os dados do diagnóstico"><AlmostThereVisual/></div>;
+    return <div className="insight-visual qf-almost-there-ai-host" role="img" aria-label="Inteligência artificial cruzando e interpretando os dados do diagnóstico"><AlmostThereVisual/></div>;
   }
 
   if(step.id==='insight-pre-result-guide'){
