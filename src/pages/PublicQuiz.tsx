@@ -146,7 +146,7 @@ export default function PublicQuiz(){
   const insight=step.kind==='insight'?parseMarked(step.source||'',CONTEXT_IMAGE_RE):null;
   const questionCount=steps.filter(s=>s.kind==='question').length;
   const questionNumber=steps.slice(0,idx+1).filter(s=>s.kind==='question').length;
-  const progress=questionCount?Math.round((questionNumber/questionCount)*100):0;
+  const progress=steps.length>1?Math.round((idx/(steps.length-1))*100):100;
   const questionCounter=step.kind==='question'?`${questionNumber}/${questionCount}`:'';
 
   const navigate=(delta:1|-1)=>{
