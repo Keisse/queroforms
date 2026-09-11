@@ -25,6 +25,7 @@ import './styles/title28.css';
 import './styles/photoChoiceButtons.css';
 import './styles/answerEmojiFallback.css';
 import './styles/specialInsightVisuals.css';
+import './styles/preResultHeadline.css';
 import './styles/quizResponsiveHardening.css';
 import './styles/salaryInsightAnimation.css';
 import './styles/adminAnalytics.css';
