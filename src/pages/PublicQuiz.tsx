@@ -38,7 +38,15 @@ function isValidEmail(value:string){
 
 function createAttemptId(){
   if(typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function') return crypto.randomUUID();
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+
+  const bytes=new Uint8Array(16);
+  if(typeof crypto!=='undefined'&&typeof crypto.getRandomValues==='function') crypto.getRandomValues(bytes);
+  else for(let i=0;i<bytes.length;i+=1) bytes[i]=Math.floor(Math.random()*256);
+
+  bytes[6]=(bytes[6]&0x0f)|0x40;
+  bytes[8]=(bytes[8]&0x3f)|0x80;
+  const hex=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
 }
 
 export default function PublicQuiz(){
@@ -68,12 +76,13 @@ export default function PublicQuiz(){
       }
 
       const draftPreview=wantsDraftPreview?readBuilderDraftPreview(remote.version):null;
+      const isDraftPreview=Boolean(draftPreview);
       const resolvedSteps=draftPreview||remote.steps;
       setSteps(resolvedSteps);
       setSurveyVersion(remote.version);
-      setPreviewMode(wantsDraftPreview);
+      setPreviewMode(isDraftPreview);
 
-      if(!wantsDraftPreview){
+      if(!isDraftPreview){
         const saved=readQuizProgress();
         if(saved&&saved.surveyVersion===remote.version){
           setIdx(Math.min(saved.idx,resolvedSteps.length-1));
@@ -157,13 +166,13 @@ export default function PublicQuiz(){
 
   const saveLead=()=>{
     if(saving||saveStarted.current) return;
-    saveStarted.current=true;
 
     if(previewMode){
       next();
       return;
     }
 
+    saveStarted.current=true;
     setSaving(true);
     const qs = new URLSearchParams(window.location.search);
     const payload:SubmissionPayload={
