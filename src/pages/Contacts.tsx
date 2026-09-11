@@ -134,7 +134,10 @@ export default function Contacts(){
 
   const removeOne=async(row:ContactRow)=>{
     const label=row.name||row.email||'este contato';
-    if(!window.confirm(`Excluir ${label}?\n\nEsta ação remove definitivamente este contato e todas as respostas dele do Supabase.`))return;
+    const confirmation=window.prompt(
+      `Excluir ${label}?\n\nEsta ação remove definitivamente este contato e todas as respostas dele do Banco de dados. Não é possível desfazer.\n\nDigite EXCLUIR para confirmar:`
+    );
+    if(confirmation?.trim()!=='EXCLUIR')return;
     setDeleting(true);setError('');
     try{
       await deleteSubmissions(row.submissionIds);
@@ -150,7 +153,10 @@ export default function Contacts(){
     if(!selectedCount)return;
     const selectedSet=new Set(selectedKeys);
     const submissionIds=contacts.filter(row=>selectedSet.has(row.key)).flatMap(row=>row.submissionIds);
-    if(!window.confirm(`Excluir ${selectedCount} contato${selectedCount===1?'':'s'} selecionado${selectedCount===1?'':'s'}?\n\nEsta ação é definitiva e também remove todas as respostas correspondentes do Supabase.`))return;
+    const confirmation=window.prompt(
+      `Excluir ${selectedCount} contato${selectedCount===1?'':'s'} selecionado${selectedCount===1?'':'s'}?\n\nEsta ação remove definitivamente os contatos e todas as respostas correspondentes do Banco de dados. Não é possível desfazer.\n\nDigite EXCLUIR para confirmar:`
+    );
+    if(confirmation?.trim()!=='EXCLUIR')return;
     setDeleting(true);setError('');
     try{
       await deleteSubmissions(submissionIds);
@@ -166,7 +172,7 @@ export default function Contacts(){
 
   return <>
     <header className="page-head contacts-head">
-      <div><div className="crumb">Keisse › My workspace</div><h1>Contatos</h1><p>Leads únicos capturados por todos os diagnósticos e salvos no Supabase.</p></div>
+      <div><div className="crumb">Keisse › My workspace</div><h1>Contatos</h1><p>Leads únicos capturados por todos os diagnósticos e salvos no Banco de dados.</p></div>
       <div className="contacts-head-actions">
         <button className="btn" onClick={()=>exportContactsCsv(filtered,'contatos-filtrados')} disabled={!filtered.length}><Download size={17}/> Exportar CSV</button>
         <div className="contacts-total"><strong>{contacts.length}</strong><span>contato{contacts.length===1?'':'s'}</span></div>
