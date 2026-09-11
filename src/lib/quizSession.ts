@@ -5,6 +5,7 @@ export type QuizAnswers = Record<string, string | string[]>;
 
 export type QuizProgress = {
   surveyVersion: number;
+  steps?: Step[];
   idx: number;
   answers: QuizAnswers;
   email: string;
@@ -51,8 +52,10 @@ export function readQuizProgress(): QuizProgress | null {
   const progress = readJson<Partial<QuizProgress>>(PROGRESS_KEY);
   if (!progress || !progress.attemptId || !Number.isFinite(progress.surveyVersion) || !Number.isFinite(progress.idx)) return null;
   if (!progress.answers || typeof progress.answers !== 'object') return null;
+  const frozenSteps = Array.isArray(progress.steps) && progress.steps.length ? progress.steps as Step[] : undefined;
   return {
     surveyVersion: Number(progress.surveyVersion),
+    steps: frozenSteps,
     idx: Math.max(0, Number(progress.idx)),
     answers: progress.answers as QuizAnswers,
     email: String(progress.email || ''),
