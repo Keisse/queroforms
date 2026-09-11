@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { AppShell } from './components/AppShell';
 import Dashboard from './pages/Dashboard';
-import Builder from './pages/BuilderStable';
+import Builder from './pages/BuilderPage';
 import PublicQuiz from './pages/PublicQuiz';
 import Placeholder from './pages/Placeholder';
 import Settings from './pages/Settings';
