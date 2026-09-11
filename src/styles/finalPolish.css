@@ -10,6 +10,20 @@
   50% { transform: scale(1.045); }
 }
 
+@keyframes qf-projection-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes qf-projection-pop {
+  from { opacity: 0; transform: scale(.65); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes qf-projection-up {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .processing-view .process-lines i {
   transform-origin: left center;
   animation: qf-process-bar-in 1.15s cubic-bezier(.22,.8,.32,1) both;
@@ -26,6 +40,124 @@
 .processing-view .primary.big {
   transform-origin: center;
   animation: qf-result-button-pulse 1.85s ease-in-out infinite;
+}
+
+.insight-view .insight-visual.qf-career-projection-host {
+  display: grid;
+  place-items: center;
+  padding: 14px 16px 6px;
+  overflow: hidden;
+}
+
+.qf-career-projection {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.qf-career-projection text {
+  font-family: inherit;
+}
+
+.qf-projection-axis {
+  stroke: #c7ced8;
+  stroke-width: 2;
+}
+
+.qf-projection-grid {
+  stroke: #d9e1ea;
+  stroke-width: 1.4;
+  stroke-dasharray: 7 7;
+}
+
+.qf-projection-axis-label {
+  fill: #97a1af;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.qf-projection-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5;
+  stroke-dasharray: 520;
+  stroke-dashoffset: 520;
+}
+
+.qf-projection-line.qf-no-gp { stroke: #bcc5d0; }
+.qf-projection-line.qf-gp { stroke: #7cabdf; }
+.qf-projection-line.qf-gp-ai { stroke: #247edb; }
+
+.qf-projection-point {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.qf-projection-point.qf-no-gp { fill: #bcc5d0; }
+.qf-projection-point.qf-gp { fill: #7cabdf; }
+.qf-projection-point.qf-gp-ai { fill: #247edb; }
+
+.qf-callout-bg.qf-no-gp { fill: #e8edf3; }
+.qf-callout-bg.qf-gp { fill: #dcecfb; }
+.qf-callout-bg.qf-gp-ai,
+.qf-callout-arrow { fill: #247edb; }
+
+.qf-callout-title {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.qf-callout-value {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.qf-callout-light { fill: #fff; }
+.qf-callout-dark { fill: #52667a; }
+
+.qf-projection-callout {
+  opacity: 0;
+  transform: translateY(7px);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.qf-career-projection .qf-projection-line.qf-no-gp {
+  animation: qf-projection-draw 1.15s ease forwards .10s;
+}
+
+.qf-career-projection .qf-projection-line.qf-gp {
+  animation: qf-projection-draw 1.35s ease forwards .25s;
+}
+
+.qf-career-projection .qf-projection-line.qf-gp-ai {
+  animation: qf-projection-draw 1.55s cubic-bezier(.22,.8,.32,1) forwards .40s;
+}
+
+.qf-career-projection .qf-point-1 {
+  animation: qf-projection-pop .30s ease forwards 1.05s;
+}
+
+.qf-career-projection .qf-point-2 {
+  animation: qf-projection-pop .30s ease forwards 1.32s;
+}
+
+.qf-career-projection .qf-point-3 {
+  animation: qf-projection-pop .30s ease forwards 1.62s;
+}
+
+.qf-career-projection .qf-callout-1 {
+  animation: qf-projection-up .38s ease forwards 1.12s;
+}
+
+.qf-career-projection .qf-callout-2 {
+  animation: qf-projection-up .38s ease forwards 1.38s;
+}
+
+.qf-career-projection .qf-callout-3 {
+  animation: qf-projection-up .38s ease forwards 1.68s;
 }
 
 /* Ordem visual do resultado. O conteúdo continua vindo exclusivamente do renderer React. */
@@ -47,9 +179,26 @@
   display: none;
 }
 
+@media (max-width: 620px) {
+  .insight-view .insight-visual.qf-career-projection-host {
+    padding: 10px 6px 2px;
+  }
+
+  .qf-projection-axis-label { font-size: 11px; }
+  .qf-callout-title { font-size: 10px; }
+  .qf-callout-value { font-size: 11px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .processing-view .process-lines i,
-  .processing-view .primary.big {
+  .processing-view .primary.big,
+  .qf-career-projection .qf-projection-line,
+  .qf-career-projection .qf-projection-point,
+  .qf-career-projection .qf-projection-callout {
     animation: none;
   }
+
+  .qf-career-projection .qf-projection-line { stroke-dashoffset: 0; }
+  .qf-career-projection .qf-projection-point,
+  .qf-career-projection .qf-projection-callout { opacity: 1; transform: none; }
 }
