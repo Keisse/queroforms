@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BarChart3, Check, Sparkles, Users } from 'lucide-react';
 import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
-import { fetchPublishedSteps } from '../lib/surveyConfig';
+import { fetchPublishedSurvey } from '../lib/surveyConfig';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 
 const INTRO_IMAGE_RE = /\s*\[\[QF_INTRO_IMAGE:([^\]]+)\]\]\s*/;
@@ -24,8 +24,14 @@ function isValidEmail(value:string){
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
+function createAttemptId(){
+  if(typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function') return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function PublicQuiz(){
   const [steps,setSteps]=useState<Step[]|null>(null);
+  const [surveyVersion,setSurveyVersion]=useState(1);
   const [loadError,setLoadError]=useState(false);
   const [idx,setIdx]=useState(0);
   const [answers,setAnswers]=useState<Record<string,string|string[]>>({});
@@ -33,16 +39,19 @@ export default function PublicQuiz(){
   const [name,setName]=useState('');
   const [saving,setSaving]=useState(false);
   const navigationLocked=useRef(false);
+  const saveStarted=useRef(false);
+  const attemptId=useRef(createAttemptId());
 
   useEffect(()=>{
     let active=true;
-    fetchPublishedSteps('gp-ia').then(remote=>{
+    fetchPublishedSurvey('gp-ia').then(remote=>{
       if(!active) return;
-      if(!remote?.length){
+      if(!remote?.steps.length){
         setLoadError(true);
         return;
       }
-      setSteps(remote);
+      setSteps(remote.steps);
+      setSurveyVersion(remote.version);
       setLoadError(false);
     });
     return()=>{active=false;};
@@ -88,13 +97,21 @@ export default function PublicQuiz(){
   };
 
   const saveLead=()=>{
-    if(saving) return;
+    if(saving||saveStarted.current) return;
+    saveStarted.current=true;
     setSaving(true);
 
     const qs = new URLSearchParams(window.location.search);
     const payload={
-      survey_slug:'gp-ia', name:name.trim(), email:email.trim(), score:result.pct, level:result.level,
-      dimension_scores:result.dimensions, answers,
+      survey_slug:'gp-ia',
+      survey_version:surveyVersion,
+      attempt_id:attemptId.current,
+      name:name.trim(),
+      email:email.trim(),
+      score:result.pct,
+      level:result.level,
+      dimension_scores:result.dimensions,
+      answers,
       source:qs.get('source') || qs.get('utm_source') || 'direct',
       utm_source:qs.get('utm_source'), utm_medium:qs.get('utm_medium'),
       utm_campaign:qs.get('utm_campaign'), utm_content:qs.get('utm_content'),
@@ -112,7 +129,7 @@ export default function PublicQuiz(){
     void (async()=>{
       try{
         const {error}=await supabase.from('submissions').insert(payload);
-        if(error) console.error('Falha ao salvar submissão do diagnóstico:', error);
+        if(error && error.code!=='23505') console.error('Falha ao salvar submissão do diagnóstico:', error);
       } catch(err: unknown){
         console.error('Falha inesperada ao salvar submissão do diagnóstico:', err);
       } finally{
@@ -174,14 +191,17 @@ export default function PublicQuiz(){
 
 function Result({name,pct,level,dimensions,salaryRange}:{name:string,pct:number,level:number,dimensions:Record<string,number>,salaryRange?:string}){
   const copy=levelCopy[level as 1|2|3|4];
-  const chartData = [
-    ['Planejamento', dimensions.planejamento ?? 0],
-    ['Riscos', dimensions.riscos ?? 0],
-    ['Decisão', dimensions.decisao ?? 0],
-    ['Comunicação', dimensions.comunicacao ?? 0],
-    ['Automação', dimensions.automacao ?? 0],
-    ['Confiança', dimensions.confianca ?? 0],
+  const desiredDimensions = [
+    ['Planejamento','planejamento'],
+    ['Riscos','riscos'],
+    ['Decisão','decisao'],
+    ['Comunicação','comunicacao'],
+    ['Automação','automacao'],
+    ['Confiança','confianca'],
   ] as const;
+  const chartData=desiredDimensions
+    .filter(([,key])=>Object.prototype.hasOwnProperty.call(dimensions,key))
+    .map(([label,key])=>[label,dimensions[key]] as const);
   const baseline = salaryRange ? salaryMidpoints[salaryRange] : undefined;
   const projection = baseline ? projectSalary(baseline) : null;
   const fmt = (n:number)=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
@@ -192,10 +212,10 @@ function Result({name,pct,level,dimensions,salaryRange}:{name:string,pct:number,
     <div className="score-card"><div className="gauge"><i style={{left:`calc(${pct}% - 10px)`}}/></div><div className="gauge-labels"><span>Explorador</span><span>Usuário</span><span>Aumentado</span><span>Orientado por IA</span></div><b className="score-number">{pct}%</b></div>
     <div className="result-copy"><h2>{copy.headline}</h2><p>{copy.next}</p></div>
 
-    <section className="dimension-card">
+    {chartData.length>0&&<section className="dimension-card">
       <div className="section-heading"><small>Seu mapa de maturidade</small><h2>Onde sua IA já gera valor e onde ainda existe espaço para crescer</h2></div>
       <div className="dimension-bars">{chartData.map(([label,value])=><div className="dimension-row" key={label}><div className="dimension-meta"><span>{label}</span><b>{value}%</b></div><div className="dimension-track"><i style={{width:`${value}%`}}/></div></div>)}</div>
-    </section>
+    </section>}
 
     {projection && <section className="salary-card">
       <div className="section-heading"><small>Projeção de carreira</small><h2>Sua evolução salarial com certificações em IA nos próximos 3 anos</h2></div>
