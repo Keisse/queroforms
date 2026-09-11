@@ -21,6 +21,7 @@ import './styles/certificateHotfix.css';
 import './styles/answerEmojiFallback.css';
 import './styles/builderHeaderCleanup.css';
 import './styles/specialInsightVisuals.css';
+import './styles/quizResponsiveHardening.css';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
