@@ -1,19 +1,4 @@
-const SALARY_MULTIPLIERS = [1, 1.35, 1.70, 2.05] as const;
 const GENDER_KEY = 'queroforms-gender';
-
-function parseCurrency(text: string) {
-  const digits = text.replace(/\D/g, '');
-  const value = Number(digits);
-  return Number.isFinite(value) ? value : 0;
-}
-
-function formatCurrency(value: number) {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  });
-}
 
 function captureGenderFromClick(event: MouseEvent) {
   const target = event.target as Element | null;
@@ -179,35 +164,11 @@ function installAiCloudContext() {
   });
 }
 
-function updateSalaryProjection() {
-  const chart = document.querySelector<HTMLElement>('.result-view .salary-chart');
-  if (!chart) return;
-
-  const values = Array.from(chart.querySelectorAll<HTMLElement>('.salary-value'));
-  const bars = Array.from(chart.querySelectorAll<HTMLElement>('.salary-bar'));
-  if (values.length < 4 || bars.length < 4) return;
-
-  const baseline = parseCurrency(values[0].textContent || '');
-  if (!baseline) return;
-
-  const projection = SALARY_MULTIPLIERS.map(multiplier => Math.round(baseline * multiplier));
-  const max = projection[projection.length - 1];
-
-  projection.forEach((value, index) => {
-    const formatted = formatCurrency(value);
-    if (values[index].textContent !== formatted) values[index].textContent = formatted;
-
-    const height = `${Math.round((value / max) * 100)}%`;
-    if (bars[index].style.height !== height) bars[index].style.height = height;
-  });
-}
-
 function applyFinalPolish() {
   softenAlmostThereStat();
   installSalaryContextProjection();
   installMarketValueVisual();
   installAiCloudContext();
-  updateSalaryProjection();
 }
 
 function startFinalPolish() {
