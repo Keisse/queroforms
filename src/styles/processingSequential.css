@@ -1,0 +1,117 @@
+@property --qf-progress-number {
+  syntax: '<integer>';
+  initial-value: 0;
+  inherits: false;
+}
+
+.processing-view .process-lines > p,
+.processing-view .process-lines > div {
+  transition: opacity .2s ease;
+}
+
+.processing-view .process-lines > p:nth-of-type(1),
+.processing-view .process-lines > div:nth-of-type(1) {
+  opacity: 1;
+}
+
+.processing-view .process-lines > p:nth-of-type(2),
+.processing-view .process-lines > div:nth-of-type(2),
+.processing-view .process-lines > p:nth-of-type(3),
+.processing-view .process-lines > div:nth-of-type(3) {
+  opacity: .42;
+}
+
+.processing-view .process-lines > div:nth-of-type(1) > i {
+  animation: qf-processing-fill 1.45s linear forwards;
+}
+
+.processing-view .process-lines > div:nth-of-type(2) > i {
+  animation: qf-processing-fill 1.45s linear 1.71s forwards;
+}
+
+.processing-view .process-lines > div:nth-of-type(3) > i {
+  animation: qf-processing-fill 1.45s linear 3.42s forwards;
+}
+
+.processing-view .process-lines > p:nth-of-type(2),
+.processing-view .process-lines > div:nth-of-type(2) {
+  animation: qf-processing-activate .18s ease 1.71s forwards;
+}
+
+.processing-view .process-lines > p:nth-of-type(3),
+.processing-view .process-lines > div:nth-of-type(3) {
+  animation: qf-processing-activate .18s ease 3.42s forwards;
+}
+
+.processing-view .process-lines > p > b {
+  font-size: 0;
+}
+
+.processing-view .process-lines > p > b::after {
+  font-size: 16px;
+  font-weight: 700;
+  counter-reset: qf-num var(--qf-progress-number);
+  content: counter(qf-num) '%';
+}
+
+.processing-view .process-lines > p:nth-of-type(1) > b::after {
+  animation: qf-processing-count 1.45s linear forwards;
+}
+
+.processing-view .process-lines > p:nth-of-type(2) > b::after {
+  animation: qf-processing-count 1.45s linear 1.71s forwards;
+}
+
+.processing-view .process-lines > p:nth-of-type(3) > b::after {
+  animation: qf-processing-count 1.45s linear 3.42s forwards;
+}
+
+.processing-view > .primary.big {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px) scale(.98);
+  animation: qf-processing-cta .36s ease 5.13s forwards;
+}
+
+@keyframes qf-processing-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes qf-processing-count {
+  from { --qf-progress-number: 0; }
+  to { --qf-progress-number: 100; }
+}
+
+@keyframes qf-processing-activate {
+  to { opacity: 1; }
+}
+
+@keyframes qf-processing-cta {
+  to {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .processing-view .process-lines > div > i {
+    animation-duration: .15s!important;
+    animation-delay: 0s!important;
+  }
+  .processing-view .process-lines > p,
+  .processing-view .process-lines > div {
+    opacity: 1!important;
+    animation-delay: 0s!important;
+  }
+  .processing-view .process-lines > p > b::after {
+    animation-duration: .15s!important;
+    animation-delay: 0s!important;
+  }
+  .processing-view > .primary.big {
+    animation-delay: .2s!important;
+  }
+}
