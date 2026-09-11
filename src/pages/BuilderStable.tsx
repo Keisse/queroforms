@@ -3,6 +3,7 @@ import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps } from '../lib/stepsStore';
 import { fetchBuilderSteps, publishSteps, saveDraftSteps } from '../lib/surveyConfig';
+import { isProtectedStructuralStep, validateSurveyStructure } from '../lib/surveyValidator';
 
 const LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v2';
 const FLOW_WIDTH_KEY = 'queroforms-builder-flow-width';
@@ -64,7 +65,7 @@ function labelFor(s:Step){
     :s.kind==='name'?'Captura de nome'
     :'Resultado';
 }
-function canReorderStep(s:Step){return s.kind!=='intro'&&s.kind!=='branch'&&s.kind!=='result';}
+function canReorderStep(s:Step){return !isProtectedStructuralStep(s);}
 
 function createNewStep(type:NewScreenType):Step{
   const stamp=`${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
@@ -177,10 +178,10 @@ export default function BuilderStable(){
     e.dataTransfer.setData('text/plain',s.id);
   };
   const dragOverStep=(s:Step,e:ReactDragEvent<HTMLDivElement>)=>{
-    if(!draggedStepId||draggedStepId===s.id||s.kind==='intro'||s.kind==='branch') return;
+    if(!draggedStepId||draggedStepId===s.id||isProtectedStructuralStep(s)) return;
     e.preventDefault();
     const rect=e.currentTarget.getBoundingClientRect();
-    setDropTarget({id:s.id,position:s.kind==='result'||e.clientY<rect.top+rect.height/2?'before':'after'});
+    setDropTarget({id:s.id,position:e.clientY<rect.top+rect.height/2?'before':'after'});
   };
   const dropStep=(s:Step,e:ReactDragEvent<HTMLDivElement>)=>{
     if(!draggedStepId||!dropTarget||dropTarget.id!==s.id) return;
@@ -192,7 +193,7 @@ export default function BuilderStable(){
     const without=steps.filter(item=>item.id!==draggedStepId);
     let insertAt=without.findIndex(item=>item.id===s.id);
     if(insertAt<0) return;
-    if(s.kind!=='result'&&dropTarget.position==='after') insertAt+=1;
+    if(dropTarget.position==='after') insertAt+=1;
     const resultIndex=without.findIndex(item=>item.kind==='result');
     if(resultIndex>=0) insertAt=Math.min(insertAt,resultIndex);
     const next=[...without];
@@ -207,6 +208,11 @@ export default function BuilderStable(){
 
   const addScreen=(type:NewScreenType)=>{
     if(!step) return;
+    if((type==='email'||type==='name'||type==='processing')&&steps.some(item=>item.kind===type)){
+      setAddOpen(false);
+      setPublishError(`Já existe uma tela estrutural do tipo ${type}. Edite a existente em vez de criar outra.`);
+      return;
+    }
     const newStep=createNewStep(type);
     const resultIndex=steps.findIndex(s=>s.kind==='result');
     let insertAt=step.kind==='result'?sel:sel+1;
@@ -242,6 +248,11 @@ export default function BuilderStable(){
 
   const publish=async()=>{
     if(!steps.length||publishing) return;
+    const validation=validateSurveyStructure(steps);
+    if(!validation.valid){
+      setPublishError(`Publicação bloqueada: ${validation.errors[0]}`);
+      return;
+    }
     setPublishing(true);
     setPublishError('');
     try{
@@ -263,6 +274,13 @@ export default function BuilderStable(){
 
   const confirmDelete=()=>{
     if(deleteIdx===null||confirmText!=='EXCLUIR') return;
+    const deleting=steps[deleteIdx];
+    if(!deleting||isProtectedStructuralStep(deleting)){
+      setDeleteIdx(null);
+      setConfirmText('');
+      setPublishError('Esta tela é estrutural e não pode ser excluída.');
+      return;
+    }
     const next=steps.filter((_,i)=>i!==deleteIdx);
     setSteps(next);
     setSel(Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1)));
@@ -290,7 +308,7 @@ export default function BuilderStable(){
       </div>
     </header>
 
-    <p className="muted" style={{margin:'-10px 0 18px'}}>Salvar edição grava o rascunho no Supabase sem alterar a página pública. <b>Publicar</b> grava todas as alterações atuais e atualiza a versão pública.</p>
+    <p className="muted" style={{margin:'-10px 0 18px'}}>Salvar edição grava o rascunho no Supabase sem alterar a página pública. <b>Publicar</b> valida a estrutura, grava todas as alterações atuais e atualiza a versão pública.</p>
 
     <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
       <section className="steps-panel">
@@ -298,6 +316,7 @@ export default function BuilderStable(){
         <div className="steps-list">
           {steps.map((s,i)=>{
             const reorderable=canReorderStep(s);
+            const deletable=!isProtectedStructuralStep(s);
             const dropClass=dropTarget?.id===s.id?`builder-step-drop-${dropTarget.position}`:'';
             return <div key={s.id} className={`step-item ${i===sel?'active':''} ${draggedStepId===s.id?'builder-step-dragging':''} ${dropClass}`} onDragOver={e=>dragOverStep(s,e)} onDrop={e=>dropStep(s,e)} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
               <span className={`builder-step-handle ${reorderable?'':'locked'}`} draggable={reorderable} onDragStart={e=>startStepDrag(s,e)} onDragEnd={()=>{setDraggedStepId(null);setDropTarget(null);}} onClick={e=>e.stopPropagation()} title={reorderable?'Arraste para mudar a ordem':'Esta tela tem posição protegida'}><GripVertical size={16}/></span>
@@ -305,13 +324,13 @@ export default function BuilderStable(){
                 <span className="step-num">{i+1}</span>
                 <div style={{minWidth:0}}><b>{labelFor(s)}</b><small>{s.kind}</small></div>
               </span>
-              <button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();setDeleteIdx(i);setConfirmText('');}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>
+              {deletable&&<button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();setDeleteIdx(i);setConfirmText('');}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>}
             </div>;
           })}
         </div>
         <div className="builder-add-screen-wrap">
           <button className="btn builder-add-screen" onClick={()=>setAddOpen(true)}><Plus size={16}/> Adicionar tela</button>
-          <small>Arraste pelo ícone ⋮⋮ para reordenar. Salve como rascunho ou publique diretamente.</small>
+          <small>Arraste pelo ícone ⋮⋮ para reordenar. Telas estruturais são protegidas e a publicação é validada antes de chegar ao público.</small>
         </div>
       </section>
 
