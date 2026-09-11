@@ -5,6 +5,7 @@ import InsightVisual from '../components/InsightVisual';
 import { toggleMultiAnswer } from '../lib/answerRules';
 import { fetchPublishedSurvey } from '../lib/surveyConfig';
 import { supabaseEnabled } from '../lib/supabase';
+import { personalizeText } from '../lib/textVariables';
 import {
   clearQuizProgress,
   enqueueSubmission,
@@ -148,6 +149,7 @@ export default function PublicQuiz(){
   if(!steps) return <div className="quiz-wrap"><div className="quiz-stage" style={{textAlign:'center',paddingTop:100,color:'#7a8b9c'}}>Carregando diagnóstico...</div></div>;
 
   const step=steps[idx];
+  const text=(value:string|undefined|null)=>personalizeText(value,name);
   const intro=step.kind==='intro'?parseMarked(step.body,INTRO_IMAGE_RE):null;
   const insight=step.kind==='insight'?parseContextMarked(step.source||''):null;
   const questionCount=steps.filter(s=>s.kind==='question').length;
@@ -252,8 +254,8 @@ export default function PublicQuiz(){
             <span className="cloud-pill p6">⚙️ Automação</span>
             <span className="cloud-pill p7">📅 Cronograma</span>
           </div>
-          <h1>{variant.title}</h1>
-          <p>{variant.body}</p>
+          <h1>{text(variant.title)}</h1>
+          <p>{text(variant.body)}</p>
           <button className="primary big" onClick={next}>Continuar</button>
         </div>;
       })()}
@@ -261,24 +263,24 @@ export default function PublicQuiz(){
         <div className="certificate-image-wrap">
           <img className="certificate-image" src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Certificado Gestão de Projetos com IA - Formação Mestre GP" loading="eager" decoding="async" />
         </div>
-        <h1>{introHeading(step.title)}</h1>
-        <p className="intro-question">{intro.text}</p>
+        <h1>{introHeading(text(step.title))}</h1>
+        <p className="intro-question">{text(intro.text)}</p>
         <div className="intro-choice-row">
           <button className="primary intro-choice" onClick={()=>chooseCloud('sim')}>Sim <span>→</span></button>
           <button className="primary intro-choice" onClick={()=>chooseCloud('nao')}>Não <span>→</span></button>
         </div>
       </div>}
-      {step.kind==='question' && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{o.label}</span></button>})}</div></div>}
-      {step.kind==='question' && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{o.label}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
-      {step.kind==='insight' && insight && <div className={`insight-view ${step.id==='insight-pre-result-guide'?'qf-pre-result-guide-view':''}`} data-step-id={step.id}>{!insight.hideImage&&<InsightVisual step={step} imageUrl={insight.imageUrl}/>}<small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p>
-        {step.chart && <div className="insight-chart">{step.chart.map(bar=><div className="insight-bar-row" key={bar.label}><div className="insight-bar-meta"><span>{bar.label}</span><b>{bar.suffix}</b></div><div className="insight-bar-track"><i className={bar.highlight?'highlight':''} style={{width:`${bar.value}%`}}/></div></div>)}</div>}
-        {step.icons && <div className="insight-icons">{step.icons.map(item=><div className="insight-icon-row" key={item.text}><span>{item.emoji}</span><p>{item.text}</p></div>)}</div>}
-        {step.stat && <div className="stat-box">{step.stat}</div>}
-        {insight.text&&<div className="source-note">Fonte: {insight.text}</div>}
+      {step.kind==='question' && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{text(o.label)}</span></button>})}</div></div>}
+      {step.kind==='question' && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{text(o.label)}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
+      {step.kind==='insight' && insight && <div className={`insight-view ${step.id==='insight-pre-result-guide'?'qf-pre-result-guide-view':''}`} data-step-id={step.id}>{!insight.hideImage&&<InsightVisual step={step} imageUrl={insight.imageUrl}/>}<small>{text(step.eyebrow)}</small><h1>{text(step.title)}</h1><p>{text(step.body)}</p>
+        {step.chart && <div className="insight-chart">{step.chart.map(bar=><div className="insight-bar-row" key={bar.label}><div className="insight-bar-meta"><span>{text(bar.label)}</span><b>{text(bar.suffix)}</b></div><div className="insight-bar-track"><i className={bar.highlight?'highlight':''} style={{width:`${bar.value}%`}}/></div></div>)}</div>}
+        {step.icons && <div className="insight-icons">{step.icons.map(item=><div className="insight-icon-row" key={item.text}><span>{item.emoji}</span><p>{text(item.text)}</p></div>)}</div>}
+        {step.stat && <div className="stat-box">{text(step.stat)}</div>}
+        {insight.text&&<div className="source-note">Fonte: {text(insight.text)}</div>}
         <button className="primary big" onClick={next}>Continuar</button></div>}
-      {step.kind==='processing' && <div className="processing-view" data-step-id={step.id}><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" onClick={next}>Ver resultado</button></div>}
-      {step.kind==='email' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!isValidEmail(email)} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
-      {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name.trim() || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button><small>{previewMode?'Modo de pré-visualização: nenhum lead será salvo.':supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
+      {step.kind==='processing' && <div className="processing-view" data-step-id={step.id}><h1>{text(step.title)}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" disabled={saving} onClick={saveLead}>{saving?'Salvando...':'Ver resultado'}</button></div>}
+      {step.kind==='email' && <div className="field-view" data-step-id={step.id}><h1>{text(step.title)}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!isValidEmail(email)} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
+      {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{text(step.title)}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name.trim()} onClick={next}>Continuar</button><small>Usaremos seu primeiro nome para personalizar as próximas telas.</small></div>}
       {step.kind==='result' && <Result name={name.trim()} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined} onRestart={restart}/>} 
     </div>
   </div>
