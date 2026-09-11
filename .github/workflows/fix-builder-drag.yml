@@ -1,0 +1,44 @@
+name: Fix builder drag reorder
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-builder-drag.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'Builder: melhora reordenacao por arraste') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Builder drag behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/pages/BuilderStable.tsx')
+          s=p.read_text()
+          s=s.replace("const startStepDrag=(s:Step,e:ReactDragEvent<HTMLSpanElement>)=>{", "const startStepDrag=(s:Step,e:ReactDragEvent<HTMLDivElement>)=>{")
+          s=s.replace("if(!draggedStepId||draggedStepId===s.id||isProtectedStructuralStep(s)) return;\n    e.preventDefault();\n    const rect=e.currentTarget.getBoundingClientRect();\n    setDropTarget({id:s.id,position:e.clientY<rect.top+rect.height/2?'before':'after'});", "if(!draggedStepId||draggedStepId===s.id) return;\n    if(s.kind==='intro'||s.kind==='branch'||s.kind==='name'||s.kind==='processing'||s.id==='insight-pre-result-guide') return;\n    e.preventDefault();\n    e.dataTransfer.dropEffect='move';\n    const rect=e.currentTarget.getBoundingClientRect();\n    const position:DropPosition=s.kind==='email'||s.kind==='result'?'before':(e.clientY<rect.top+rect.height/2?'before':'after');\n    setDropTarget({id:s.id,position});")
+          old="return <div key={s.id} className={`step-item ${i===sel?'active':''} ${draggedStepId===s.id?'builder-step-dragging':''} ${dropClass}`} onDragOver={e=>dragOverStep(s,e)} onDrop={e=>dropStep(s,e)} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>\n              <span className={`builder-step-handle ${reorderable?'':'locked'}`} draggable={reorderable} onDragStart={e=>startStepDrag(s,e)} onDragEnd={()=>{setDraggedStepId(null);setDropTarget(null);}} onClick={e=>e.stopPropagation()} title={reorderable?'Arraste para mudar a ordem':'Esta tela tem posição protegida'}><GripVertical size={16}/></span>"
+          new="return <div key={s.id} className={`step-item ${i===sel?'active':''} ${draggedStepId===s.id?'builder-step-dragging':''} ${dropClass}`} draggable={reorderable} onDragStart={e=>startStepDrag(s,e)} onDragEnd={()=>{setDraggedStepId(null);setDropTarget(null);}} onDragOver={e=>dragOverStep(s,e)} onDrop={e=>dropStep(s,e)} style={{cursor:reorderable?'grab':'pointer',display:'flex',alignItems:'center',gap:6}}>\n              <span className={`builder-step-handle ${reorderable?'':'locked'}`} onClick={e=>e.stopPropagation()} title={reorderable?'Arraste esta linha para mudar a ordem':'Esta tela tem posição protegida'}><GripVertical size={16}/></span>"
+          if old not in s:
+              raise SystemExit('builder row pattern not found')
+          s=s.replace(old,new)
+          p.write_text(s)
+          PY
+      - name: Verify patch
+        run: |
+          grep -q "draggable={reorderable} onDragStart" src/pages/BuilderStable.tsx
+          grep -q "s.kind==='email'||s.kind==='result'?'before'" src/pages/BuilderStable.tsx
+      - name: Commit fix and remove temporary workflow
+        run: |
+          rm .github/workflows/fix-builder-drag.yml
+          git config user.name "Keisse Brandao"
+          git config user.email "keissebrandao@gmail.com"
+          git add src/pages/BuilderStable.tsx .github/workflows/fix-builder-drag.yml
+          git commit -m "Builder: melhora reordenacao por arraste"
+          git push
