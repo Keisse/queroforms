@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Sparkles } from 'lucide-react';
 import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
 import InsightVisual from '../components/InsightVisual';
+import { toggleMultiAnswer } from '../lib/answerRules';
 import { fetchPublishedSurvey } from '../lib/surveyConfig';
 import { supabaseEnabled } from '../lib/supabase';
 import {
@@ -161,7 +162,7 @@ export default function PublicQuiz(){
     if(s.input==='multi'){
       setAnswers(current=>{
         const cur=Array.isArray(current[s.id])?current[s.id] as string[]:[];
-        return {...current,[s.id]:cur.includes(value)?cur.filter(v=>v!==value):[...cur,value]};
+        return {...current,[s.id]:toggleMultiAnswer(cur,value)};
       });
     } else {
       setAnswers(current=>({...current,[s.id]:value}));
