@@ -77,24 +77,33 @@ export default function PublicQuiz(){
 
       const draftPreview=wantsDraftPreview?readBuilderDraftPreview(remote.version):null;
       const isDraftPreview=Boolean(draftPreview);
-      const resolvedSteps=draftPreview||remote.steps;
-      setSteps(resolvedSteps);
-      setSurveyVersion(remote.version);
-      setPreviewMode(isDraftPreview);
+      const saved=!isDraftPreview?readQuizProgress():null;
+      let resolvedSteps=draftPreview||remote.steps;
+      let resolvedVersion=remote.version;
 
-      if(!isDraftPreview){
-        const saved=readQuizProgress();
-        if(saved&&saved.surveyVersion===remote.version){
+      if(saved){
+        if(saved.steps?.length){
+          resolvedSteps=saved.steps;
+          resolvedVersion=saved.surveyVersion;
           setIdx(Math.min(saved.idx,resolvedSteps.length-1));
           setAnswers(saved.answers);
           setEmail(saved.email);
           setName(saved.name);
           attemptId.current=saved.attemptId;
-        }else if(saved){
+        }else if(saved.surveyVersion===remote.version){
+          setIdx(Math.min(saved.idx,resolvedSteps.length-1));
+          setAnswers(saved.answers);
+          setEmail(saved.email);
+          setName(saved.name);
+          attemptId.current=saved.attemptId;
+        }else{
           clearQuizProgress();
         }
       }
 
+      setSteps(resolvedSteps);
+      setSurveyVersion(resolvedVersion);
+      setPreviewMode(isDraftPreview);
       progressReady.current=true;
       setLoadError(false);
     });
@@ -106,6 +115,7 @@ export default function PublicQuiz(){
     if(!steps||previewMode||!progressReady.current) return;
     saveQuizProgress({
       surveyVersion,
+      steps,
       idx,
       answers,
       email,
@@ -165,7 +175,11 @@ export default function PublicQuiz(){
   };
 
   const saveLead=()=>{
-    if(saving||saveStarted.current) return;
+    if(saving) return;
+    if(saveStarted.current){
+      next();
+      return;
+    }
 
     if(previewMode){
       next();
@@ -205,6 +219,11 @@ export default function PublicQuiz(){
       if(saved) removePendingSubmission(payload.attempt_id);
       setSaving(false);
     })();
+  };
+
+  const restart=()=>{
+    clearQuizProgress();
+    window.location.reload();
   };
 
   return <div className="quiz-wrap">
@@ -253,12 +272,12 @@ export default function PublicQuiz(){
       {step.kind==='processing' && <div className="processing-view" data-step-id={step.id}><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" onClick={next}>Ver resultado</button></div>}
       {step.kind==='email' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!isValidEmail(email)} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
       {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name.trim() || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button><small>{previewMode?'Modo de pré-visualização: nenhum lead será salvo.':supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
-      {step.kind==='result' && <Result name={name.trim()} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined}/>} 
+      {step.kind==='result' && <Result name={name.trim()} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined} onRestart={restart}/>} 
     </div>
   </div>
 }
 
-function Result({name,pct,level,dimensions,salaryRange}:{name:string;pct:number;level:number;dimensions:Record<string,number>;salaryRange?:string}){
+function Result({name,pct,level,dimensions,salaryRange,onRestart}:{name:string;pct:number;level:number;dimensions:Record<string,number>;salaryRange?:string;onRestart:()=>void}){
   const copy=levelCopy[level as 1|2|3|4];
   const desiredDimensions = [
     ['Planejamento','planejamento'],
@@ -307,5 +326,7 @@ function Result({name,pct,level,dimensions,salaryRange}:{name:string;pct:number;
       <div className="ebook-cover-real"><img src="https://allevotech.com.br/wp-content/uploads/2026/06/Capa-760.webp" alt="Capa do livro Gestão de Projetos com Inteligência Artificial, de Mario Trentim" /></div>
       <div className="offer-copy"><small>Recomendado para o seu momento</small><h2>Gestão de Projetos com Inteligência Artificial</h2><p>O livro de Mario Trentim mostra como aplicar IA em planejamento, riscos, comunicação, análise e tomada de decisão para conduzir projetos com mais inteligência e foco em valor.</p><a className="primary big" href="https://chk.eduzz.com/40QR6AJP9B" target="_blank" rel="noreferrer">Desbloquear acesso</a><a className="secondary big" href="https://trentim.com/livro-gestao-de-projetos-com-ia-perpetuo/" target="_blank" rel="noreferrer">Saiba mais</a></div>
     </div>
+
+    <button className="secondary big" type="button" onClick={onRestart}>Refazer diagnóstico</button>
   </div>
 }
