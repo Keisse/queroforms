@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { AppShell } from './components/AppShell';
 import Dashboard from './pages/Dashboard';
+import Diagnostics from './pages/Diagnostics';
 import Analytics from './pages/Analytics';
 import Builder from './pages/BuilderPage';
 import PublicQuiz from './pages/PublicQuiz';
@@ -27,6 +28,7 @@ import './styles/quizResponsiveHardening.css';
 import './styles/salaryInsightAnimation.css';
 import './styles/adminAnalytics.css';
 import './styles/builderAnalytics.css';
+import './styles/diagnostics.css';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
@@ -46,13 +48,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/login" element={<Login/>}/>
         <Route path="/" element={<Admin><Dashboard/></Admin>}/>
+        <Route path="/diagnostics" element={<Admin><Diagnostics/></Admin>}/>
         <Route path="/builder/gp-ia" element={<Admin><Builder/></Admin>}/>
         <Route path="/contacts" element={<Admin><Placeholder title="Contatos"/></Admin>}/>
         <Route path="/responses" element={<Admin><Navigate to="/analytics?tab=responses" replace/></Admin>}/>
         <Route path="/analytics" element={<Admin><Analytics/></Admin>}/>
         <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
         <Route path="/settings" element={<Admin><Settings/></Admin>}/>
-        <Route path="/d/gp-ia" element={<PublicQuiz/>}/>
+        <Route path="/d/:slug" element={<PublicQuiz/>}/>
         <Route path="*" element={<NotFound/>}/>
       </Routes>
     </BrowserRouter>
