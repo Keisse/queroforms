@@ -54,15 +54,27 @@ function requestedSurveySlug(fallback: string) {
   return match?.[1] ? decodeURIComponent(match[1]) : fallback;
 }
 
+const submissionSelect = 'id,survey_slug,survey_version,attempt_id,name,email,score,level,dimension_scores,answers,source,utm_source,utm_medium,utm_campaign,utm_content,utm_term,landing_url,referrer,created_at';
+
 export async function fetchSubmissions(slug = 'gp-ia', limit = 2000): Promise<SubmissionSnapshot> {
   const resolvedSlug = requestedSurveySlug(slug);
   const { data, error, count } = await supabase
     .from('submissions')
-    .select(
-      'id,survey_slug,survey_version,attempt_id,name,email,score,level,dimension_scores,answers,source,utm_source,utm_medium,utm_campaign,utm_content,utm_term,landing_url,referrer,created_at',
-      { count: 'exact' },
-    )
+    .select(submissionSelect, { count: 'exact' })
     .eq('survey_slug', resolvedSlug)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  const rows = (data || []) as Submission[];
+  const totalCount = count ?? rows.length;
+  return { rows, totalCount, truncated: totalCount > rows.length };
+}
+
+export async function fetchAllSubmissions(limit = 5000): Promise<SubmissionSnapshot> {
+  const { data, error, count } = await supabase
+    .from('submissions')
+    .select(submissionSelect, { count: 'exact' })
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -96,7 +108,7 @@ export async function deleteSubmissions(ids: string[]): Promise<void> {
 export async function fetchRecentSubmissions(limit = 8): Promise<Submission[]> {
   const { data, error } = await supabase
     .from('submissions')
-    .select('id,survey_slug,survey_version,attempt_id,name,email,score,level,dimension_scores,answers,source,utm_source,utm_medium,utm_campaign,utm_content,utm_term,landing_url,referrer,created_at')
+    .select(submissionSelect)
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
