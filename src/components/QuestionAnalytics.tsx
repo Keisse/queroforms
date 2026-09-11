@@ -28,8 +28,6 @@ const specialQuestions: Record<string, QuestionDefinition> = {
     options: [
       { label: 'Sim', value: 'sim' },
       { label: 'Não', value: 'nao' },
-      { label: 'Sim', value: 'yes' },
-      { label: 'Não', value: 'no' },
     ],
   },
 };
@@ -59,7 +57,7 @@ function buildDefinitions(versions: Record<number, Step[]>, rows: Submission[]) 
     }
   }
 
-  const latestOrder = (versions[latestVersion] || [])
+  const latestOrder = latestVersion === undefined ? [] : (versions[latestVersion] || [])
     .filter((step): step is QuestionStep => step.kind === 'question')
     .map(step => step.id);
 
@@ -101,7 +99,13 @@ function buildHistoricalLabels(versions: Record<number, Step[]>) {
   return labels;
 }
 
-function aggregateQuestion(question: QuestionDefinition, rows: Submission[], versions: Record<number, Step[]>, historicalLabels: Map<string, Map<string, string>>) {
+function fallbackValueLabel(value: string) {
+  if (value === 'yes') return 'Sim';
+  if (value === 'no') return 'Não';
+  return value;
+}
+
+function aggregateQuestion(question: QuestionDefinition, rows: Submission[], historicalLabels: Map<string, Map<string, string>>) {
   const counts = new Map<string, number>();
   let answered = 0;
 
@@ -125,7 +129,7 @@ function aggregateQuestion(question: QuestionDefinition, rows: Submission[], ver
       const count = counts.get(value) || 0;
       return {
         value,
-        label: currentLabel || labelMap?.get(value) || specialLabel || value,
+        label: currentLabel || labelMap?.get(value) || specialLabel || fallbackValueLabel(value),
         count,
         percentage: answered ? Math.round((count / answered) * 100) : 0,
       };
@@ -184,7 +188,7 @@ export default function QuestionAnalytics({ rows, versions }: { rows: Submission
 
     <div className="question-analytics-grid">
       {definitions.map((question, index) => {
-        const { answered, stats, top } = aggregateQuestion(question, rows, versions, historicalLabels);
+        const { answered, stats, top } = aggregateQuestion(question, rows, historicalLabels);
         const isSalary = question.id.toLowerCase().includes('salary') || question.title.toLowerCase().includes('salári');
         const typeLabel = question.input === 'scale' ? 'Escala' : question.input === 'multi' ? 'Múltipla escolha' : 'Escolha única';
 
