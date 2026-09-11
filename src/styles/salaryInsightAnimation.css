@@ -1,0 +1,76 @@
+/* Animação dedicada à tela de insight sobre remuneração.
+   O conteúdo e os valores continuam vindo do Builder. */
+[data-step-id="insight-salary"] .insight-chart {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-step-id="insight-salary"] .insight-bar-track {
+  overflow: hidden;
+}
+
+[data-step-id="insight-salary"] .insight-bar-track i {
+  position: relative;
+  transform-origin: left center;
+  animation: qf-salary-bar-grow 900ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+[data-step-id="insight-salary"] .insight-bar-row:nth-child(2) .insight-bar-track i {
+  animation-delay: 160ms;
+}
+
+[data-step-id="insight-salary"] .insight-bar-track i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .42), transparent);
+  animation: qf-salary-shine 950ms 520ms ease-out both;
+}
+
+[data-step-id="insight-salary"] .insight-bar-row:nth-child(2) .insight-bar-track i::after {
+  animation-delay: 680ms;
+}
+
+[data-step-id="insight-salary"] .insight-bar-meta {
+  animation: qf-salary-label-in 520ms ease-out both;
+}
+
+[data-step-id="insight-salary"] .insight-bar-row:nth-child(2) .insight-bar-meta {
+  animation-delay: 110ms;
+}
+
+@keyframes qf-salary-bar-grow {
+  from {
+    transform: scaleX(0);
+    opacity: .45;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes qf-salary-shine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
+@keyframes qf-salary-label-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-step-id="insight-salary"] .insight-bar-track i,
+  [data-step-id="insight-salary"] .insight-bar-track i::after,
+  [data-step-id="insight-salary"] .insight-bar-meta {
+    animation: none;
+  }
+}
