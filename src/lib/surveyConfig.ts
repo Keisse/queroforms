@@ -17,12 +17,21 @@ function readSteps(config: SurveyConfig | null | undefined, key: 'steps' | 'draf
   return Array.isArray(value) && value.length ? (value as Step[]) : null;
 }
 
+function resolveSurveySlug(fallback: string) {
+  if (typeof window === 'undefined') return fallback;
+  const querySlug = new URLSearchParams(window.location.search).get('survey');
+  if (querySlug) return querySlug;
+  const match = window.location.pathname.match(/^\/(?:builder|d)\/([^/?#]+)/);
+  return match?.[1] ? decodeURIComponent(match[1]) : fallback;
+}
+
 export async function fetchPublishedSurvey(slug: string): Promise<SurveySnapshot | null> {
+  const resolvedSlug = resolveSurveySlug(slug);
   try {
     const { data, error } = await supabase
       .from('surveys')
       .select('config,published_version,updated_at')
-      .eq('slug', slug)
+      .eq('slug', resolvedSlug)
       .eq('status', 'published')
       .maybeSingle();
     if (error || !data) return null;
@@ -39,15 +48,16 @@ export async function fetchPublishedSurvey(slug: string): Promise<SurveySnapshot
 }
 
 export async function fetchBuilderSnapshot(slug: string): Promise<SurveySnapshot | null> {
+  const resolvedSlug = resolveSurveySlug(slug);
   try {
     const { data, error } = await supabase
       .from('surveys')
       .select('config,published_version,updated_at')
-      .eq('slug', slug)
+      .eq('slug', resolvedSlug)
       .maybeSingle();
     if (error || !data) return null;
     const config = data.config as SurveyConfig | null;
-    const steps = readSteps(config, 'steps') || readSteps(config, 'draft_steps');
+    const steps = readSteps(config, 'draft_steps') || readSteps(config, 'steps');
     if (!steps) return null;
     return {
       steps,
@@ -60,15 +70,16 @@ export async function fetchBuilderSnapshot(slug: string): Promise<SurveySnapshot
 }
 
 export async function publishSteps(slug: string, steps: Step[], expectedVersion?: number) {
+  const resolvedSlug = resolveSurveySlug(slug);
   let version = expectedVersion;
   if (version === undefined) {
-    const snapshot = await fetchBuilderSnapshot(slug);
+    const snapshot = await fetchBuilderSnapshot(resolvedSlug);
     if (!snapshot) throw new Error('Diagnóstico não encontrado.');
     version = snapshot.version;
   }
 
   const { data, error } = await supabase.rpc('publish_survey', {
-    p_slug: slug,
+    p_slug: resolvedSlug,
     p_steps: steps,
     p_expected_version: version,
   });
