@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { BarChart3, Braces, ClipboardList, PencilRuler, PlugZap } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import Analytics from './Analytics';
 import BuilderStable from './BuilderStable';
+import { fetchSurvey } from '../lib/adminData';
 
 type BuilderSection = 'build' | 'analytics' | 'responses' | 'integrations';
 
@@ -45,8 +47,26 @@ function IntegrationsPanel() {
 
 export default function BuilderPage(){
   const [searchParams, setSearchParams] = useSearchParams();
+  const surveySlug = searchParams.get('survey') || 'gp-ia';
+  const [surveyName, setSurveyName] = useState('Diagnóstico de Maturidade em IA para GP');
   const requested = searchParams.get('section') as BuilderSection | null;
   const active: BuilderSection = sections.some(item => item.id === requested) ? requested! : 'build';
+
+  useEffect(() => {
+    let mounted = true;
+    fetchSurvey(surveySlug).then(survey => {
+      if (mounted && survey?.name) setSurveyName(survey.name);
+    }).catch(() => undefined);
+
+    const activeKey = 'qf_active_builder_slug';
+    const previous = window.localStorage.getItem(activeKey);
+    if (previous && previous !== surveySlug) {
+      window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v3');
+      window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v2');
+    }
+    window.localStorage.setItem(activeKey, surveySlug);
+    return () => { mounted = false; };
+  }, [surveySlug]);
 
   const changeSection = (section: BuilderSection) => {
     const next = new URLSearchParams(searchParams);
@@ -57,8 +77,8 @@ export default function BuilderPage(){
 
   return <>
     <header className="builder-workspace-head">
-      <div><div className="crumb">Keisse › My workspace › Diagnóstico</div><h1>Diagnóstico de Maturidade em IA para GP</h1></div>
-      {active === 'build' && <a className="btn" href="/d/gp-ia?preview=draft" target="_blank" rel="noreferrer">Pré-visualizar rascunho</a>}
+      <div><div className="crumb">Keisse › My workspace › Diagnósticos</div><h1>{surveyName}</h1><small style={{color:'#8191a1'}}>/d/{surveySlug}</small></div>
+      {active === 'build' && <a className="btn" href={`/d/${surveySlug}?preview=draft`} target="_blank" rel="noreferrer">Pré-visualizar rascunho</a>}
     </header>
 
     <nav className="builder-workspace-tabs" aria-label="Áreas do diagnóstico">
