@@ -3,7 +3,18 @@ import { ArrowLeft, Check, Sparkles } from 'lucide-react';
 import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
 import InsightVisual from '../components/InsightVisual';
 import { fetchPublishedSurvey } from '../lib/surveyConfig';
-import { supabase, supabaseEnabled } from '../lib/supabase';
+import { supabaseEnabled } from '../lib/supabase';
+import {
+  clearQuizProgress,
+  enqueueSubmission,
+  flushSubmissionQueue,
+  readBuilderDraftPreview,
+  readQuizProgress,
+  removePendingSubmission,
+  saveQuizProgress,
+  submitWithRetry,
+  type SubmissionPayload,
+} from '../lib/quizSession';
 
 const INTRO_IMAGE_RE = /\s*\[\[QF_INTRO_IMAGE:([^\]]+)\]\]\s*/;
 const CONTEXT_IMAGE_RE = /\s*\[\[QF_IMAGE:([^\]]+)\]\]\s*/;
@@ -34,6 +45,7 @@ export default function PublicQuiz(){
   const [steps,setSteps]=useState<Step[]|null>(null);
   const [surveyVersion,setSurveyVersion]=useState(1);
   const [loadError,setLoadError]=useState(false);
+  const [previewMode,setPreviewMode]=useState(false);
   const [idx,setIdx]=useState(0);
   const [answers,setAnswers]=useState<Record<string,string|string[]>>({});
   const [email,setEmail]=useState('');
@@ -41,21 +53,67 @@ export default function PublicQuiz(){
   const [saving,setSaving]=useState(false);
   const navigationLocked=useRef(false);
   const saveStarted=useRef(false);
+  const progressReady=useRef(false);
   const attemptId=useRef(createAttemptId());
 
   useEffect(()=>{
     let active=true;
+    const wantsDraftPreview=new URLSearchParams(window.location.search).get('preview')==='draft';
+
     fetchPublishedSurvey('gp-ia').then(remote=>{
       if(!active) return;
       if(!remote?.steps.length){
         setLoadError(true);
         return;
       }
-      setSteps(remote.steps);
+
+      const draftPreview=wantsDraftPreview?readBuilderDraftPreview(remote.version):null;
+      const resolvedSteps=draftPreview||remote.steps;
+      setSteps(resolvedSteps);
       setSurveyVersion(remote.version);
+      setPreviewMode(wantsDraftPreview);
+
+      if(!wantsDraftPreview){
+        const saved=readQuizProgress();
+        if(saved&&saved.surveyVersion===remote.version){
+          setIdx(Math.min(saved.idx,resolvedSteps.length-1));
+          setAnswers(saved.answers);
+          setEmail(saved.email);
+          setName(saved.name);
+          attemptId.current=saved.attemptId;
+        }else if(saved){
+          clearQuizProgress();
+        }
+      }
+
+      progressReady.current=true;
       setLoadError(false);
     });
+
     return()=>{active=false;};
+  },[]);
+
+  useEffect(()=>{
+    if(!steps||previewMode||!progressReady.current) return;
+    saveQuizProgress({
+      surveyVersion,
+      idx,
+      answers,
+      email,
+      name,
+      attemptId:attemptId.current,
+    });
+  },[steps,previewMode,surveyVersion,idx,answers,email,name]);
+
+  useEffect(()=>{
+    const flush=()=>{void flushSubmissionQueue();};
+    flush();
+    window.addEventListener('online',flush);
+    window.addEventListener('focus',flush);
+    return()=>{
+      window.removeEventListener('online',flush);
+      window.removeEventListener('focus',flush);
+    };
   },[]);
 
   const result=useMemo(()=>steps?scoreResult(steps,answers):{pct:0,level:1,dimensions:{} as Record<string,number>},[steps,answers]);
@@ -100,10 +158,15 @@ export default function PublicQuiz(){
   const saveLead=()=>{
     if(saving||saveStarted.current) return;
     saveStarted.current=true;
-    setSaving(true);
 
+    if(previewMode){
+      next();
+      return;
+    }
+
+    setSaving(true);
     const qs = new URLSearchParams(window.location.search);
-    const payload={
+    const payload:SubmissionPayload={
       survey_slug:'gp-ia',
       survey_version:surveyVersion,
       attempt_id:attemptId.current,
@@ -120,6 +183,7 @@ export default function PublicQuiz(){
       referrer:document.referrer || null, user_agent:navigator.userAgent
     };
 
+    enqueueSubmission(payload);
     next();
 
     if(!supabaseEnabled){
@@ -128,19 +192,14 @@ export default function PublicQuiz(){
     }
 
     void (async()=>{
-      try{
-        const {error}=await supabase.from('submissions').insert(payload);
-        if(error && error.code!=='23505') console.error('Falha ao salvar submissão do diagnóstico:', error);
-      } catch(err: unknown){
-        console.error('Falha inesperada ao salvar submissão do diagnóstico:', err);
-      } finally{
-        setSaving(false);
-      }
+      const saved=await submitWithRetry(payload);
+      if(saved) removePendingSubmission(payload.attempt_id);
+      setSaving(false);
     })();
   };
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">Diagnóstico de Maturidade</div><div className="counter">{questionCounter}</div></div>
+    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">{previewMode?'Prévia do rascunho':'Diagnóstico de Maturidade'}</div><div className="counter">{questionCounter}</div></div>
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
       {step.kind==='branch' && (()=>{
@@ -184,7 +243,7 @@ export default function PublicQuiz(){
         <button className="primary big" onClick={next}>Continuar</button></div>}
       {step.kind==='processing' && <div className="processing-view" data-step-id={step.id}><h1>{step.title}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" onClick={next}>Ver resultado</button></div>}
       {step.kind==='email' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!isValidEmail(email)} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
-      {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name.trim() || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button><small>{supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
+      {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{step.title}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name.trim() || saving} onClick={saveLead}>{saving?'Salvando...':'Liberar meu diagnóstico'}</button><small>{previewMode?'Modo de pré-visualização: nenhum lead será salvo.':supabaseEnabled?'Supabase configurado para receber os dados deste diagnóstico.':'Modo demonstração.'}</small></div>}
       {step.kind==='result' && <Result name={name.trim()} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined}/>} 
     </div>
   </div>
