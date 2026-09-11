@@ -1,11 +1,11 @@
 import type { Step } from '../data/gpIa';
-import { hasNameVariable } from './textVariables';
 
 const REQUIRED_KINDS: Step['kind'][] = ['intro', 'branch', 'email', 'name', 'processing', 'result'];
 const PROTECTED_KINDS = new Set<Step['kind']>(REQUIRED_KINDS);
 const PRE_RESULT_STEP_ID = 'insight-pre-result-guide';
 const RESULT_DIMENSIONS = ['planejamento', 'riscos', 'decisao', 'comunicacao', 'automacao', 'confianca'] as const;
 const IMAGE_MARKER_RE = /\[\[(?:QF_INTRO_IMAGE|QF_IMAGE):([^\]]+)\]\]/g;
+const NAME_VARIABLE_RE = /\{\{\s*nome\s*\}\}/i;
 
 export type SurveyValidation = {
   valid: boolean;
@@ -14,6 +14,10 @@ export type SurveyValidation = {
 
 export function isProtectedStructuralStep(step: Step) {
   return PROTECTED_KINDS.has(step.kind) || step.id === PRE_RESULT_STEP_ID;
+}
+
+function hasNameVariable(value: string | undefined | null) {
+  return Boolean(value && NAME_VARIABLE_RE.test(value));
 }
 
 function isScoreableQuestion(step: Step, dimension: string) {
