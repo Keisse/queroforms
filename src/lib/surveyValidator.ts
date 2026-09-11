@@ -4,6 +4,7 @@ const REQUIRED_KINDS: Step['kind'][] = ['intro', 'branch', 'email', 'name', 'pro
 const PROTECTED_KINDS = new Set<Step['kind']>(REQUIRED_KINDS);
 const PRE_RESULT_STEP_ID = 'insight-pre-result-guide';
 const RESULT_DIMENSIONS = ['planejamento', 'riscos', 'decisao', 'comunicacao', 'automacao', 'confianca'] as const;
+const IMAGE_MARKER_RE = /\[\[(?:QF_INTRO_IMAGE|QF_IMAGE):([^\]]+)\]\]/g;
 
 export type SurveyValidation = {
   valid: boolean;
@@ -16,7 +17,18 @@ export function isProtectedStructuralStep(step: Step) {
 
 function isScoreableQuestion(step: Step, dimension: string) {
   if (step.kind !== 'question' || step.input === 'multi' || step.dimension !== dimension) return false;
-  return step.options.filter(option => typeof option.score === 'number').length >= 2;
+  return step.options.length >= 2 && step.options.every(option => typeof option.score === 'number' && Number.isFinite(option.score));
+}
+
+function validateImageMarkers(raw: string | undefined, stepId: string, errors: string[]) {
+  if (!raw) return;
+  IMAGE_MARKER_RE.lastIndex = 0;
+  for (const match of raw.matchAll(IMAGE_MARKER_RE)) {
+    const url = String(match[1] || '').trim();
+    if (!/^https?:\/\//i.test(url)) {
+      errors.push(`A tela ${stepId} possui uma URL de imagem inválida. Use uma URL http:// ou https://.`);
+    }
+  }
 }
 
 export function validateSurveyStructure(steps: Step[]): SurveyValidation {
@@ -34,8 +46,13 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
       errors.push(`A tela ${step.id} está sem título.`);
     }
 
-    if (step.kind === 'intro' && !step.body.trim()) {
-      errors.push('A abertura está sem pergunta/texto.');
+    if (step.kind === 'intro') {
+      if (!step.body.trim()) errors.push('A abertura está sem pergunta/texto.');
+      validateImageMarkers(step.body, step.id, errors);
+    }
+
+    if (step.kind === 'insight') {
+      validateImageMarkers(step.source, step.id, errors);
     }
 
     if (step.kind === 'branch') {
@@ -54,11 +71,25 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
       if (!step.title.trim()) errors.push(`A pergunta ${step.id} está sem título.`);
       if (step.options.length < 2) errors.push(`A pergunta ${step.id} precisa ter pelo menos duas opções.`);
       const optionValues = new Set<string>();
+      let scoredCount = 0;
       for (const option of step.options) {
         if (!option.label.trim()) errors.push(`A pergunta ${step.id} possui uma opção sem rótulo.`);
         if (!option.value.trim()) errors.push(`A pergunta ${step.id} possui uma opção sem valor.`);
         if (optionValues.has(option.value)) errors.push(`A pergunta ${step.id} possui valores de opção duplicados.`);
         optionValues.add(option.value);
+        if (option.score !== undefined) {
+          if (typeof option.score !== 'number' || !Number.isFinite(option.score)) {
+            errors.push(`A pergunta ${step.id} possui um score inválido.`);
+          } else {
+            scoredCount += 1;
+          }
+        }
+      }
+      if (step.input !== 'multi' && scoredCount > 0 && scoredCount !== step.options.length) {
+        errors.push(`A pergunta ${step.id} mistura alternativas com e sem score. Defina score para todas ou para nenhuma.`);
+      }
+      if (step.input === 'scale' && scoredCount !== step.options.length) {
+        errors.push(`A pergunta ${step.id} é uma escala e precisa de score em todas as alternativas.`);
       }
     }
   }
