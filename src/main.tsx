@@ -9,6 +9,7 @@ import PublicQuiz from './pages/PublicQuiz';
 import Placeholder from './pages/Placeholder';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import NotFound from './pages/NotFound';
 import { getSession, onAuthChange } from './lib/auth';
 import './styles/global.css';
 import './styles/introCertificate.css';
@@ -46,6 +47,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
         <Route path="/settings" element={<Admin><Settings/></Admin>}/>
         <Route path="/d/gp-ia" element={<PublicQuiz/>}/>
+        <Route path="*" element={<NotFound/>}/>
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
