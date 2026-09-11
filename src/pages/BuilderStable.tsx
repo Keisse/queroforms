@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState, type DragEvent as ReactDragEvent, type Po
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps } from '../lib/stepsStore';
-import { fetchBuilderSteps, publishSteps, saveDraftSteps } from '../lib/surveyConfig';
+import { fetchBuilderSnapshot, publishSteps } from '../lib/surveyConfig';
 import { isProtectedStructuralStep, validateSurveyStructure } from '../lib/surveyValidator';
 
-const LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v2';
+const LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v3';
+const LEGACY_LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v2';
 const FLOW_WIDTH_KEY = 'queroforms-builder-flow-width';
 const PROPS_WIDTH_KEY = 'queroforms-builder-props-width';
 const INTRO_IMAGE_RE = /\s*\[\[QF_INTRO_IMAGE:([^\]]+)\]\]\s*/;
@@ -14,6 +15,7 @@ const INTRO_FALLBACK_IMAGE = 'https://trentim.com/wp-content/uploads/2026/09/Ima
 
 type NewScreenType = 'single'|'multi'|'scale'|'insight'|'email'|'name'|'processing';
 type DropPosition = 'before'|'after';
+type LocalDraft = {steps:Step[];baseVersion:number;savedAt:string};
 
 const NEW_SCREEN_OPTIONS:{type:NewScreenType;icon:string;title:string;description:string}[] = [
   {type:'single',icon:'◉',title:'Pergunta — escolha única',description:'Uma resposta entre várias opções.'},
@@ -31,16 +33,30 @@ function readPanelWidth(key:string, fallback:number){
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-function loadLocalDraft():Step[]|null{
+function readLocalDraft():LocalDraft|null{
   try{
     const raw=window.localStorage.getItem(LOCAL_DRAFT_KEY);
-    if(!raw) return null;
-    const parsed=JSON.parse(raw);
-    return Array.isArray(parsed)&&parsed.length ? parsed as Step[] : null;
+    if(raw){
+      const parsed=JSON.parse(raw) as Partial<LocalDraft>;
+      if(Array.isArray(parsed.steps)&&parsed.steps.length){
+        return {steps:parsed.steps as Step[],baseVersion:Number(parsed.baseVersion)||0,savedAt:String(parsed.savedAt||'')};
+      }
+    }
+    const legacyRaw=window.localStorage.getItem(LEGACY_LOCAL_DRAFT_KEY);
+    if(!legacyRaw) return null;
+    const legacy=JSON.parse(legacyRaw);
+    return Array.isArray(legacy)&&legacy.length ? {steps:legacy as Step[],baseVersion:0,savedAt:''} : null;
   }catch{return null;}
 }
-function saveLocalDraft(steps:Step[]){window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify(steps));}
-function clearLocalDraft(){window.localStorage.removeItem(LOCAL_DRAFT_KEY);}
+function saveLocalDraft(steps:Step[],baseVersion:number){
+  const draft:LocalDraft={steps,baseVersion,savedAt:new Date().toISOString()};
+  window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify(draft));
+  window.localStorage.removeItem(LEGACY_LOCAL_DRAFT_KEY);
+}
+function clearLocalDraft(){
+  window.localStorage.removeItem(LOCAL_DRAFT_KEY);
+  window.localStorage.removeItem(LEGACY_LOCAL_DRAFT_KEY);
+}
 function sameSteps(a:Step[],b:Step[]){return JSON.stringify(a)===JSON.stringify(b);}
 
 function parseMarked(raw:string,re:RegExp){
@@ -91,8 +107,9 @@ export default function BuilderStable(){
   const [savedMsg,setSavedMsg]=useState('');
   const [publishError,setPublishError]=useState('');
   const [publishing,setPublishing]=useState(false);
-  const [savingDraft,setSavingDraft]=useState(false);
   const [localDraftExists,setLocalDraftExists]=useState(false);
+  const [baseVersion,setBaseVersion]=useState(1);
+  const [versionConflict,setVersionConflict]=useState(false);
   const [flowWidth,setFlowWidth]=useState(()=>readPanelWidth(FLOW_WIDTH_KEY,260));
   const [propsWidth,setPropsWidth]=useState(()=>readPanelWidth(PROPS_WIDTH_KEY,380));
   const [addOpen,setAddOpen]=useState(false);
@@ -103,18 +120,44 @@ export default function BuilderStable(){
 
   useEffect(()=>{
     let active=true;
-    const local=loadLocalDraft();
-    fetchBuilderSteps('gp-ia').then(remote=>{
+    const local=readLocalDraft();
+    fetchBuilderSnapshot('gp-ia').then(remote=>{
       if(!active) return;
-      const base=remote||local||loadSteps();
-      if(remote){
-        clearLocalDraft();
-        setLocalDraftExists(false);
-      }else{
+      if(!remote){
+        const fallback=local?.steps||loadSteps();
+        setSteps(fallback);
+        setSavedDraft(fallback);
         setLocalDraftExists(Boolean(local));
+        setBaseVersion(local?.baseVersion||1);
+        setPublishError('Não foi possível confirmar a versão publicada no Supabase. A publicação ficará bloqueada até a conexão voltar.');
+        setVersionConflict(true);
+        setLoading(false);
+        return;
       }
-      setSteps(base);
-      setSavedDraft(base);
+
+      if(local){
+        const legacyMatchesRemote=local.baseVersion===0&&sameSteps(local.steps,remote.steps);
+        const compatible=local.baseVersion===remote.version||legacyMatchesRemote;
+        if(compatible){
+          const normalizedVersion=remote.version;
+          setSteps(local.steps);
+          setSavedDraft(local.steps);
+          setLocalDraftExists(true);
+          setBaseVersion(normalizedVersion);
+          if(local.baseVersion!==normalizedVersion) saveLocalDraft(local.steps,normalizedVersion);
+        }else{
+          setSteps(local.steps);
+          setSavedDraft(local.steps);
+          setLocalDraftExists(true);
+          setBaseVersion(local.baseVersion);
+          setVersionConflict(true);
+          setPublishError(`Este navegador possui um rascunho baseado na versão ${local.baseVersion||'antiga'}, mas o Supabase já está na versão ${remote.version}. Nada será sobrescrito automaticamente.`);
+        }
+      }else{
+        setSteps(remote.steps);
+        setSavedDraft(remote.steps);
+        setBaseVersion(remote.version);
+      }
       setLoading(false);
     });
     return()=>{active=false;};
@@ -134,7 +177,7 @@ export default function BuilderStable(){
   const update=(patch:Partial<Step>)=>{
     setSteps(prev=>prev.map((s,i)=>i===sel?{...s,...patch} as Step:s));
     setSavedMsg('');
-    setPublishError('');
+    if(!versionConflict) setPublishError('');
   };
 
   const updateOption=(optIdx:number,patch:Partial<Option>)=>{
@@ -146,7 +189,7 @@ export default function BuilderStable(){
     update({options:[...step.options,{label:'Nova opção',value:`opt-${Date.now()}`}]} as Partial<Step>);
   };
   const removeOption=(optIdx:number)=>{
-    if(!step||step.kind!=='question'||step.options.length<=1) return;
+    if(!step||step.kind!=='question'||step.options.length<=2) return;
     update({options:step.options.filter((_,i)=>i!==optIdx)} as Partial<Step>);
   };
 
@@ -203,7 +246,7 @@ export default function BuilderStable(){
     setSel(nextSelected>=0?nextSelected:insertAt);
     setDraggedStepId(null);
     setDropTarget(null);
-    setSavedMsg('Ordem alterada. Salve a edição ou publique para gravar no banco.');
+    setSavedMsg('Ordem alterada. Clique em Salvar edição desta tela antes de publicar.');
   };
 
   const addScreen=(type:NewScreenType)=>{
@@ -221,34 +264,46 @@ export default function BuilderStable(){
     setSteps(next);
     setSel(insertAt);
     setAddOpen(false);
-    setSavedMsg('Nova tela criada. Salve a edição ou publique para gravar no banco.');
+    setSavedMsg('Nova tela criada. Clique em Salvar edição desta tela antes de publicar.');
   };
 
-  const saveCurrentScreen=async()=>{
-    if(!step||savingDraft) return;
-    const savedById=new Map(savedDraft.map(item=>[item.id,item]));
-    const nextDraft=steps.map(item=>item.id===step.id?item:(savedById.get(item.id)||item));
-    setSavingDraft(true);
-    setPublishError('');
-    try{
-      await saveDraftSteps('gp-ia',nextDraft);
-      setSavedDraft(nextDraft);
-      saveLocalDraft(nextDraft);
-      setLocalDraftExists(true);
-      setSavedMsg(`Tela ${sel+1} salva no banco como rascunho ✓`);
-    }catch{
-      saveLocalDraft(nextDraft);
-      setLocalDraftExists(true);
-      setPublishError('Não consegui salvar este rascunho no Supabase. Mantive uma cópia local para não perder a edição.');
-    }finally{
-      setSavingDraft(false);
-      window.setTimeout(()=>setSavedMsg(''),3500);
+  const saveCurrentScreen=()=>{
+    if(!step) return;
+    setSavedDraft(steps);
+    saveLocalDraft(steps,baseVersion);
+    setLocalDraftExists(true);
+    setSavedMsg(`Tela ${sel+1} salva neste navegador ✓`);
+    window.setTimeout(()=>setSavedMsg(''),3500);
+  };
+
+  const reloadPublished=async()=>{
+    const remote=await fetchBuilderSnapshot('gp-ia');
+    if(!remote){
+      setPublishError('Ainda não foi possível carregar a versão publicada do Supabase.');
+      return;
     }
+    clearLocalDraft();
+    setSteps(remote.steps);
+    setSavedDraft(remote.steps);
+    setBaseVersion(remote.version);
+    setVersionConflict(false);
+    setLocalDraftExists(false);
+    setSel(0);
+    setPublishError('');
+    setSavedMsg(`Versão ${remote.version} carregada do Supabase ✓`);
   };
 
   const publish=async()=>{
     if(!steps.length||publishing) return;
-    const validation=validateSurveyStructure(steps);
+    if(versionConflict){
+      setPublishError('Publicação bloqueada para evitar sobrescrever uma versão mais recente. Recarregue a versão publicada primeiro.');
+      return;
+    }
+    if(hasUnsavedChanges){
+      setPublishError('Publicação bloqueada: clique em “Salvar edição desta tela” para guardar as alterações no rascunho deste navegador.');
+      return;
+    }
+    const validation=validateSurveyStructure(savedDraft);
     if(!validation.valid){
       setPublishError(`Publicação bloqueada: ${validation.errors[0]}`);
       return;
@@ -256,16 +311,23 @@ export default function BuilderStable(){
     setPublishing(true);
     setPublishError('');
     try{
-      await publishSteps('gp-ia',steps);
-      setSavedDraft(steps);
-      saveSteps(steps);
+      const published=await publishSteps('gp-ia',savedDraft,baseVersion);
+      setBaseVersion(published.version);
+      setSteps(savedDraft);
+      saveSteps(savedDraft);
       clearLocalDraft();
       setLocalDraftExists(false);
-      setSavedMsg('Publicado no Supabase ✓ página pública atualizada');
-    }catch{
-      saveLocalDraft(steps);
+      setSavedMsg(`Versão ${published.version} publicada no Supabase ✓`);
+    }catch(err:unknown){
+      saveLocalDraft(savedDraft,baseVersion);
       setLocalDraftExists(true);
-      setPublishError('Não consegui publicar no Supabase. Mantive uma cópia local das alterações.');
+      const message=err instanceof Error?err.message:'';
+      if(message.startsWith('CONFLICT:')){
+        setVersionConflict(true);
+        setPublishError('Outra aba ou computador publicou uma versão mais recente. Seu rascunho foi preservado neste navegador e não foi sobrescrito.');
+      }else{
+        setPublishError('Não consegui publicar no Supabase. O rascunho continua salvo neste navegador.');
+      }
     }finally{
       setPublishing(false);
       window.setTimeout(()=>setSavedMsg(''),4000);
@@ -286,10 +348,10 @@ export default function BuilderStable(){
     setSel(Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1)));
     setDeleteIdx(null);
     setConfirmText('');
-    setSavedMsg('Tela removida. Salve a edição ou publique para gravar no banco.');
+    setSavedMsg('Tela removida. Clique em Salvar edição desta tela para guardar esta alteração localmente.');
   };
 
-  if(loading) return <p className="muted">Carregando rascunho do Supabase...</p>;
+  if(loading) return <p className="muted">Carregando versão publicada e rascunho local...</p>;
   if(!step) return <p className="muted">Não foi possível carregar o formulário.</p>;
 
   const intro=step.kind==='intro'?introData(step):null;
@@ -297,18 +359,19 @@ export default function BuilderStable(){
 
   return <>
     <header className="page-head">
-      <div><div className="crumb">Diagnósticos › GP com IA</div><h1>Editor do diagnóstico</h1></div>
+      <div><div className="crumb">Diagnósticos › GP com IA › versão {baseVersion}</div><h1>Editor do diagnóstico</h1></div>
       <div className="head-actions">
-        {hasUnsavedChanges&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>Alterações não salvas</span>}
-        {!hasUnsavedChanges&&localDraftExists&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>Rascunho salvo no banco ✓</span>}
+        {hasUnsavedChanges&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>Edição ainda não salva</span>}
+        {!hasUnsavedChanges&&localDraftExists&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>Rascunho salvo neste navegador ✓</span>}
         {savedMsg&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>{savedMsg}</span>}
         {publishError&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>{publishError}</span>}
-        <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Pré-visualizar</a>
-        <button className="btn dark" onClick={publish} disabled={publishing}>{publishing?'Publicando...':'Publicar'}</button>
+        {versionConflict&&<button className="btn" onClick={reloadPublished}>Usar versão publicada</button>}
+        <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Ver versão pública</a>
+        <button className="btn dark" onClick={publish} disabled={publishing||versionConflict}>{publishing?'Publicando...':'Publicar'}</button>
       </div>
     </header>
 
-    <p className="muted" style={{margin:'-10px 0 18px'}}>Salvar edição grava o rascunho no Supabase sem alterar a página pública. <b>Publicar</b> valida a estrutura, grava todas as alterações atuais e atualiza a versão pública.</p>
+    <p className="muted" style={{margin:'-10px 0 18px'}}>Cada <b>Salvar edição desta tela</b> guarda o rascunho somente neste navegador. <b>Publicar</b> valida o formulário, grava uma nova versão no Supabase e só então atualiza a página pública.</p>
 
     <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
       <section className="steps-panel">
@@ -387,8 +450,8 @@ export default function BuilderStable(){
         {step.kind==='result'&&<p className="muted">A tela de resultado é composta a partir das respostas.</p>}
 
         {step.kind!=='result'&&<div style={{marginTop:20,paddingTop:16,borderTop:'1px solid #e3eaf0'}}>
-          <button className="btn dark" disabled={savingDraft} onClick={saveCurrentScreen} style={{width:'100%',justifyContent:'center'}}>{savingDraft?'Salvando no banco...':`Salvar edição desta tela${currentScreenSaved?'':' *'}`}</button>
-          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está igual ao rascunho salvo no Supabase.':'Esta tela tem alterações ainda não salvas no Supabase.'}</small>
+          <button className="btn dark" onClick={saveCurrentScreen} style={{width:'100%',justifyContent:'center'}}>{`Salvar edição desta tela${currentScreenSaved?'':' *'}`}</button>
+          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está guardada no rascunho deste navegador.':'Esta tela tem alterações que ainda não foram salvas no navegador.'}</small>
         </div>}
       </aside>
     </div>
