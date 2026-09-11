@@ -22,13 +22,11 @@ import './styles/certificateHotfix.css';
 import './styles/answerEmojiFallback.css';
 import './styles/builderHeaderCleanup.css';
 
-// Scripts que manipulam o DOM da experiência pública só entram no diagnóstico.
-// O Builder fica isolado e 100% React, sem MutationObservers globais.
+// Os aprimoramentos abaixo alteram somente elementos visuais da experiência pública.
+// Conteúdo, imagens configuráveis e textos são renderizados diretamente pelo React a partir do Supabase.
 if (window.location.pathname.startsWith('/d/')) {
   void Promise.all([
     import('./publicLegacyVisuals'),
-    import('./contextImageUpload'),
-    import('./introImageEditor'),
     import('./almostThereAiVisual'),
     import('./preResultGuideScreen'),
   ]);
