@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BarChart3, Check, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, Check, Sparkles } from 'lucide-react';
 import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
+import InsightVisual from '../components/InsightVisual';
 import { fetchPublishedSurvey } from '../lib/surveyConfig';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 
@@ -175,7 +176,7 @@ export default function PublicQuiz(){
       </div>}
       {step.kind==='question' && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{o.label}</span></button>})}</div></div>}
       {step.kind==='question' && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{step.title}</h1>{step.subtitle&&<p className="muted center">{step.subtitle}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{o.label}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
-      {step.kind==='insight' && insight && <div className="insight-view" data-step-id={step.id}><div className={`insight-visual ${insight.imageUrl?'qf-context-upload-host':''}`}>{insight.imageUrl?<img className="qf-context-upload-image" src={insight.imageUrl} alt="Imagem da tela de contexto"/>:step.visual==='chart'?<BarChart3 size={54}/>:step.visual==='people'?<Users size={54}/>:<Sparkles size={54}/>}</div><small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p>
+      {step.kind==='insight' && insight && <div className={`insight-view ${step.id==='insight-pre-result-guide'?'qf-pre-result-guide-view':''}`} data-step-id={step.id}><InsightVisual step={step} imageUrl={insight.imageUrl}/><small>{step.eyebrow}</small><h1>{step.title}</h1><p>{step.body}</p>
         {step.chart && <div className="insight-chart">{step.chart.map(bar=><div className="insight-bar-row" key={bar.label}><div className="insight-bar-meta"><span>{bar.label}</span><b>{bar.suffix}</b></div><div className="insight-bar-track"><i className={bar.highlight?'highlight':''} style={{width:`${bar.value}%`}}/></div></div>)}</div>}
         {step.icons && <div className="insight-icons">{step.icons.map(item=><div className="insight-icon-row" key={item.text}><span>{item.emoji}</span><p>{item.text}</p></div>)}</div>}
         {step.stat && <div className="stat-box">{step.stat}</div>}
@@ -189,7 +190,7 @@ export default function PublicQuiz(){
   </div>
 }
 
-function Result({name,pct,level,dimensions,salaryRange}:{name:string,pct:number,level:number,dimensions:Record<string,number>,salaryRange?:string}){
+function Result({name,pct,level,dimensions,salaryRange}:{name:string;pct:number;level:number;dimensions:Record<string,number>;salaryRange?:string}){
   const copy=levelCopy[level as 1|2|3|4];
   const desiredDimensions = [
     ['Planejamento','planejamento'],
