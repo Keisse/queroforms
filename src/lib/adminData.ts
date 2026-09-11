@@ -81,6 +81,18 @@ export async function deleteSubmission(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteSubmissions(ids: string[]): Promise<void> {
+  const uniqueIds = Array.from(new Set(ids)).filter(Boolean);
+  if (!uniqueIds.length) return;
+
+  const { error } = await supabase
+    .from('submissions')
+    .delete()
+    .in('id', uniqueIds);
+
+  if (error) throw error;
+}
+
 export async function fetchRecentSubmissions(limit = 8): Promise<Submission[]> {
   const { data, error } = await supabase
     .from('submissions')
