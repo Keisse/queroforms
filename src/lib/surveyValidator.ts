@@ -42,7 +42,7 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
 
   if (steps[0]?.kind !== 'intro') errors.push('A abertura precisa ser a primeira tela.');
   if (steps[1]?.kind !== 'branch') errors.push('A resposta condicional precisa ser a segunda tela.');
-  if (steps.at(-1)?.kind !== 'result') errors.push('O resultado precisa ser a última tela.');
+  if (steps[steps.length - 1]?.kind !== 'result') errors.push('O resultado precisa ser a última tela.');
 
   const emailIndex = steps.findIndex(step => step.kind === 'email');
   const nameIndex = steps.findIndex(step => step.kind === 'name');
