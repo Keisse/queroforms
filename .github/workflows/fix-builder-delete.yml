@@ -1,0 +1,59 @@
+name: Fix Builder Delete Persistence
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-builder-delete.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Apply React state fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          builder = Path('src/pages/BuilderStable.tsx')
+          source = builder.read_text(encoding='utf-8')
+          old = """  const confirmDelete=()=>{\n    if(deleteIdx===null||confirmText!=='EXCLUIR') return;\n    const deleting=steps[deleteIdx];\n    if(!deleting||isProtectedStructuralStep(deleting)){\n      setDeleteIdx(null);\n      setConfirmText('');\n      setPublishError('Esta tela é estrutural e não pode ser excluída.');\n      return;\n    }\n    const next=steps.filter((_,i)=>i!==deleteIdx);\n    setSteps(next);\n    setSel(Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1)));\n    setDeleteIdx(null);\n    setConfirmText('');\n    setSavedMsg('Tela removida. Clique em Salvar edição desta tela para guardar esta alteração localmente.');\n  };\n"""
+          new = """  const confirmDelete=()=>{\n    if(deleteIdx===null||confirmText!=='EXCLUIR') return;\n    const deleting=steps[deleteIdx];\n    if(!deleting||isProtectedStructuralStep(deleting)){\n      setDeleteIdx(null);\n      setConfirmText('');\n      setPublishError('Esta tela é estrutural e não pode ser excluída.');\n      return;\n    }\n    const next=steps.filter((_,i)=>i!==deleteIdx);\n    const nextSelection=Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1));\n    try{\n      const revision=saveLocalDraft(next,baseVersion,localRevision);\n      setLocalRevision(revision);\n      setSteps(next);\n      setSavedDraft(next);\n      setLocalDraftExists(true);\n      setSel(nextSelection);\n      setDeleteIdx(null);\n      setConfirmText('');\n      if(!versionConflict) setPublishError('');\n      setSavedMsg('Tela removida e rascunho salvo neste navegador ✓');\n      window.setTimeout(()=>setSavedMsg(''),3500);\n    }catch{\n      setDeleteIdx(null);\n      setConfirmText('');\n      setLocalDraftConflict(true);\n      setPublishError('Outra aba alterou este rascunho. A exclusão não foi aplicada para evitar perda de trabalho. Recarregue o Builder.');\n    }\n  };\n"""
+          if old not in source:
+              raise SystemExit('confirmDelete block not found; no changes applied')
+          builder.write_text(source.replace(old, new, 1), encoding='utf-8')
+
+          page = Path('src/pages/BuilderPage.tsx')
+          page_source = page.read_text(encoding='utf-8')
+          page_source = page_source.replace("import { useEffect } from 'react';\n", '', 1)
+          start = page_source.find('function AutoPersistDeletedScreen() {')
+          end = page_source.find('\nfunction IntegrationsPanel()', start)
+          if start >= 0 and end >= 0:
+              page_source = page_source[:start] + page_source[end + 1:]
+          page_source = page_source.replace('      <AutoPersistDeletedScreen/>\n', '', 1)
+          page.write_text(page_source, encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Characterization tests
+        run: npm run test:characterization
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/BuilderStable.tsx src/pages/BuilderPage.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Builder: persiste exclusao diretamente no rascunho"
+          git push origin HEAD:main
