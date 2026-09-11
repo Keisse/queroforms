@@ -74,6 +74,37 @@ test('dimensao de resultado sem pergunta pontuavel bloqueia publicacao', () => {
   assert.match(result.errors.join(' '), /dimensão riscos/);
 });
 
+test('score parcial em pergunta pontuada bloqueia publicacao', () => {
+  const steps = validSurvey();
+  const qIndex = steps.findIndex(step => step.id === 'q-planejamento');
+  steps[qIndex] = {
+    id: 'q-planejamento', kind: 'question', title: 'Planejamento', input: 'single', dimension: 'planejamento',
+    options: [{ label: 'A', value: 'a', score: 0 }, { label: 'B', value: 'b' }],
+  };
+  const result = validateSurveyStructure(steps);
+  assert.equal(result.valid, false);
+  assert.match(result.errors.join(' '), /mistura alternativas com e sem score/);
+});
+
+test('escala sem score em todas as alternativas bloqueia publicacao', () => {
+  const steps = validSurvey();
+  steps.splice(8, 0, {
+    id: 'scale-extra', kind: 'question', title: 'Escala', input: 'scale', dimension: 'planejamento',
+    options: [{ label: 'Nada', value: '1', score: 1 }, { label: 'Muito', value: '5' }],
+  });
+  const result = validateSurveyStructure(steps);
+  assert.equal(result.valid, false);
+  assert.match(result.errors.join(' '), /escala e precisa de score/);
+});
+
+test('URL de imagem fora de http ou https bloqueia publicacao', () => {
+  const steps = validSurvey();
+  steps[0] = { id: 'intro', kind: 'intro', title: 'Abertura', body: 'Pergunta\n[[QF_INTRO_IMAGE:javascript:alert(1)]]', cta: 'Começar' };
+  const result = validateSurveyStructure(steps);
+  assert.equal(result.valid, false);
+  assert.match(result.errors.join(' '), /URL de imagem inválida/);
+});
+
 test('tela de preparacao do resultado e obrigatoria e protegida', () => {
   const steps = validSurvey();
   const preResult = steps.find(step => step.id === 'insight-pre-result-guide')!;
