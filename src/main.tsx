@@ -30,6 +30,7 @@ function Admin({children}:{children:React.ReactNode}){
   },[]);
   if(session===undefined) return <div style={{padding:60,textAlign:'center',color:'#7a8b9c'}}>Carregando...</div>;
   if(!session) return <Navigate to="/login" replace/>;
+  if(session.user.app_metadata?.role!=='admin') return <Navigate to="/login" replace/>;
   return <AppShell>{children}</AppShell>;
 }
 
