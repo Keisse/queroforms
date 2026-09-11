@@ -30,7 +30,7 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
     if (ids.has(step.id)) errors.push(`ID de tela duplicado: ${step.id}.`);
     ids.add(step.id);
 
-    if ('title' in step && step.kind !== 'result' && !step.title.trim()) {
+    if ('title' in step && !step.title.trim()) {
       errors.push(`A tela ${step.id} está sem título.`);
     }
 
