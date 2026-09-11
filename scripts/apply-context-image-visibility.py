@@ -1,0 +1,40 @@
+from pathlib import Path
+
+
+def replace_once(path, old, new):
+    p = Path(path)
+    text = p.read_text(encoding='utf-8')
+    if old not in text:
+        raise SystemExit(f'Expected snippet not found in {path}: {old[:80]!r}')
+    p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+builder = 'src/pages/BuilderStable.tsx'
+public_quiz = 'src/pages/PublicQuiz.tsx'
+
+replace_once(builder, "const CONTEXT_IMAGE_RE = /\\s*\\[\\[QF_IMAGE:([^\\]]+)\\]\\]\\s*/;\n", "const CONTEXT_IMAGE_RE = /\\s*\\[\\[QF_IMAGE:([^\\]]+)\\]\\]\\s*/;\nconst CONTEXT_HIDE_IMAGE_RE = /\\s*\\[\\[QF_HIDE_IMAGE\\]\\]\\s*/;\n")
+replace_once(builder, "function insightSource(step:Extract<Step,{kind:'insight'}>){return parseMarked(step.source||'',CONTEXT_IMAGE_RE);}\n", "function insightSource(step:Extract<Step,{kind:'insight'}>){\n  const source=step.source||'';\n  const marked=parseMarked(source,CONTEXT_IMAGE_RE);\n  const hideImage=CONTEXT_HIDE_IMAGE_RE.test(source);\n  return {text:marked.text.replace(CONTEXT_HIDE_IMAGE_RE,'').trim(),imageUrl:marked.imageUrl,hideImage};\n}\nfunction composeInsightSource(text:string,imageUrl:string,hideImage:boolean){\n  const marked=composeMarked(text,imageUrl,'QF_IMAGE');\n  return hideImage ? `${marked}${marked?'\\n':''}[[QF_HIDE_IMAGE]]` : marked;\n}\n")
+replace_once(builder, "{step.kind==='insight'&&<>{insight?.imageUrl&&<ImagePreview src={insight.imageUrl} alt=\"Imagem da tela de contexto\"/>}<h2>{step.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>{step.stat&&<div className=\"option-card\"><b>{step.stat}</b></div>}</>}", "{step.kind==='insight'&&<>{insight?.imageUrl&&!insight.hideImage&&<ImagePreview src={insight.imageUrl} alt=\"Imagem da tela de contexto\"/>}<h2>{step.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>{step.stat&&<div className=\"option-card\"><b>{step.stat}</b></div>}</>}")
+replace_once(builder, "          <label>URL da imagem</label><input type=\"url\" value={insight.imageUrl} placeholder=\"https://.../imagem.webp\" onChange={e=>update({source:composeMarked(insight.text,e.target.value,'QF_IMAGE')} as Partial<Step>)}/>\n          <ImagePreview src={insight.imageUrl} alt=\"Prévia da imagem da tela de contexto\"/>\n          <label>Fonte</label><textarea value={insight.text} onChange={e=>update({source:composeMarked(e.target.value,insight.imageUrl,'QF_IMAGE')} as Partial<Step>)}/>\n", "          <label>URL da imagem</label><input type=\"url\" value={insight.imageUrl} placeholder=\"https://.../imagem.webp\" onChange={e=>update({source:composeInsightSource(insight.text,e.target.value,insight.hideImage)} as Partial<Step>)}/>\n          <label style={{display:'flex',alignItems:'center',gap:10,margin:'12px 0 14px',cursor:'pointer',fontWeight:600}}><input type=\"checkbox\" checked={insight.hideImage} onChange={e=>update({source:composeInsightSource(insight.text,insight.imageUrl,e.target.checked)} as Partial<Step>)} style={{width:18,height:18,margin:0,flex:'0 0 auto'}}/><span>Ocultar imagem nesta tela</span></label>\n          {insight.hideImage&&<small className=\"muted\" style={{display:'block',margin:'-6px 0 12px'}}>A imagem continua configurada, mas não aparecerá no diagnóstico público.</small>}\n          <ImagePreview src={insight.imageUrl} alt=\"Prévia da imagem da tela de contexto\"/>\n          <label>Fonte</label><textarea value={insight.text} onChange={e=>update({source:composeInsightSource(e.target.value,insight.imageUrl,insight.hideImage)} as Partial<Step>)}/>\n")
+
+replace_once(public_quiz, "const CONTEXT_IMAGE_RE = /\\s*\\[\\[QF_IMAGE:([^\\]]+)\\]\\]\\s*/;\n", "const CONTEXT_IMAGE_RE = /\\s*\\[\\[QF_IMAGE:([^\\]]+)\\]\\]\\s*/;\nconst CONTEXT_HIDE_IMAGE_RE = /\\s*\\[\\[QF_HIDE_IMAGE\\]\\]\\s*/;\n")
+replace_once(public_quiz, "function parseMarked(raw:string,re:RegExp){\n  const match=raw.match(re);\n  return {text:raw.replace(re,'').trim(),imageUrl:match?.[1]?.trim()||''};\n}\n", "function parseMarked(raw:string,re:RegExp){\n  const match=raw.match(re);\n  return {text:raw.replace(re,'').trim(),imageUrl:match?.[1]?.trim()||''};\n}\nfunction parseContextMarked(raw:string){\n  const marked=parseMarked(raw,CONTEXT_IMAGE_RE);\n  const hideImage=CONTEXT_HIDE_IMAGE_RE.test(raw);\n  return {text:marked.text.replace(CONTEXT_HIDE_IMAGE_RE,'').trim(),imageUrl:marked.imageUrl,hideImage};\n}\n")
+replace_once(public_quiz, "  const insight=step.kind==='insight'?parseMarked(step.source||'',CONTEXT_IMAGE_RE):null;\n", "  const insight=step.kind==='insight'?parseContextMarked(step.source||''):null;\n")
+replace_once(public_quiz, "data-step-id={step.id}><InsightVisual step={step} imageUrl={insight.imageUrl}/><small>{step.eyebrow}</small>", "data-step-id={step.id}>{!insight.hideImage&&<InsightVisual step={step} imageUrl={insight.imageUrl}/>}<small>{step.eyebrow}</small>")
+
+Path('tests/context-image-visibility.test.ts').write_text("""import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+test('builder oferece controle para ocultar imagem sem apagar a configuracao', async()=>{
+  const builder=await readFile(new URL('../src/pages/BuilderStable.tsx',import.meta.url),'utf8');
+  assert.match(builder,/Ocultar imagem nesta tela/);
+  assert.match(builder,/composeInsightSource/);
+  assert.match(builder,/QF_HIDE_IMAGE/);
+});
+
+test('pagina publica respeita a visibilidade da imagem de contexto', async()=>{
+  const publicQuiz=await readFile(new URL('../src/pages/PublicQuiz.tsx',import.meta.url),'utf8');
+  assert.match(publicQuiz,/parseContextMarked/);
+  assert.match(publicQuiz,/!insight\\.hideImage&&<InsightVisual/);
+});
+""", encoding='utf-8')
