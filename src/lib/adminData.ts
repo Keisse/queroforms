@@ -72,6 +72,15 @@ export async function fetchSubmissions(slug = 'gp-ia', limit = 2000): Promise<Su
   return { rows, totalCount, truncated: totalCount > rows.length };
 }
 
+export async function deleteSubmission(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('submissions')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 export async function fetchRecentSubmissions(limit = 8): Promise<Submission[]> {
   const { data, error } = await supabase
     .from('submissions')
