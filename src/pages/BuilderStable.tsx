@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { GripVertical, Plus, Trash2 } from 'lucide-react';
+import { Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps } from '../lib/stepsStore';
 import { fetchBuilderSnapshot, publishSteps } from '../lib/surveyConfig';
@@ -82,6 +82,7 @@ function labelFor(s:Step){
     :'Resultado';
 }
 function canReorderStep(s:Step){return !isProtectedStructuralStep(s);}
+function canDuplicateStep(s:Step){return !isProtectedStructuralStep(s);}
 
 function createNewStep(type:NewScreenType):Step{
   const stamp=`${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
@@ -92,6 +93,13 @@ function createNewStep(type:NewScreenType):Step{
   if(type==='email') return {id:`email-${stamp}`,kind:'email',title:'Qual é o seu melhor e-mail?'};
   if(type==='name') return {id:`name-${stamp}`,kind:'name',title:'Como podemos te chamar?'};
   return {id:`processing-${stamp}`,kind:'processing',title:'Estamos preparando seu resultado...'};
+}
+
+function cloneEditableStep(step:Step):Step{
+  const stamp=`${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+  const clone=JSON.parse(JSON.stringify(step)) as Step;
+  clone.id=`${step.kind}-${stamp}`;
+  return clone;
 }
 
 function ImagePreview({src,alt}:{src:string;alt:string}){
@@ -174,6 +182,28 @@ export default function BuilderStable(){
     return Boolean(saved&&JSON.stringify(saved)===JSON.stringify(step));
   },[step,savedDraft]);
 
+  useEffect(()=>{
+    if(!hasUnsavedChanges) return;
+    const handler=(event:BeforeUnloadEvent)=>{
+      event.preventDefault();
+      event.returnValue='';
+    };
+    window.addEventListener('beforeunload',handler);
+    return()=>window.removeEventListener('beforeunload',handler);
+  },[hasUnsavedChanges]);
+
+  const warnUnsavedScreen=()=>{
+    setSavedMsg('');
+    setPublishError('Salve a edição desta tela antes de mudar de tela ou alterar a estrutura do diagnóstico.');
+  };
+
+  const requestSelect=(index:number)=>{
+    if(index===sel) return;
+    if(!currentScreenSaved){warnUnsavedScreen();return;}
+    setPublishError(versionConflict?publishError:'');
+    setSel(index);
+  };
+
   const update=(patch:Partial<Step>)=>{
     setSteps(prev=>prev.map((s,i)=>i===sel?{...s,...patch} as Step:s));
     setSavedMsg('');
@@ -186,11 +216,18 @@ export default function BuilderStable(){
   };
   const addOption=()=>{
     if(!step||step.kind!=='question') return;
-    update({options:[...step.options,{label:'Nova opção',value:`opt-${Date.now()}`}]} as Partial<Step>);
+    const existingScores=step.options.map(option=>option.score).filter((score):score is number=>typeof score==='number'&&Number.isFinite(score));
+    const nextScore=step.input==='scale'||existingScores.length ? (existingScores.length?Math.max(...existingScores)+1:step.options.length+1) : undefined;
+    update({options:[...step.options,{label:'Nova opção',value:`opt-${Date.now()}`,score:nextScore}]} as Partial<Step>);
   };
   const removeOption=(optIdx:number)=>{
     if(!step||step.kind!=='question'||step.options.length<=2) return;
     update({options:step.options.filter((_,i)=>i!==optIdx)} as Partial<Step>);
+  };
+  const toggleScoring=()=>{
+    if(!step||step.kind!=='question'||step.input==='multi') return;
+    const hasScores=step.options.some(option=>typeof option.score==='number');
+    update({options:step.options.map((option,index)=>hasScores?{...option,score:undefined}:{...option,score:index})} as Partial<Step>);
   };
 
   const startResize=(side:'flow'|'props',e:ReactPointerEvent<HTMLDivElement>)=>{
@@ -209,12 +246,19 @@ export default function BuilderStable(){
       document.body.classList.remove('builder-resizing');
       window.removeEventListener('pointermove',onMove);
       window.removeEventListener('pointerup',onUp);
+      window.removeEventListener('pointercancel',onUp);
     };
     window.addEventListener('pointermove',onMove);
     window.addEventListener('pointerup',onUp,{once:true});
+    window.addEventListener('pointercancel',onUp,{once:true});
   };
 
   const startStepDrag=(s:Step,e:ReactDragEvent<HTMLSpanElement>)=>{
+    if(!currentScreenSaved){
+      e.preventDefault();
+      warnUnsavedScreen();
+      return;
+    }
     if(!canReorderStep(s)){e.preventDefault();return;}
     setDraggedStepId(s.id);
     e.dataTransfer.effectAllowed='move';
@@ -251,6 +295,7 @@ export default function BuilderStable(){
 
   const addScreen=(type:NewScreenType)=>{
     if(!step) return;
+    if(!currentScreenSaved){setAddOpen(false);warnUnsavedScreen();return;}
     if((type==='email'||type==='name'||type==='processing')&&steps.some(item=>item.kind===type)){
       setAddOpen(false);
       setPublishError(`Já existe uma tela estrutural do tipo ${type}. Edite a existente em vez de criar outra.`);
@@ -264,7 +309,23 @@ export default function BuilderStable(){
     setSteps(next);
     setSel(insertAt);
     setAddOpen(false);
-    setSavedMsg('Nova tela criada. Clique em Salvar edição desta tela antes de publicar.');
+    setSavedMsg('Nova tela criada. Edite e clique em Salvar edição desta tela antes de publicar.');
+  };
+
+  const duplicateScreen=(source:Step,index:number)=>{
+    if(!currentScreenSaved){warnUnsavedScreen();return;}
+    if(!canDuplicateStep(source)){
+      setPublishError('Esta tela é estrutural e não pode ser duplicada.');
+      return;
+    }
+    const copy=cloneEditableStep(source);
+    const resultIndex=steps.findIndex(item=>item.kind==='result');
+    let insertAt=index+1;
+    if(resultIndex>=0) insertAt=Math.min(insertAt,resultIndex);
+    const next=[...steps.slice(0,insertAt),copy,...steps.slice(insertAt)];
+    setSteps(next);
+    setSel(insertAt);
+    setSavedMsg('Cópia criada. Revise a nova tela e salve a edição antes de publicar.');
   };
 
   const saveCurrentScreen=()=>{
@@ -272,6 +333,7 @@ export default function BuilderStable(){
     setSavedDraft(steps);
     saveLocalDraft(steps,baseVersion);
     setLocalDraftExists(true);
+    setPublishError(versionConflict?publishError:'');
     setSavedMsg(`Tela ${sel+1} salva neste navegador ✓`);
     window.setTimeout(()=>setSavedMsg(''),3500);
   };
@@ -334,6 +396,12 @@ export default function BuilderStable(){
     }
   };
 
+  const openDelete=(index:number)=>{
+    if(!currentScreenSaved){warnUnsavedScreen();return;}
+    setDeleteIdx(index);
+    setConfirmText('');
+  };
+
   const confirmDelete=()=>{
     if(deleteIdx===null||confirmText!=='EXCLUIR') return;
     const deleting=steps[deleteIdx];
@@ -356,6 +424,7 @@ export default function BuilderStable(){
 
   const intro=step.kind==='intro'?introData(step):null;
   const insight=step.kind==='insight'?insightSource(step):null;
+  const questionHasScores=step.kind==='question'&&step.options.some(option=>typeof option.score==='number');
 
   return <>
     <header className="page-head">
@@ -371,7 +440,7 @@ export default function BuilderStable(){
       </div>
     </header>
 
-    <p className="muted" style={{margin:'-10px 0 18px'}}>Cada <b>Salvar edição desta tela</b> guarda o rascunho somente neste navegador. <b>Publicar</b> valida o formulário, grava uma nova versão no Supabase e só então atualiza a página pública.</p>
+    <p className="muted" style={{margin:'-10px 0 18px'}}>Cada <b>Salvar edição desta tela</b> guarda o rascunho somente neste navegador. Se houver uma edição ainda não salva, o Builder impede a troca de tela para evitar perda acidental. <b>Publicar</b> valida o formulário, grava uma nova versão no Supabase e só então atualiza a página pública.</p>
 
     <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
       <section className="steps-panel">
@@ -380,19 +449,21 @@ export default function BuilderStable(){
           {steps.map((s,i)=>{
             const reorderable=canReorderStep(s);
             const deletable=!isProtectedStructuralStep(s);
+            const duplicable=canDuplicateStep(s);
             const dropClass=dropTarget?.id===s.id?`builder-step-drop-${dropTarget.position}`:'';
-            return <div key={s.id} className={`step-item ${i===sel?'active':''} ${draggedStepId===s.id?'builder-step-dragging':''} ${dropClass}`} onDragOver={e=>dragOverStep(s,e)} onDrop={e=>dropStep(s,e)} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
+            return <div key={s.id} className={`step-item ${i===sel?'active':''} ${draggedStepId===s.id?'builder-step-dragging':''} ${dropClass}`} onDragOver={e=>dragOverStep(s,e)} onDrop={e=>dropStep(s,e)} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
               <span className={`builder-step-handle ${reorderable?'':'locked'}`} draggable={reorderable} onDragStart={e=>startStepDrag(s,e)} onDragEnd={()=>{setDraggedStepId(null);setDropTarget(null);}} onClick={e=>e.stopPropagation()} title={reorderable?'Arraste para mudar a ordem':'Esta tela tem posição protegida'}><GripVertical size={16}/></span>
-              <span onClick={()=>setSel(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1,minWidth:0}}>
+              <span onClick={()=>requestSelect(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1,minWidth:0}}>
                 <span className="step-num">{i+1}</span>
                 <div style={{minWidth:0}}><b>{labelFor(s)}</b><small>{s.kind}</small></div>
               </span>
-              {deletable&&<button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();setDeleteIdx(i);setConfirmText('');}} style={{padding:'6px 10px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={16}/></button>}
+              {duplicable&&<button className="btn" title="Duplicar esta tela" onClick={e=>{e.stopPropagation();duplicateScreen(s,i);}} style={{padding:'6px 8px'}}><Copy size={15}/></button>}
+              {deletable&&<button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();openDelete(i);}} style={{padding:'6px 8px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={15}/></button>}
             </div>;
           })}
         </div>
         <div className="builder-add-screen-wrap">
-          <button className="btn builder-add-screen" onClick={()=>setAddOpen(true)}><Plus size={16}/> Adicionar tela</button>
+          <button className="btn builder-add-screen" onClick={()=>{if(!currentScreenSaved){warnUnsavedScreen();return;}setAddOpen(true);}}><Plus size={16}/> Adicionar tela</button>
           <small>Arraste pelo ícone ⋮⋮ para reordenar. Telas estruturais são protegidas e a publicação é validada antes de chegar ao público.</small>
         </div>
       </section>
@@ -422,8 +493,10 @@ export default function BuilderStable(){
           <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
           <label>Subtítulo</label><textarea value={step.subtitle||''} onChange={e=>update({subtitle:e.target.value} as Partial<Step>)}/>
           <label>Tipo</label><select value={step.input} onChange={e=>update({input:e.target.value as 'single'|'multi'|'scale'} as Partial<Step>)}><option value="single">Escolha única</option><option value="multi">Múltipla escolha</option><option value="scale">Escala</option></select>
+          <label>Dimensão / categoria</label><input value={step.dimension||''} placeholder="Ex.: planejamento" onChange={e=>update({dimension:e.target.value.trim()||undefined} as Partial<Step>)}/>
+          {step.input!=='multi'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:14}}><small className="muted">{questionHasScores?'Esta pergunta participa da pontuação.':'Esta pergunta não altera o score.'}</small><button className="btn" onClick={toggleScoring}>{questionHasScores?'Remover pontuação':'Ativar pontuação'}</button></div>}
           <label>Opções</label>
-          {step.options.map((o,i)=><div key={`${o.value}-${i}`} style={{display:'flex',gap:6,marginBottom:6}}><input style={{width:42}} value={o.emoji||''} placeholder="🙂" onChange={e=>updateOption(i,{emoji:e.target.value})}/><input style={{flex:1}} value={o.label} onChange={e=>updateOption(i,{label:e.target.value})}/><button className="btn" onClick={()=>removeOption(i)} title="Remover opção">✕</button></div>)}
+          {step.options.map((o,i)=><div key={`${o.value}-${i}`} style={{display:'grid',gridTemplateColumns:step.input!=='multi'&&(questionHasScores||step.input==='scale')?'42px minmax(0,1fr) 76px 38px':'42px minmax(0,1fr) 38px',gap:6,marginBottom:6}}><input style={{width:'100%'}} value={o.emoji||''} placeholder="🙂" onChange={e=>updateOption(i,{emoji:e.target.value})}/><input style={{width:'100%'}} value={o.label} onChange={e=>updateOption(i,{label:e.target.value})}/>{step.input!=='multi'&&(questionHasScores||step.input==='scale')&&<input type="number" step="any" title="Score desta alternativa" value={o.score??''} placeholder="score" onChange={e=>updateOption(i,{score:e.target.value===''?undefined:Number(e.target.value)})}/>}<button className="btn" onClick={()=>removeOption(i)} title="Remover opção">✕</button></div>)}
           <button className="btn" onClick={addOption}>+ Adicionar opção</button>
         </>}
 
@@ -451,7 +524,7 @@ export default function BuilderStable(){
 
         {step.kind!=='result'&&<div style={{marginTop:20,paddingTop:16,borderTop:'1px solid #e3eaf0'}}>
           <button className="btn dark" onClick={saveCurrentScreen} style={{width:'100%',justifyContent:'center'}}>{`Salvar edição desta tela${currentScreenSaved?'':' *'}`}</button>
-          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está guardada no rascunho deste navegador.':'Esta tela tem alterações que ainda não foram salvas no navegador.'}</small>
+          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está guardada no rascunho deste navegador.':'Esta tela tem alterações que ainda não foram salvas no navegador. O Builder bloqueará a troca de tela até você salvar.'}</small>
         </div>}
       </aside>
     </div>
@@ -460,6 +533,6 @@ export default function BuilderStable(){
 
     {addOpen&&<div className="builder-add-overlay" onClick={()=>setAddOpen(false)}><div className="builder-add-modal" onClick={e=>e.stopPropagation()}><div className="builder-add-modal-head"><div><small>Nova tela</small><h3>O que você quer adicionar?</h3></div><button className="btn" onClick={()=>setAddOpen(false)}>✕</button></div><p className="muted">A nova tela será inserida depois de <b>{sel+1}. {labelFor(step)}</b>.</p><div className="builder-screen-types">{NEW_SCREEN_OPTIONS.map(item=><button key={item.type} className="builder-screen-type" onClick={()=>addScreen(item.type)}><span>{item.icon}</span><div><b>{item.title}</b><small>{item.description}</small></div></button>)}</div></div></div>}
 
-    {deleteIdx!==null&&<div style={{position:'fixed',inset:0,background:'rgba(15,30,50,.45)',display:'grid',placeItems:'center',zIndex:90}} onClick={()=>setDeleteIdx(null)}><div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:16,padding:28,width:380,display:'flex',flexDirection:'column',gap:12}}><h3 style={{margin:0}}>Excluir esta tela?</h3><p className="muted" style={{margin:0}}>Digite <b>EXCLUIR</b> para confirmar.</p><input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder="EXCLUIR" style={{padding:12,border:'1px solid #d0dbe3',borderRadius:10}}/><div style={{display:'flex',gap:8,justifyContent:'flex-end'}}><button className="btn" onClick={()=>setDeleteIdx(null)}>Cancelar</button><button className="btn dark" disabled={confirmText!=='EXCLUIR'} onClick={confirmDelete}>Excluir tela</button></div></div></div>}
+    {deleteIdx!==null&&<div style={{position:'fixed',inset:0,background:'rgba(15,30,50,.45)',display:'grid',placeItems:'center',zIndex:90}} onClick={()=>setDeleteIdx(null)}><div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:16,padding:28,width:'min(380px,calc(100vw - 28px))',display:'flex',flexDirection:'column',gap:12}}><h3 style={{margin:0}}>Excluir esta tela?</h3><p className="muted" style={{margin:0}}>Digite <b>EXCLUIR</b> para confirmar.</p><input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder="EXCLUIR" style={{padding:12,border:'1px solid #d0dbe3',borderRadius:10}}/><div style={{display:'flex',gap:8,justifyContent:'flex-end'}}><button className="btn" onClick={()=>setDeleteIdx(null)}>Cancelar</button><button className="btn dark" disabled={confirmText!=='EXCLUIR'} onClick={confirmDelete}>Excluir tela</button></div></div></div>}
   </>;
 }
