@@ -14,23 +14,13 @@ import './styles/global.css';
 import './styles/introCertificate.css';
 import './styles/builderResponsive.css';
 import './styles/finalPolish.css';
-import './styles/aiCloud.css';
 import './styles/contextCompact.css';
 import './styles/title28.css';
 import './styles/photoChoiceButtons.css';
 import './styles/certificateHotfix.css';
 import './styles/answerEmojiFallback.css';
 import './styles/builderHeaderCleanup.css';
-
-// Os aprimoramentos abaixo alteram somente elementos visuais da experiência pública.
-// Conteúdo, imagens configuráveis e textos são renderizados diretamente pelo React a partir do Supabase.
-if (window.location.pathname.startsWith('/d/')) {
-  void Promise.all([
-    import('./publicLegacyVisuals'),
-    import('./almostThereAiVisual'),
-    import('./preResultGuideScreen'),
-  ]);
-}
+import './styles/specialInsightVisuals.css';
 
 function Admin({children}:{children:React.ReactNode}){
   const [session,setSession]=useState<Session|null|undefined>(undefined);
