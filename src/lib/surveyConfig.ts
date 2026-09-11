@@ -6,82 +6,110 @@ type SurveyConfig = Record<string, unknown> & {
   draft_steps?: Step[];
 };
 
+export type SurveySnapshot = {
+  steps: Step[];
+  version: number;
+  updatedAt: string;
+};
+
 function readSteps(config: SurveyConfig | null | undefined, key: 'steps' | 'draft_steps') {
   const value = config?.[key];
   return Array.isArray(value) && value.length ? (value as Step[]) : null;
 }
 
-export async function fetchPublishedSteps(slug: string): Promise<Step[] | null> {
+export async function fetchPublishedSurvey(slug: string): Promise<SurveySnapshot | null> {
   try {
     const { data, error } = await supabase
       .from('surveys')
-      .select('config')
+      .select('config,published_version,updated_at')
       .eq('slug', slug)
       .eq('status', 'published')
       .maybeSingle();
     if (error || !data) return null;
-    return readSteps(data.config as SurveyConfig | null, 'steps');
+    const steps = readSteps(data.config as SurveyConfig | null, 'steps');
+    if (!steps) return null;
+    return {
+      steps,
+      version: Number(data.published_version) || 1,
+      updatedAt: String(data.updated_at || ''),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPublishedSteps(slug: string): Promise<Step[] | null> {
+  return (await fetchPublishedSurvey(slug))?.steps ?? null;
+}
+
+export async function fetchBuilderSnapshot(slug: string): Promise<SurveySnapshot | null> {
+  try {
+    const { data, error } = await supabase
+      .from('surveys')
+      .select('config,published_version,updated_at')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (error || !data) return null;
+    const config = data.config as SurveyConfig | null;
+    const steps = readSteps(config, 'steps') || readSteps(config, 'draft_steps');
+    if (!steps) return null;
+    return {
+      steps,
+      version: Number(data.published_version) || 1,
+      updatedAt: String(data.updated_at || ''),
+    };
   } catch {
     return null;
   }
 }
 
 export async function fetchBuilderSteps(slug: string): Promise<Step[] | null> {
-  try {
-    const { data, error } = await supabase
-      .from('surveys')
-      .select('config')
-      .eq('slug', slug)
-      .maybeSingle();
-    if (error || !data) return null;
-    const config = data.config as SurveyConfig | null;
-    return readSteps(config, 'draft_steps') || readSteps(config, 'steps');
-  } catch {
-    return null;
-  }
+  return (await fetchBuilderSnapshot(slug))?.steps ?? null;
 }
 
-async function readConfig(slug: string) {
+/**
+ * Mantido temporariamente para compatibilidade com código legado.
+ * O Builder atual salva rascunhos no navegador e só grava o banco ao publicar.
+ */
+export async function saveDraftSteps(slug: string, steps: Step[]) {
+  const snapshot = await fetchBuilderSnapshot(slug);
+  if (!snapshot) throw new Error('Diagnóstico não encontrado.');
   const { data, error } = await supabase
     .from('surveys')
     .select('config')
     .eq('slug', slug)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error('Diagnóstico não encontrado.');
-  return (data.config as SurveyConfig | null) || {};
-}
-
-export async function saveDraftSteps(slug: string, steps: Step[]) {
-  const existingConfig = await readConfig(slug);
-  const nextConfig: SurveyConfig = { ...existingConfig, draft_steps: steps };
-
-  const { data, error } = await supabase
+    .single();
+  if (error || !data) throw error || new Error('Diagnóstico não encontrado.');
+  const config = (data.config as SurveyConfig | null) || {};
+  const nextConfig: SurveyConfig = { ...config, draft_steps: steps };
+  const { error: updateError } = await supabase
     .from('surveys')
     .update({ config: nextConfig, updated_at: new Date().toISOString() })
     .eq('slug', slug)
-    .select('updated_at')
-    .single();
-
-  if (error) throw error;
-  if (!data) throw new Error('O rascunho não atualizou nenhum diagnóstico.');
+    .eq('published_version', snapshot.version);
+  if (updateError) throw updateError;
 }
 
-export async function publishSteps(slug: string, steps: Step[]) {
-  const existingConfig = await readConfig(slug);
-  const nextConfig: SurveyConfig = {
-    ...existingConfig,
-    steps,
-    draft_steps: steps,
+export async function publishSteps(slug: string, steps: Step[], expectedVersion: number) {
+  const { data, error } = await supabase.rpc('publish_survey', {
+    p_slug: slug,
+    p_steps: steps,
+    p_expected_version: expectedVersion,
+  });
+
+  if (error) {
+    const message = String(error.message || '');
+    if (error.code === '40001' || message.toLowerCase().includes('version conflict')) {
+      throw new Error('CONFLICT: existe uma versão mais recente publicada no Supabase. Recarregue antes de publicar.');
+    }
+    throw error;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error('A publicação não retornou confirmação do Supabase.');
+
+  return {
+    version: Number((row as { version?: number }).version) || expectedVersion + 1,
+    updatedAt: String((row as { updated_at?: string }).updated_at || ''),
   };
-
-  const { data, error } = await supabase
-    .from('surveys')
-    .update({ config: nextConfig, updated_at: new Date().toISOString() })
-    .eq('slug', slug)
-    .select('updated_at')
-    .single();
-
-  if (error) throw error;
-  if (!data) throw new Error('A publicação não atualizou nenhum diagnóstico.');
 }
