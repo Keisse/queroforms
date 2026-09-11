@@ -15,12 +15,12 @@ const INTRO_FALLBACK_IMAGE = 'https://trentim.com/wp-content/uploads/2026/09/Ima
 
 type NewScreenType = 'single'|'multi'|'scale'|'insight'|'email'|'name'|'processing';
 type DropPosition = 'before'|'after';
-type LocalDraft = {steps:Step[];baseVersion:number;savedAt:string};
+type LocalDraft = {steps:Step[];baseVersion:number;savedAt:string;revision:number};
 
 const NEW_SCREEN_OPTIONS:{type:NewScreenType;icon:string;title:string;description:string}[] = [
   {type:'single',icon:'◉',title:'Pergunta — escolha única',description:'Uma resposta entre várias opções.'},
   {type:'multi',icon:'☑',title:'Pergunta — múltipla escolha',description:'Permite selecionar mais de uma opção.'},
-  {type:'scale',icon:'↔',title:'Pergunta — escala',description:'Escala de 1 a 5 para medir intensidade.'},
+  {type:'scale',icon:'↔',title:'Pergunta — escala',description:'Escala de intensidade com pontuação explícita.'},
   {type:'insight',icon:'✦',title:'Tela de contexto',description:'Título, texto, destaque, fonte e imagem.'},
   {type:'email',icon:'@',title:'Captura de e-mail',description:'Solicita o e-mail do participante.'},
   {type:'name',icon:'Aa',title:'Captura de nome',description:'Solicita o nome do participante.'},
@@ -33,29 +33,51 @@ function readPanelWidth(key:string, fallback:number){
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-function readLocalDraft():LocalDraft|null{
+function readCurrentDraftRaw():Partial<LocalDraft>|null{
   try{
     const raw=window.localStorage.getItem(LOCAL_DRAFT_KEY);
-    if(raw){
-      const parsed=JSON.parse(raw) as Partial<LocalDraft>;
-      if(Array.isArray(parsed.steps)&&parsed.steps.length){
-        return {steps:parsed.steps as Step[],baseVersion:Number(parsed.baseVersion)||0,savedAt:String(parsed.savedAt||'')};
-      }
+    return raw?JSON.parse(raw) as Partial<LocalDraft>:null;
+  }catch{return null;}
+}
+
+function currentLocalRevision(){
+  const draft=readCurrentDraftRaw();
+  return Number(draft?.revision)||0;
+}
+
+function readLocalDraft():LocalDraft|null{
+  try{
+    const parsed=readCurrentDraftRaw();
+    if(parsed&&Array.isArray(parsed.steps)&&parsed.steps.length){
+      return {
+        steps:parsed.steps as Step[],
+        baseVersion:Number(parsed.baseVersion)||0,
+        savedAt:String(parsed.savedAt||''),
+        revision:Number(parsed.revision)||0,
+      };
     }
     const legacyRaw=window.localStorage.getItem(LEGACY_LOCAL_DRAFT_KEY);
     if(!legacyRaw) return null;
     const legacy=JSON.parse(legacyRaw);
-    return Array.isArray(legacy)&&legacy.length ? {steps:legacy as Step[],baseVersion:0,savedAt:''} : null;
+    return Array.isArray(legacy)&&legacy.length ? {steps:legacy as Step[],baseVersion:0,savedAt:'',revision:0} : null;
   }catch{return null;}
 }
-function saveLocalDraft(steps:Step[],baseVersion:number){
-  const draft:LocalDraft={steps,baseVersion,savedAt:new Date().toISOString()};
+function saveLocalDraft(steps:Step[],baseVersion:number,expectedRevision?:number){
+  const currentRevision=currentLocalRevision();
+  if(expectedRevision!==undefined&&currentRevision!==expectedRevision){
+    throw new Error('LOCAL_DRAFT_CONFLICT');
+  }
+  const revision=currentRevision+1;
+  const draft:LocalDraft={steps,baseVersion,savedAt:new Date().toISOString(),revision};
   window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify(draft));
   window.localStorage.removeItem(LEGACY_LOCAL_DRAFT_KEY);
+  return revision;
 }
-function clearLocalDraft(){
+function clearLocalDraft(expectedRevision?:number){
+  if(expectedRevision!==undefined&&currentLocalRevision()!==expectedRevision) return false;
   window.localStorage.removeItem(LOCAL_DRAFT_KEY);
   window.localStorage.removeItem(LEGACY_LOCAL_DRAFT_KEY);
+  return true;
 }
 function sameSteps(a:Step[],b:Step[]){return JSON.stringify(a)===JSON.stringify(b);}
 
@@ -116,6 +138,8 @@ export default function BuilderStable(){
   const [publishError,setPublishError]=useState('');
   const [publishing,setPublishing]=useState(false);
   const [localDraftExists,setLocalDraftExists]=useState(false);
+  const [localRevision,setLocalRevision]=useState(0);
+  const [localDraftConflict,setLocalDraftConflict]=useState(false);
   const [baseVersion,setBaseVersion]=useState(1);
   const [versionConflict,setVersionConflict]=useState(false);
   const [flowWidth,setFlowWidth]=useState(()=>readPanelWidth(FLOW_WIDTH_KEY,260));
@@ -131,6 +155,7 @@ export default function BuilderStable(){
     const local=readLocalDraft();
     fetchBuilderSnapshot('gp-ia').then(remote=>{
       if(!active) return;
+      setLocalRevision(local?.revision||0);
       if(!remote){
         const fallback=local?.steps||loadSteps();
         setSteps(fallback);
@@ -152,7 +177,15 @@ export default function BuilderStable(){
           setSavedDraft(local.steps);
           setLocalDraftExists(true);
           setBaseVersion(normalizedVersion);
-          if(local.baseVersion!==normalizedVersion) saveLocalDraft(local.steps,normalizedVersion);
+          if(local.baseVersion!==normalizedVersion){
+            try{
+              const revision=saveLocalDraft(local.steps,normalizedVersion,local.revision);
+              setLocalRevision(revision);
+            }catch{
+              setLocalDraftConflict(true);
+              setPublishError('Outra aba alterou este rascunho durante o carregamento. Recarregue o Builder para usar a versão local mais recente.');
+            }
+          }
         }else{
           setSteps(local.steps);
           setSavedDraft(local.steps);
@@ -192,6 +225,17 @@ export default function BuilderStable(){
     return()=>window.removeEventListener('beforeunload',handler);
   },[hasUnsavedChanges]);
 
+  useEffect(()=>{
+    const handler=(event:StorageEvent)=>{
+      if(event.key!==LOCAL_DRAFT_KEY) return;
+      if(currentLocalRevision()===localRevision) return;
+      setLocalDraftConflict(true);
+      setPublishError('Outra aba alterou o rascunho deste diagnóstico. Para evitar sobrescrita, salvar e publicar foram bloqueados nesta aba.');
+    };
+    window.addEventListener('storage',handler);
+    return()=>window.removeEventListener('storage',handler);
+  },[localRevision]);
+
   const warnUnsavedScreen=()=>{
     setSavedMsg('');
     setPublishError('Salve a edição desta tela antes de mudar de tela ou alterar a estrutura do diagnóstico.');
@@ -200,14 +244,14 @@ export default function BuilderStable(){
   const requestSelect=(index:number)=>{
     if(index===sel) return;
     if(!currentScreenSaved){warnUnsavedScreen();return;}
-    setPublishError(versionConflict?publishError:'');
+    if(!versionConflict&&!localDraftConflict) setPublishError('');
     setSel(index);
   };
 
   const update=(patch:Partial<Step>)=>{
     setSteps(prev=>prev.map((s,i)=>i===sel?{...s,...patch} as Step:s));
     setSavedMsg('');
-    if(!versionConflict) setPublishError('');
+    if(!versionConflict&&!localDraftConflict) setPublishError('');
   };
 
   const updateOption=(optIdx:number,patch:Partial<Option>)=>{
@@ -225,9 +269,17 @@ export default function BuilderStable(){
     update({options:step.options.filter((_,i)=>i!==optIdx)} as Partial<Step>);
   };
   const toggleScoring=()=>{
-    if(!step||step.kind!=='question'||step.input==='multi') return;
+    if(!step||step.kind!=='question'||step.input!=='single') return;
     const hasScores=step.options.some(option=>typeof option.score==='number');
     update({options:step.options.map((option,index)=>hasScores?{...option,score:undefined}:{...option,score:index})} as Partial<Step>);
+  };
+  const changeQuestionType=(input:'single'|'multi'|'scale')=>{
+    if(!step||step.kind!=='question') return;
+    if(input==='scale'){
+      update({input,options:step.options.map((option,index)=>({...option,score:typeof option.score==='number'?option.score:index+1}))} as Partial<Step>);
+      return;
+    }
+    update({input} as Partial<Step>);
   };
 
   const startResize=(side:'flow'|'props',e:ReactPointerEvent<HTMLDivElement>)=>{
@@ -259,6 +311,7 @@ export default function BuilderStable(){
       warnUnsavedScreen();
       return;
     }
+    if(localDraftConflict){e.preventDefault();return;}
     if(!canReorderStep(s)){e.preventDefault();return;}
     setDraggedStepId(s.id);
     e.dataTransfer.effectAllowed='move';
@@ -295,6 +348,7 @@ export default function BuilderStable(){
 
   const addScreen=(type:NewScreenType)=>{
     if(!step) return;
+    if(localDraftConflict){setAddOpen(false);return;}
     if(!currentScreenSaved){setAddOpen(false);warnUnsavedScreen();return;}
     if((type==='email'||type==='name'||type==='processing')&&steps.some(item=>item.kind===type)){
       setAddOpen(false);
@@ -313,6 +367,7 @@ export default function BuilderStable(){
   };
 
   const duplicateScreen=(source:Step,index:number)=>{
+    if(localDraftConflict) return;
     if(!currentScreenSaved){warnUnsavedScreen();return;}
     if(!canDuplicateStep(source)){
       setPublishError('Esta tela é estrutural e não pode ser duplicada.');
@@ -329,13 +384,36 @@ export default function BuilderStable(){
   };
 
   const saveCurrentScreen=()=>{
+    if(!step||localDraftConflict) return;
+    try{
+      const revision=saveLocalDraft(steps,baseVersion,localRevision);
+      setLocalRevision(revision);
+      setSavedDraft(steps);
+      setLocalDraftExists(true);
+      if(!versionConflict) setPublishError('');
+      setSavedMsg(`Tela ${sel+1} salva neste navegador ✓`);
+      window.setTimeout(()=>setSavedMsg(''),3500);
+    }catch{
+      setLocalDraftConflict(true);
+      setPublishError('Outra aba salvou uma versão diferente deste rascunho. Esta aba não sobrescreveu nada. Recarregue o Builder para continuar com segurança.');
+    }
+  };
+
+  const discardCurrentScreen=()=>{
     if(!step) return;
-    setSavedDraft(steps);
-    saveLocalDraft(steps,baseVersion);
-    setLocalDraftExists(true);
-    setPublishError(versionConflict?publishError:'');
-    setSavedMsg(`Tela ${sel+1} salva neste navegador ✓`);
-    window.setTimeout(()=>setSavedMsg(''),3500);
+    const savedIndex=savedDraft.findIndex(item=>item.id===step.id);
+    if(savedIndex>=0){
+      const savedStep=savedDraft[savedIndex];
+      setSteps(current=>current.map(item=>item.id===step.id?savedStep:item));
+      setSavedMsg('Alterações desta tela descartadas.');
+      if(!versionConflict&&!localDraftConflict) setPublishError('');
+      return;
+    }
+    const next=steps.filter(item=>item.id!==step.id);
+    setSteps(next);
+    setSel(Math.max(0,Math.min(sel-1,next.length-1)));
+    setSavedMsg('Nova tela descartada.');
+    if(!versionConflict&&!localDraftConflict) setPublishError('');
   };
 
   const reloadPublished=async()=>{
@@ -344,11 +422,13 @@ export default function BuilderStable(){
       setPublishError('Ainda não foi possível carregar a versão publicada do Supabase.');
       return;
     }
-    clearLocalDraft();
+    clearLocalDraft(localRevision);
+    setLocalRevision(currentLocalRevision());
     setSteps(remote.steps);
     setSavedDraft(remote.steps);
     setBaseVersion(remote.version);
     setVersionConflict(false);
+    setLocalDraftConflict(false);
     setLocalDraftExists(false);
     setSel(0);
     setPublishError('');
@@ -357,6 +437,11 @@ export default function BuilderStable(){
 
   const publish=async()=>{
     if(!steps.length||publishing) return;
+    if(localDraftConflict||currentLocalRevision()!==localRevision){
+      setLocalDraftConflict(true);
+      setPublishError('Outra aba alterou o rascunho. Publicação bloqueada para evitar perda de trabalho. Recarregue o Builder.');
+      return;
+    }
     if(versionConflict){
       setPublishError('Publicação bloqueada para evitar sobrescrever uma versão mais recente. Recarregue a versão publicada primeiro.');
       return;
@@ -377,12 +462,18 @@ export default function BuilderStable(){
       setBaseVersion(published.version);
       setSteps(savedDraft);
       saveSteps(savedDraft);
-      clearLocalDraft();
+      clearLocalDraft(localRevision);
+      setLocalRevision(0);
       setLocalDraftExists(false);
       setSavedMsg(`Versão ${published.version} publicada no Supabase ✓`);
     }catch(err:unknown){
-      saveLocalDraft(savedDraft,baseVersion);
-      setLocalDraftExists(true);
+      try{
+        const revision=saveLocalDraft(savedDraft,baseVersion,localRevision);
+        setLocalRevision(revision);
+        setLocalDraftExists(true);
+      }catch{
+        setLocalDraftConflict(true);
+      }
       const message=err instanceof Error?err.message:'';
       if(message.startsWith('CONFLICT:')){
         setVersionConflict(true);
@@ -397,6 +488,7 @@ export default function BuilderStable(){
   };
 
   const openDelete=(index:number)=>{
+    if(localDraftConflict) return;
     if(!currentScreenSaved){warnUnsavedScreen();return;}
     setDeleteIdx(index);
     setConfirmText('');
@@ -434,13 +526,14 @@ export default function BuilderStable(){
         {!hasUnsavedChanges&&localDraftExists&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>Rascunho salvo neste navegador ✓</span>}
         {savedMsg&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>{savedMsg}</span>}
         {publishError&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>{publishError}</span>}
-        {versionConflict&&<button className="btn" onClick={reloadPublished}>Usar versão publicada</button>}
+        {localDraftConflict&&<button className="btn" onClick={()=>window.location.reload()}>Recarregar rascunho</button>}
+        {versionConflict&&!localDraftConflict&&<button className="btn" onClick={reloadPublished}>Usar versão publicada</button>}
         <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Ver versão pública</a>
-        <button className="btn dark" onClick={publish} disabled={publishing||versionConflict}>{publishing?'Publicando...':'Publicar'}</button>
+        <button className="btn dark" onClick={publish} disabled={publishing||versionConflict||localDraftConflict}>{publishing?'Publicando...':'Publicar'}</button>
       </div>
     </header>
 
-    <p className="muted" style={{margin:'-10px 0 18px'}}>Cada <b>Salvar edição desta tela</b> guarda o rascunho somente neste navegador. Se houver uma edição ainda não salva, o Builder impede a troca de tela para evitar perda acidental. <b>Publicar</b> valida o formulário, grava uma nova versão no Supabase e só então atualiza a página pública.</p>
+    <p className="muted" style={{margin:'-10px 0 18px'}}>Cada <b>Salvar edição desta tela</b> guarda o rascunho somente neste navegador. Se houver uma edição ainda não salva, o Builder impede a troca de tela para evitar perda acidental. Duas abas não podem mais sobrescrever silenciosamente o mesmo rascunho. <b>Publicar</b> valida o formulário, grava uma nova versão no Supabase e só então atualiza a página pública.</p>
 
     <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
       <section className="steps-panel">
@@ -463,7 +556,7 @@ export default function BuilderStable(){
           })}
         </div>
         <div className="builder-add-screen-wrap">
-          <button className="btn builder-add-screen" onClick={()=>{if(!currentScreenSaved){warnUnsavedScreen();return;}setAddOpen(true);}}><Plus size={16}/> Adicionar tela</button>
+          <button className="btn builder-add-screen" onClick={()=>{if(localDraftConflict)return;if(!currentScreenSaved){warnUnsavedScreen();return;}setAddOpen(true);}}><Plus size={16}/> Adicionar tela</button>
           <small>Arraste pelo ícone ⋮⋮ para reordenar. Telas estruturais são protegidas e a publicação é validada antes de chegar ao público.</small>
         </div>
       </section>
@@ -492,9 +585,10 @@ export default function BuilderStable(){
         {step.kind==='question'&&<>
           <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
           <label>Subtítulo</label><textarea value={step.subtitle||''} onChange={e=>update({subtitle:e.target.value} as Partial<Step>)}/>
-          <label>Tipo</label><select value={step.input} onChange={e=>update({input:e.target.value as 'single'|'multi'|'scale'} as Partial<Step>)}><option value="single">Escolha única</option><option value="multi">Múltipla escolha</option><option value="scale">Escala</option></select>
+          <label>Tipo</label><select value={step.input} onChange={e=>changeQuestionType(e.target.value as 'single'|'multi'|'scale')}><option value="single">Escolha única</option><option value="multi">Múltipla escolha</option><option value="scale">Escala</option></select>
           <label>Dimensão / categoria</label><input value={step.dimension||''} placeholder="Ex.: planejamento" onChange={e=>update({dimension:e.target.value.trim()||undefined} as Partial<Step>)}/>
-          {step.input!=='multi'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:14}}><small className="muted">{questionHasScores?'Esta pergunta participa da pontuação.':'Esta pergunta não altera o score.'}</small><button className="btn" onClick={toggleScoring}>{questionHasScores?'Remover pontuação':'Ativar pontuação'}</button></div>}
+          {step.input==='single'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:14}}><small className="muted">{questionHasScores?'Esta pergunta participa da pontuação.':'Esta pergunta não altera o score.'}</small><button className="btn" onClick={toggleScoring}>{questionHasScores?'Remover pontuação':'Ativar pontuação'}</button></div>}
+          {step.input==='scale'&&<small className="muted" style={{display:'block',marginTop:12}}>Escalas exigem score em todas as alternativas. A publicação é bloqueada se algum score estiver vazio.</small>}
           <label>Opções</label>
           {step.options.map((o,i)=><div key={`${o.value}-${i}`} style={{display:'grid',gridTemplateColumns:step.input!=='multi'&&(questionHasScores||step.input==='scale')?'42px minmax(0,1fr) 76px 38px':'42px minmax(0,1fr) 38px',gap:6,marginBottom:6}}><input style={{width:'100%'}} value={o.emoji||''} placeholder="🙂" onChange={e=>updateOption(i,{emoji:e.target.value})}/><input style={{width:'100%'}} value={o.label} onChange={e=>updateOption(i,{label:e.target.value})}/>{step.input!=='multi'&&(questionHasScores||step.input==='scale')&&<input type="number" step="any" title="Score desta alternativa" value={o.score??''} placeholder="score" onChange={e=>updateOption(i,{score:e.target.value===''?undefined:Number(e.target.value)})}/>}<button className="btn" onClick={()=>removeOption(i)} title="Remover opção">✕</button></div>)}
           <button className="btn" onClick={addOption}>+ Adicionar opção</button>
@@ -523,8 +617,9 @@ export default function BuilderStable(){
         {step.kind==='result'&&<p className="muted">A tela de resultado é composta a partir das respostas.</p>}
 
         {step.kind!=='result'&&<div style={{marginTop:20,paddingTop:16,borderTop:'1px solid #e3eaf0'}}>
-          <button className="btn dark" onClick={saveCurrentScreen} style={{width:'100%',justifyContent:'center'}}>{`Salvar edição desta tela${currentScreenSaved?'':' *'}`}</button>
-          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está guardada no rascunho deste navegador.':'Esta tela tem alterações que ainda não foram salvas no navegador. O Builder bloqueará a troca de tela até você salvar.'}</small>
+          <button className="btn dark" onClick={saveCurrentScreen} disabled={localDraftConflict} style={{width:'100%',justifyContent:'center'}}>{`Salvar edição desta tela${currentScreenSaved?'':' *'}`}</button>
+          {!currentScreenSaved&&<button className="btn" onClick={discardCurrentScreen} style={{width:'100%',justifyContent:'center',marginTop:8}}>Descartar alterações desta tela</button>}
+          <small style={{display:'block',marginTop:8,color:currentScreenSaved?'#72859a':'#a35f16',lineHeight:1.4}}>{currentScreenSaved?'Esta tela está guardada no rascunho deste navegador.':'Esta tela tem alterações que ainda não foram salvas no navegador. O Builder bloqueará a troca de tela até você salvar ou descartar.'}</small>
         </div>}
       </aside>
     </div>
