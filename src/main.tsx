@@ -14,7 +14,6 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import { getSession, onAuthChange } from './lib/auth';
-import './lib/resultSalesEnhancer';
 import './styles/global.css';
 import './styles/introCertificate.css';
 import './styles/builderResponsive.css';
