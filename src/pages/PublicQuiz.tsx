@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Sparkles } from 'lucide-react';
 import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
 import InsightVisual from '../components/InsightVisual';
+import ResultSalesSections, { ResultBookOffer } from '../components/ResultSalesSections';
 import { toggleMultiAnswer } from '../lib/answerRules';
 import { fetchPublishedSurvey } from '../lib/surveyConfig';
 import { supabaseEnabled } from '../lib/supabase';
@@ -331,10 +332,8 @@ function Result({name,pct,level,dimensions,salaryRange,onRestart}:{name:string;p
       <p>O guia atual coloca a IA dentro da realidade do gerenciamento de projetos: análise de dados, previsão de riscos, apoio à decisão, planejamento e automação. Ao mesmo tempo, reforça que a qualidade das entradas e a supervisão humana continuam determinantes para o resultado.</p>
     </section>
 
-    <div className="offer-card">
-      <div className="ebook-cover-real"><img src="https://allevotech.com.br/wp-content/uploads/2026/06/Capa-760.webp" alt="Capa do livro Gestão de Projetos com Inteligência Artificial, de Mario Trentim" /></div>
-      <div className="offer-copy"><small>Recomendado para o seu momento</small><h2>Gestão de Projetos com Inteligência Artificial</h2><p>O livro de Mario Trentim mostra como aplicar IA em planejamento, riscos, comunicação, análise e tomada de decisão para conduzir projetos com mais inteligência e foco em valor.</p><a className="primary big" href="https://chk.eduzz.com/40QR6AJP9B" target="_blank" rel="noreferrer">Desbloquear acesso</a><a className="secondary big" href="https://trentim.com/livro-gestao-de-projetos-com-ia-perpetuo/" target="_blank" rel="noreferrer">Saiba mais</a></div>
-    </div>
+    <ResultBookOffer/>
+    <ResultSalesSections/>
 
     <button className="secondary big" type="button" onClick={onRestart}>Refazer diagnóstico</button>
   </div>
