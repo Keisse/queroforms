@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, BarChart3, FileQuestion, Plus, Users } from 'lucide-react';
+import { Activity, BarChart3, FileQuestion, Users } from 'lucide-react';
 import { fetchRecentSubmissions, fetchSurveySummaries, Submission, SurveySummary } from '../lib/adminData';
 
 const levelNames: Record<number, string> = {
@@ -40,7 +40,6 @@ export default function Dashboard(){
   return <>
     <header className="page-head">
       <div><div className="crumb">Keisse › My workspace</div><h1>Dashboard</h1><p className="page-subtitle">Visão geral dos diagnósticos e dos leads capturados.</p></div>
-      <Link className="btn dark" to="/diagnostics"><Plus size={17}/> Novo diagnóstico</Link>
     </header>
 
     {loading&&<div className="analytics-loading">Carregando indicadores...</div>}
