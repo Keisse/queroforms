@@ -5,8 +5,8 @@ import { loadSteps, saveSteps } from '../lib/stepsStore';
 import { fetchBuilderSnapshot, publishSteps } from '../lib/surveyConfig';
 import { isProtectedStructuralStep, validateSurveyStructure } from '../lib/surveyValidator';
 
-const LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v3';
-const LEGACY_LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v2';
+const LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v4';
+const LEGACY_LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v3';
 const FLOW_WIDTH_KEY = 'queroforms-builder-flow-width';
 const PROPS_WIDTH_KEY = 'queroforms-builder-props-width';
 const INTRO_IMAGE_RE = /\s*\[\[QF_INTRO_IMAGE:([^\]]+)\]\]\s*/;
