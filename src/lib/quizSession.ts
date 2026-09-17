@@ -38,7 +38,7 @@ function activeSurveySlug(fallback = 'gp-ia') {
 
 function progressKey(){ return `qf_${activeSurveySlug().replace(/[^a-z0-9_-]/gi,'_')}_progress_v1`; }
 function pendingKey(){ return `qf_${activeSurveySlug().replace(/[^a-z0-9_-]/gi,'_')}_pending_submissions_v1`; }
-function builderDraftKey(){ return activeSurveySlug()==='gp-ia' ? 'qf_gp_ia_builder_screen_draft_v3' : `qf_${activeSurveySlug().replace(/[^a-z0-9_-]/gi,'_')}_builder_screen_draft_v3`; }
+function builderDraftKey(){ return activeSurveySlug()==='gp-ia' ? 'qf_gp_ia_builder_screen_draft_v4' : `qf_${activeSurveySlug().replace(/[^a-z0-9_-]/gi,'_')}_builder_screen_draft_v4`; }
 
 function readJson<T>(key: string): T | null {
   try {
