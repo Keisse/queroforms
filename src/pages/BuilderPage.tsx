@@ -61,6 +61,7 @@ export default function BuilderPage(){
     const activeKey = 'qf_active_builder_slug';
     const previous = window.localStorage.getItem(activeKey);
     if (previous && previous !== surveySlug) {
+      window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v4');
       window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v3');
       window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v2');
     }
