@@ -1,7 +1,7 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Activity, BarChart3, ExternalLink, FilePlus2, Pencil, Search, Users, X } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { createSurvey, fetchSurveySummaries, slugifySurveyName, SurveySummary } from '../lib/adminData';
+import { useEffect, useMemo, useState } from 'react';
+import { Activity, BarChart3, ExternalLink, Pencil, Search, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { fetchSurveySummaries, SurveySummary } from '../lib/adminData';
 
 function formatDate(value: string | null) {
   if (!value) return 'Sem leads ainda';
@@ -9,17 +9,10 @@ function formatDate(value: string | null) {
 }
 
 export default function Diagnostics() {
-  const navigate = useNavigate();
   const [items, setItems] = useState<SurveySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [slugTouched, setSlugTouched] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -32,38 +25,15 @@ export default function Diagnostics() {
 
   useEffect(load, []);
 
-  useEffect(() => {
-    if (!slugTouched) setSlug(slugifySurveyName(name));
-  }, [name, slugTouched]);
-
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return items;
     return items.filter(item => `${item.name} ${item.slug} ${item.status}`.toLowerCase().includes(term));
   }, [items, search]);
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setCreating(true);
-    setCreateError('');
-    try {
-      const created = await createSurvey({ name, slug });
-      setCreateOpen(false);
-      setName('');
-      setSlug('');
-      setSlugTouched(false);
-      navigate(`/builder/gp-ia?survey=${encodeURIComponent(created.slug)}`);
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Não foi possível criar o diagnóstico.');
-    } finally {
-      setCreating(false);
-    }
-  };
-
   return <>
     <header className="page-head">
       <div><div className="crumb">Keisse › My workspace</div><h1>Diagnósticos</h1><p className="page-subtitle">Crie, acompanhe e gerencie todos os diagnósticos do workspace.</p></div>
-      <button className="btn dark" onClick={() => setCreateOpen(true)}><FilePlus2 size={17}/> Novo diagnóstico</button>
     </header>
 
     <section className="diagnostics-summary-row">
@@ -98,17 +68,5 @@ export default function Diagnostics() {
       </div>}
     </section>
 
-    {createOpen && <div className="diagnostic-modal-backdrop" onMouseDown={() => setCreateOpen(false)}>
-      <form className="diagnostic-modal" onSubmit={submit} onMouseDown={event => event.stopPropagation()}>
-        <div className="diagnostic-modal-head"><div><small>NOVO DIAGNÓSTICO</small><h2>Comece com a estrutura pronta</h2></div><button type="button" className="icon-action" onClick={() => setCreateOpen(false)}><X size={18}/></button></div>
-        <p>O novo diagnóstico nasce como rascunho usando a estrutura atual como modelo. Depois você pode editar perguntas, telas e pontuação no Builder.</p>
-        <label>Nome do diagnóstico</label>
-        <input autoFocus value={name} onChange={event => setName(event.target.value)} placeholder="Ex.: Diagnóstico de Liderança com IA" required/>
-        <label>URL</label>
-        <div className="diagnostic-slug-input"><span>forms.trentim.com/d/</span><input value={slug} onChange={event => { setSlugTouched(true); setSlug(slugifySurveyName(event.target.value)); }} placeholder="diagnostico-lideranca-ia" required/></div>
-        {createError && <div className="save-error">{createError}</div>}
-        <div className="diagnostic-modal-actions"><button type="button" className="btn" onClick={() => setCreateOpen(false)}>Cancelar</button><button className="btn dark" disabled={creating || !name.trim() || !slug.trim()}>{creating ? 'Criando...' : 'Criar e abrir Builder'}</button></div>
-      </form>
-    </div>}
   </>;
 }
