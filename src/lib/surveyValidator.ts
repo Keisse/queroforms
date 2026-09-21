@@ -3,7 +3,6 @@ import type { Step } from '../data/gpIa';
 const REQUIRED_KINDS: Step['kind'][] = ['intro', 'branch', 'email', 'name', 'processing', 'result'];
 const PROTECTED_KINDS = new Set<Step['kind']>(REQUIRED_KINDS);
 const PRE_RESULT_STEP_ID = 'insight-pre-result-guide';
-const RESULT_DIMENSIONS = ['planejamento', 'riscos', 'decisao', 'comunicacao', 'automacao', 'confianca'] as const;
 const IMAGE_MARKER_RE = /\[\[(?:QF_INTRO_IMAGE|QF_IMAGE):([^\]]+)\]\]/g;
 const NAME_VARIABLE_RE = /\{\{\s*nome\s*\}\}/i;
 
@@ -20,8 +19,8 @@ function hasNameVariable(value: string | undefined | null) {
   return Boolean(value && NAME_VARIABLE_RE.test(value));
 }
 
-function isScoreableQuestion(step: Step, dimension: string) {
-  if (step.kind !== 'question' || step.input === 'multi' || step.dimension !== dimension) return false;
+function isScoreableQuestion(step: Step) {
+  if (step.kind !== 'question' || step.input === 'multi') return false;
   return step.options.length >= 2 && step.options.every(option => typeof option.score === 'number' && Number.isFinite(option.score));
 }
 
@@ -126,9 +125,13 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
     errors.push(`O diagnóstico precisa ter exatamente uma tela de preparação do resultado; encontrou ${preResultCount}.`);
   }
 
-  for (const dimension of RESULT_DIMENSIONS) {
-    if (!steps.some(step => isScoreableQuestion(step, dimension))) {
-      errors.push(`O resultado precisa de pelo menos uma pergunta pontuável na dimensão ${dimension}.`);
+  const scoreableQuestions = steps.filter(isScoreableQuestion);
+  if (!scoreableQuestions.length) {
+    errors.push('O diagnóstico precisa ter pelo menos uma pergunta pontuável.');
+  }
+  for (const question of scoreableQuestions) {
+    if (question.kind === 'question' && !question.dimension?.trim()) {
+      errors.push(`A pergunta pontuável ${question.id} precisa informar uma dimensão/categoria.`);
     }
   }
 
