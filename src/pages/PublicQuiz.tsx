@@ -161,10 +161,11 @@ export default function PublicQuiz(){
   const text=(value:string|undefined|null)=>personalizeText(value,name);
   const intro=step.kind==='intro'?parseMarked(step.body,INTRO_IMAGE_RE):null;
   const insight=step.kind==='insight'?parseContextMarked(step.source||''):null;
-  const questionCount=steps.filter(s=>s.kind==='question').length;
-  const questionNumber=steps.slice(0,idx+1).filter(s=>s.kind==='question').length;
+  const isDiagnosticQuestion=(s:Step)=>s.kind==='question'&&s.id!=='salary-range';
+  const questionCount=steps.filter(isDiagnosticQuestion).length;
+  const questionNumber=steps.slice(0,idx+1).filter(isDiagnosticQuestion).length;
   const progress=steps.length>1?Math.round((idx/(steps.length-1))*100):100;
-  const questionCounter=step.kind==='question'?`${questionNumber}/${questionCount}`:'';
+  const questionCounter=step.kind==='question'&&step.id!=='salary-range'?`${questionNumber}/${questionCount}`:'';
 
   const navigate=(delta:1|-1)=>{
     if(navigationLocked.current) return;
