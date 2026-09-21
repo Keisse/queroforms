@@ -58,14 +58,6 @@ export default function BuilderPage(){
       if (mounted && survey?.name) setSurveyName(survey.name);
     }).catch(() => undefined);
 
-    const activeKey = 'qf_active_builder_slug';
-    const previous = window.localStorage.getItem(activeKey);
-    if (previous && previous !== surveySlug) {
-      window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v4');
-      window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v3');
-      window.localStorage.removeItem('qf_gp_ia_builder_screen_draft_v2');
-    }
-    window.localStorage.setItem(activeKey, surveySlug);
     return () => { mounted = false; };
   }, [surveySlug]);
 
@@ -90,7 +82,7 @@ export default function BuilderPage(){
     </nav>
 
     <div className={active === 'build' ? '' : 'builder-section-hidden'} aria-hidden={active !== 'build'}>
-      <BuilderStable/>
+      <BuilderStable key={surveySlug} surveySlug={surveySlug}/>
     </div>
 
     {active === 'analytics' && <Analytics embedded view="overview" onOpenResponses={() => changeSection('responses')}/>} 

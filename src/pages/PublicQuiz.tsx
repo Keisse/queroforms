@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Sparkles } from 'lucide-react';
-import { levelCopy, projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
+import { projectSalary, salaryMidpoints, scoreResult, Step } from '../data/gpIa';
+import { getSurveyPresentation } from '../data/surveyPresentation';
 import InsightVisual from '../components/InsightVisual';
 import ResultSalesSections, { ResultBookOffer } from '../components/ResultSalesSections';
 import { toggleMultiAnswer } from '../lib/answerRules';
@@ -41,6 +42,11 @@ function introHeading(title: string){
   return <>{title.slice(0,pos)}<span>{title.slice(pos)}</span></>;
 }
 
+function currentSurveySlug(){
+  const match=window.location.pathname.match(/^\/d\/([^/?#]+)/);
+  return match?.[1] ? decodeURIComponent(match[1]) : 'gp-ia';
+}
+
 function isValidEmail(value:string){
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
@@ -59,6 +65,8 @@ function createAttemptId(){
 }
 
 export default function PublicQuiz(){
+  const surveySlug=currentSurveySlug();
+  const presentation=getSurveyPresentation(surveySlug);
   const [steps,setSteps]=useState<Step[]|null>(null);
   const [surveyVersion,setSurveyVersion]=useState(1);
   const [loadError,setLoadError]=useState(false);
@@ -77,7 +85,7 @@ export default function PublicQuiz(){
     let active=true;
     const wantsDraftPreview=new URLSearchParams(window.location.search).get('preview')==='draft';
 
-    fetchPublishedSurvey('gp-ia').then(remote=>{
+    fetchPublishedSurvey(surveySlug).then(remote=>{
       if(!active) return;
       if(!remote?.steps.length){
         setLoadError(true);
@@ -118,7 +126,7 @@ export default function PublicQuiz(){
     });
 
     return()=>{active=false;};
-  },[]);
+  },[surveySlug]);
 
   useEffect(()=>{
     if(!steps||previewMode||!progressReady.current) return;
@@ -153,10 +161,11 @@ export default function PublicQuiz(){
   const text=(value:string|undefined|null)=>personalizeText(value,name);
   const intro=step.kind==='intro'?parseMarked(step.body,INTRO_IMAGE_RE):null;
   const insight=step.kind==='insight'?parseContextMarked(step.source||''):null;
-  const questionCount=steps.filter(s=>s.kind==='question').length;
-  const questionNumber=steps.slice(0,idx+1).filter(s=>s.kind==='question').length;
+  const isDiagnosticQuestion=(s:Step)=>s.kind==='question'&&s.id!=='salary-range';
+  const questionCount=steps.filter(isDiagnosticQuestion).length;
+  const questionNumber=steps.slice(0,idx+1).filter(isDiagnosticQuestion).length;
   const progress=steps.length>1?Math.round((idx/(steps.length-1))*100):100;
-  const questionCounter=step.kind==='question'?`${questionNumber}/${questionCount}`:'';
+  const questionCounter=step.kind==='question'&&step.id!=='salary-range'?`${questionNumber}/${questionCount}`:'';
 
   const navigate=(delta:1|-1)=>{
     if(navigationLocked.current) return;
@@ -179,8 +188,8 @@ export default function PublicQuiz(){
     }
   };
 
-  const chooseCloud=(value:'sim'|'nao')=>{
-    setAnswers(current=>({...current,'cloud-use':value}));
+  const chooseBranch=(value:'sim'|'nao')=>{
+    setAnswers(current=>({...current,[presentation.branchAnswerKey]:value}));
     next();
   };
 
@@ -200,7 +209,7 @@ export default function PublicQuiz(){
     setSaving(true);
     const qs = new URLSearchParams(window.location.search);
     const payload:SubmissionPayload={
-      survey_slug:'gp-ia',
+      survey_slug:surveySlug,
       survey_version:surveyVersion,
       attempt_id:attemptId.current,
       name:name.trim(),
@@ -237,23 +246,30 @@ export default function PublicQuiz(){
   };
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">{previewMode?'Prévia do rascunho':'Diagnóstico de Maturidade'}</div><div className="counter">{questionCounter}</div></div>
+    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">{previewMode?'Prévia do rascunho':presentation.quizLabel}</div><div className="counter">{questionCounter}</div></div>
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
       {step.kind==='branch' && (()=>{
-        const variant = step.variants[(answers['cloud-use'] as string) || 'sim'] || Object.values(step.variants)[0];
+        const variant = step.variants[(answers[presentation.branchAnswerKey] as string) || 'sim'] || Object.values(step.variants)[0];
         return <div className="intro-card branch-view" data-step-id={step.id}>
           <div className="cloud-orbit">
             <span className="cloud-ring cloud-ring-out"/>
             <span className="cloud-ring cloud-ring-in"/>
             <div className="cloud-orbit-center"><Sparkles size={26}/></div>
-            <span className="cloud-pill p1">🗺️ Planejamento</span>
-            <span className="cloud-pill p2">🛡️ Riscos</span>
-            <span className="cloud-pill p3">📊 Dados</span>
-            <span className="cloud-pill p4">🎯 Decisões</span>
-            <span className="cloud-pill p5">💬 Comunicação</span>
-            <span className="cloud-pill p6">⚙️ Automação</span>
-            <span className="cloud-pill p7">📅 Cronograma</span>
+            {surveySlug==='gp-ia'?<>
+              <span className="cloud-pill p1">🗺️ Planejamento</span>
+              <span className="cloud-pill p2">🛡️ Riscos</span>
+              <span className="cloud-pill p3">📊 Dados</span>
+              <span className="cloud-pill p4">🎯 Decisões</span>
+              <span className="cloud-pill p5">💬 Comunicação</span>
+              <span className="cloud-pill p6">⚙️ Automação</span>
+              <span className="cloud-pill p7">📅 Cronograma</span>
+            </>:<>
+              <span className="cloud-pill p1">🎯 Estratégia</span>
+              <span className="cloud-pill p2">🏢 Arquitetura</span>
+              <span className="cloud-pill p4">🤝 Influência</span>
+              <span className="cloud-pill p6">💎 Valor</span>
+            </>}
           </div>
           <h1>{text(variant.title)}</h1>
           <p>{text(variant.body)}</p>
@@ -262,13 +278,13 @@ export default function PublicQuiz(){
       })()}
       {step.kind==='intro' && intro && <div className="intro-card intro-certificate-screen" data-step-id={step.id}>
         <div className="certificate-image-wrap">
-          <img className="certificate-image" src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Certificado Gestão de Projetos com IA - Formação Mestre GP" loading="eager" decoding="async" />
+          <img className="certificate-image" src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt={surveySlug==='pmo-vmo'?'Capa do livro Estratégia em Ação':'Certificado Gestão de Projetos com IA - Formação Mestre GP'} loading="eager" decoding="async" />
         </div>
         <h1>{introHeading(text(step.title))}</h1>
         <p className="intro-question">{text(intro.text)}</p>
         <div className="intro-choice-row">
-          <button className="primary intro-choice" onClick={()=>chooseCloud('sim')}>Sim <span>→</span></button>
-          <button className="primary intro-choice" onClick={()=>chooseCloud('nao')}>Não <span>→</span></button>
+          <button className="primary intro-choice" onClick={()=>chooseBranch('sim')}>Sim <span>→</span></button>
+          <button className="primary intro-choice" onClick={()=>chooseBranch('nao')}>Não <span>→</span></button>
         </div>
       </div>}
       {step.kind==='question' && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{text(o.label)}</span></button>})}</div></div>}
@@ -279,39 +295,32 @@ export default function PublicQuiz(){
         {step.stat && <div className="stat-box">{text(step.stat)}</div>}
         {insight.text&&<div className="source-note">Fonte: {text(insight.text)}</div>}
         <button className="primary big" onClick={next}>Continuar</button></div>}
-      {step.kind==='processing' && <div className="processing-view" data-step-id={step.id}><h1>{text(step.title)}</h1><div className="process-lines"><p><span>Mapeando seu uso de IA</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>Analisando sua maturidade</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>Identificando seu próximo salto</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">Cruzamos suas respostas com os principais sinais de maturidade em IA aplicada à gestão de projetos.</p><button className="primary big" disabled={saving} onClick={saveLead}>{saving?'Salvando...':'Ver resultado'}</button></div>}
+      {step.kind==='processing' && <div className="processing-view" data-step-id={step.id}><h1>{text(step.title)}</h1><div className="process-lines"><p><span>{presentation.processing.labels[0]}</span><b>100%</b></p><div><i style={{width:'100%'}}/></div><p><span>{presentation.processing.labels[1]}</span><b>86%</b></p><div><i style={{width:'86%'}}/></div><p><span>{presentation.processing.labels[2]}</span><b>72%</b></p><div><i style={{width:'72%'}}/></div></div><p className="muted center">{presentation.processing.subtitle}</p><button className="primary big" disabled={saving} onClick={saveLead}>{saving?'Salvando...':'Ver resultado'}</button></div>}
       {step.kind==='email' && <div className="field-view" data-step-id={step.id}><h1>{text(step.title)}</h1><input autoFocus type="email" placeholder="voce@empresa.com" value={email} onChange={e=>setEmail(e.target.value)}/><button className="primary big" disabled={!isValidEmail(email)} onClick={next}>Continuar</button><small>Ao continuar, você concorda em receber seu diagnóstico e conteúdos relacionados.</small></div>}
       {step.kind==='name' && <div className="field-view" data-step-id={step.id}><h1>{text(step.title)}</h1><input autoFocus placeholder="Seu primeiro nome" value={name} onChange={e=>setName(e.target.value)}/><button className="primary big" disabled={!name.trim()} onClick={next}>Continuar</button><small>Usaremos seu primeiro nome para personalizar as próximas telas.</small></div>}
-      {step.kind==='result' && <Result name={name.trim()} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined} onRestart={restart}/>} 
+      {step.kind==='result' && <Result surveySlug={surveySlug} name={name.trim()} pct={result.pct} level={result.level} dimensions={result.dimensions} salaryRange={answers['salary-range'] as string|undefined} onRestart={restart}/>} 
     </div>
   </div>
 }
 
-function Result({name,pct,level,dimensions,salaryRange,onRestart}:{name:string;pct:number;level:number;dimensions:Record<string,number>;salaryRange?:string;onRestart:()=>void}){
-  const copy=levelCopy[level as 1|2|3|4];
-  const desiredDimensions = [
-    ['Planejamento','planejamento'],
-    ['Riscos','riscos'],
-    ['Decisão','decisao'],
-    ['Comunicação','comunicacao'],
-    ['Automação','automacao'],
-    ['Confiança','confianca'],
-  ] as const;
-  const chartData=desiredDimensions
+function Result({surveySlug,name,pct,level,dimensions,salaryRange,onRestart}:{surveySlug:string;name:string;pct:number;level:number;dimensions:Record<string,number>;salaryRange?:string;onRestart:()=>void}){
+  const presentation=getSurveyPresentation(surveySlug);
+  const copy=presentation.levels[level as 1|2|3|4];
+  const chartData=presentation.dimensions
     .filter(([,key])=>Object.prototype.hasOwnProperty.call(dimensions,key))
     .map(([label,key])=>[label,dimensions[key]] as const);
-  const baseline = salaryRange ? salaryMidpoints[salaryRange] : undefined;
+  const baseline = presentation.showSalaryProjection && salaryRange ? salaryMidpoints[salaryRange] : undefined;
   const projection = baseline ? projectSalary(baseline) : null;
   const fmt = (n:number)=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 
   return <div className="result-view" data-step-id="result">
-    <div className="result-kicker">Seu perfil de maturidade</div>
+    <div className="result-kicker">{presentation.resultKicker}</div>
     <h1>{name?`${name}, `:''}você está no nível <span>{copy.name}</span></h1>
-    <div className="score-card"><div className="gauge"><i style={{left:`calc(${pct}% - 10px)`}}/></div><div className="gauge-labels"><span>Explorador</span><span>Usuário</span><span>Aumentado</span><span>Orientado por IA</span></div><b className="score-number">{pct}%</b></div>
+    <div className="score-card"><div className="gauge"><i style={{left:`calc(${pct}% - 10px)`}}/></div><div className="gauge-labels">{presentation.gaugeLabels.map(label=><span key={label}>{label}</span>)}</div><b className="score-number">{pct}%</b></div>
     <div className="result-copy"><h2>{copy.headline}</h2><p>{copy.next}</p></div>
 
     {chartData.length>0&&<section className="dimension-card">
-      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>Onde sua IA já gera valor e onde ainda existe espaço para crescer</h2></div>
+      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>{surveySlug==='pmo-vmo'?'As competências que já sustentam sua atuação e onde está o próximo salto':'Onde sua IA já gera valor e onde ainda existe espaço para crescer'}</h2></div>
       <div className="dimension-bars">{chartData.map(([label,value])=><div className="dimension-row" key={label}><div className="dimension-meta"><span>{label}</span><b>{value}%</b></div><div className="dimension-track"><i style={{width:`${value}%`}}/></div></div>)}</div>
     </section>}
 
@@ -327,13 +336,14 @@ function Result({name,pct,level,dimensions,salaryRange,onRestart}:{name:string;p
     </section>}
 
     <section className="pmi-card">
-      <small>Insight do PMBOK® 8ª edição</small>
-      <h2>Seu próximo salto não é usar mais ferramentas. É usar IA com mais contexto, governança e intenção.</h2>
-      <p>O guia atual coloca a IA dentro da realidade do gerenciamento de projetos: análise de dados, previsão de riscos, apoio à decisão, planejamento e automação. Ao mesmo tempo, reforça que a qualidade das entradas e a supervisão humana continuam determinantes para o resultado.</p>
+      <small>{presentation.insightCard.eyebrow}</small>
+      <h2>{presentation.insightCard.title}</h2>
+      <p>{presentation.insightCard.body}</p>
+      {presentation.insightCard.source&&<div className="source-note">Fonte: {presentation.insightCard.source}</div>}
     </section>
 
-    <ResultBookOffer/>
-    <ResultSalesSections/>
+    <ResultBookOffer surveySlug={surveySlug}/>
+    <ResultSalesSections surveySlug={surveySlug}/>
 
     <button className="secondary big" type="button" onClick={onRestart}>Refazer diagnóstico</button>
   </div>
