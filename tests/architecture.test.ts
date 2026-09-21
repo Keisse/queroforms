@@ -42,3 +42,16 @@ test('pagina publica usa renderer React declarado para os visuais de contexto',(
   assert.match(insightVisual,/qf-context-upload-image/);
   assert.match(insightVisual,/insight-pre-result-guide/);
 });
+
+
+test('PMO agrupa as seis perguntas Likert em uma unica tela',()=>{
+  const publicQuiz=readFileSync('src/pages/PublicQuiz.tsx','utf8');
+  assert.match(publicQuiz,/qf-pmo-likert-group/);
+  assert.match(publicQuiz,/\^pmo-q\[1-6\]\$/);
+  assert.match(publicQuiz,/finishPmoLikert/);
+});
+
+test('progresso salvo antigo nao sobrepoe uma versao publicada nova',()=>{
+  const publicQuiz=readFileSync('src/pages/PublicQuiz.tsx','utf8');
+  assert.match(publicQuiz,/saved\.surveyVersion===remote\.version/);
+});
