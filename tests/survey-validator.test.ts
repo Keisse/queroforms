@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateSurveyStructure, isProtectedStructuralStep } from '../src/lib/surveyValidator.ts';
 import type { Step } from '../src/data/gpIa.ts';
+import { getSurveyPresentation } from '../src/data/surveyPresentation.ts';
 
 const scoredOptions = [
   { label: 'Nunca', value: '0', score: 0 },
@@ -67,11 +68,10 @@ test('opcao sem rotulo e rejeitada', () => {
   assert.match(result.errors.join(' '), /sem rótulo/);
 });
 
-test('dimensao de resultado sem pergunta pontuavel bloqueia publicacao', () => {
+test('dimensoes de maturidade nao sao fixas entre diagnosticos', () => {
   const steps = validSurvey().filter(step => step.id !== 'q-riscos');
   const result = validateSurveyStructure(steps);
-  assert.equal(result.valid, false);
-  assert.match(result.errors.join(' '), /dimensão riscos/);
+  assert.equal(result.valid, true);
 });
 
 test('score parcial em pergunta pontuada bloqueia publicacao', () => {
@@ -122,4 +122,21 @@ test('telas estruturais sao protegidas', () => {
       assert.equal(isProtectedStructuralStep(step), true);
     }
   }
+});
+
+
+test('apresentacao PMO VMO nao herda linguagem de IA nem projecao salarial', () => {
+  const presentation = getSurveyPresentation('pmo-vmo');
+  const serialized = JSON.stringify(presentation);
+  assert.equal(presentation.showSalaryProjection, false);
+  assert.equal(serialized.includes('Profissional Aumentado por IA'), false);
+  assert.equal(serialized.includes('Mapeando seu uso de IA'), false);
+  assert.equal(serialized.includes('certificações em IA'), false);
+  assert.match(presentation.resultKicker, /PMO/i);
+});
+
+test('apresentacao de IA continua isolada no diagnostico gp-ia', () => {
+  const presentation = getSurveyPresentation('gp-ia');
+  assert.equal(presentation.showSalaryProjection, true);
+  assert.match(JSON.stringify(presentation), /IA/);
 });
