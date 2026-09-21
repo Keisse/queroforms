@@ -304,12 +304,16 @@ export const pmoVmoSteps: Step[] = [
   {
     id:'insight-pre-result-guide',
     kind:'insight',
-    eyebrow:'Seu mapa profissional está pronto',
-    title:'Mas antes, vamos para seu resultado {{nome}}!',
-    body:'Organizamos suas respostas para mostrar seu nível atual, os pontos fortes que você já pode colocar em prática e as competências que mais podem acelerar sua evolução em PMO e VMO.',
-    stat:'Da execução de projetos à capacidade de influenciar estratégia e valor.',
-    source:'PMI, Escritórios de Gerenciamento de Projetos: Um Guia Prático, 2025',
-    visual:'sparkle',
+    title:'Estatísticas de Desempenho e Impacto',
+    body:'Indicadores para contextualizar o impacto de PMOs e da gestão de projetos nas organizações.',
+    icons:[
+      {emoji:'80%',text:'Percentual de empresas de alto desempenho que contam com um PMO.'},
+      {emoji:'300%',text:'Retorno financeiro (ROI) que um PMO pode trazer no primeiro ano de operação.'},
+      {emoji:'US$ 2 trilhões',text:'Valor que empresas no mundo todo desperdiçam anualmente por causa de uma gestão de projetos inadequada.'},
+      {emoji:'34%',text:'Taxa de projetos concluídos rigorosamente dentro do prazo e do orçamento estipulado.'},
+    ],
+    source:'Institute of Project Management',
+    visual:'chart',
   },
   { id:'result', kind:'result' },
 ];
