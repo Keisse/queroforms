@@ -41,7 +41,7 @@ export const pmoVmoSteps: Step[] = [
   {
     id:'pmo-q1',
     kind:'question',
-    title:'Consigo identificar quando uma organização realmente precisa de um PMO e qual problema ele deve resolver.',
+    title:'Identifico quando a organização precisa de um PMO e qual problema ele deve resolver.',
     input:'scale',
     dimension:'visao_estrategica',
     options:likert,
@@ -49,7 +49,7 @@ export const pmoVmoSteps: Step[] = [
   {
     id:'pmo-q2',
     kind:'question',
-    title:'Consigo definir qual tipo de PMO faz mais sentido para diferentes contextos, em vez de aplicar um modelo pronto.',
+    title:'Defino o tipo de PMO mais adequado ao contexto, sem copiar modelos prontos.',
     input:'scale',
     dimension:'arquitetura_pmo',
     options:likert,
@@ -57,7 +57,7 @@ export const pmoVmoSteps: Step[] = [
   {
     id:'pmo-q3',
     kind:'question',
-    title:'Se recebesse hoje a responsabilidade de estruturar ou reorganizar um PMO, saberia por onde começar.',
+    title:'Se precisasse estruturar ou reorganizar um PMO hoje, saberia por onde começar.',
     input:'scale',
     dimension:'arquitetura_pmo',
     options:likert,
@@ -65,7 +65,7 @@ export const pmoVmoSteps: Step[] = [
   {
     id:'pmo-q4',
     kind:'question',
-    title:'Consigo conectar projetos, programas e portfólio aos objetivos estratégicos da organização.',
+    title:'Conecto projetos, programas e portfólio aos objetivos estratégicos.',
     input:'scale',
     dimension:'visao_estrategica',
     options:likert,
@@ -73,7 +73,7 @@ export const pmoVmoSteps: Step[] = [
   {
     id:'pmo-q5',
     kind:'question',
-    title:'Sei definir indicadores que demonstrem o valor do PMO para a liderança, e não apenas o andamento dos projetos.',
+    title:'Defino indicadores que mostram o valor do PMO para a liderança.',
     input:'scale',
     dimension:'gestao_valor',
     options:likert,
@@ -81,7 +81,7 @@ export const pmoVmoSteps: Step[] = [
   {
     id:'pmo-q6',
     kind:'question',
-    title:'Tenho segurança para conversar com a alta liderança sobre prioridades, governança, investimentos e geração de valor.',
+    title:'Tenho segurança para discutir com a alta liderança prioridades, governança, investimentos e valor.',
     input:'scale',
     dimension:'governanca_influencia',
     options:likert,
