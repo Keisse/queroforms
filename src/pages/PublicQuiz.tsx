@@ -99,15 +99,11 @@ export default function PublicQuiz(){
       let resolvedVersion=remote.version;
 
       if(saved){
-        if(saved.steps?.length){
-          resolvedSteps=saved.steps;
-          resolvedVersion=saved.surveyVersion;
-          setIdx(Math.min(saved.idx,resolvedSteps.length-1));
-          setAnswers(saved.answers);
-          setEmail(saved.email);
-          setName(saved.name);
-          attemptId.current=saved.attemptId;
-        }else if(saved.surveyVersion===remote.version){
+        if(saved.surveyVersion===remote.version){
+          if(saved.steps?.length){
+            resolvedSteps=saved.steps;
+            resolvedVersion=saved.surveyVersion;
+          }
           setIdx(Math.min(saved.idx,resolvedSteps.length-1));
           setAnswers(saved.answers);
           setEmail(saved.email);
@@ -166,6 +162,15 @@ export default function PublicQuiz(){
   const questionNumber=steps.slice(0,idx+1).filter(isDiagnosticQuestion).length;
   const progress=steps.length>1?Math.round((idx/(steps.length-1))*100):100;
   const questionCounter=step.kind==='question'&&step.id!=='salary-range'?`${questionNumber}/${questionCount}`:'';
+  const pmoLikertQuestions=surveySlug==='pmo-vmo'
+    ? steps.filter((s):s is Extract<Step,{kind:'question'}>=>s.kind==='question'&&s.input==='scale'&&/^pmo-q[1-6]$/.test(s.id))
+    : [];
+  const pmoLikertIds=new Set(pmoLikertQuestions.map(q=>q.id));
+  const isPmoLikertScreen=step.kind==='question'&&pmoLikertIds.has(step.id);
+  const pmoLikertFirstIndex=pmoLikertQuestions.length?steps.findIndex(s=>s.id===pmoLikertQuestions[0].id):-1;
+  const pmoLikertLastIndex=pmoLikertQuestions.length?steps.findIndex(s=>s.id===pmoLikertQuestions[pmoLikertQuestions.length-1].id):-1;
+  const pmoLikertComplete=pmoLikertQuestions.length>0&&pmoLikertQuestions.every(q=>typeof answers[q.id]==='string');
+  const visibleQuestionCounter=isPmoLikertScreen?`1–${pmoLikertQuestions.length}/${questionCount}`:questionCounter;
 
   const navigate=(delta:1|-1)=>{
     if(navigationLocked.current) return;
@@ -175,6 +180,18 @@ export default function PublicQuiz(){
   };
   const next=()=>navigate(1);
   const back=()=>navigate(-1);
+  const goTo=(target:number)=>{
+    if(navigationLocked.current) return;
+    navigationLocked.current=true;
+    setIdx(Math.max(0,Math.min(target,steps.length-1)));
+    window.setTimeout(()=>{navigationLocked.current=false;},260);
+  };
+  const selectPmoLikert=(s:Extract<Step,{kind:'question'}>,value:string)=>{
+    setAnswers(current=>({...current,[s.id]:value}));
+  };
+  const finishPmoLikert=()=>{
+    if(pmoLikertComplete&&pmoLikertLastIndex>=0) goTo(pmoLikertLastIndex+1);
+  };
 
   const select=(s:Extract<Step,{kind:'question'}>, value:string)=>{
     if(s.input==='multi'){
@@ -246,7 +263,7 @@ export default function PublicQuiz(){
   };
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><button onClick={back} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">{previewMode?'Prévia do rascunho':presentation.quizLabel}</div><div className="counter">{questionCounter}</div></div>
+    <div className="quiz-top"><button onClick={()=>isPmoLikertScreen&&pmoLikertFirstIndex>0?goTo(pmoLikertFirstIndex-1):back()} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">{previewMode?'Prévia do rascunho':presentation.quizLabel}</div><div className="counter">{visibleQuestionCounter}</div></div>
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
       {step.kind==='branch' && (()=>{
@@ -287,8 +304,28 @@ export default function PublicQuiz(){
           <button className="primary intro-choice" onClick={()=>chooseBranch('nao')}>Não <span>→</span></button>
         </div>
       </div>}
-      {step.kind==='question' && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{text(o.label)}</span></button>})}</div></div>}
-      {step.kind==='question' && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{text(o.label)}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
+      {isPmoLikertScreen && <div className="question-view qf-pmo-likert-group" data-step-id="pmo-likert-group">
+        <h1>Como você avalia sua maturidade em PMO?</h1>
+        <p className="muted center">Marque o quanto cada afirmação representa sua atuação hoje.</p>
+        <div className="qf-pmo-likert-scroll">
+          <div className="qf-pmo-likert-matrix">
+            <div className="qf-pmo-likert-header">
+              <span/>
+              {pmoLikertQuestions[0]?.options.map(o=><span key={o.value}>{text(o.label)}</span>)}
+            </div>
+            {pmoLikertQuestions.map((q,qIndex)=><div className="qf-pmo-likert-row" key={q.id}>
+              <div className="qf-pmo-likert-statement"><b>{qIndex+1}.</b> {text(q.title)}</div>
+              {q.options.map(o=>{
+                const selected=answers[q.id]===o.value;
+                return <button type="button" className={`qf-pmo-likert-choice ${selected?'selected':''}`} aria-label={`${text(q.title)} — ${text(o.label)}`} aria-pressed={selected} key={o.value} onClick={()=>selectPmoLikert(q,o.value)}><span>{o.value}</span></button>;
+              })}
+            </div>)}
+          </div>
+        </div>
+        <button className="primary big" disabled={!pmoLikertComplete} onClick={finishPmoLikert}>Continuar</button>
+      </div>}
+      {step.kind==='question' && !isPmoLikertScreen && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{text(o.label)}</span></button>})}</div></div>}
+      {step.kind==='question' && !isPmoLikertScreen && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{text(o.label)}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
       {step.kind==='insight' && insight && surveySlug==='pmo-vmo' && step.id==='insight-pre-result-guide' && <div className="insight-view qf-pmo-impact-context" data-step-id={step.id}>
         <h1>{text(step.title)}</h1>
         {step.icons && <ul className="qf-pmo-impact-list">{step.icons.map(item=><li key={item.text}><strong>{text(item.emoji)}:</strong> <span>{text(item.text)}</span></li>)}</ul>}
