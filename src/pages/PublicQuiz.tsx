@@ -307,6 +307,7 @@ export default function PublicQuiz(){
       {isPmoLikertScreen && <div className="question-view qf-pmo-likert-group" data-step-id="pmo-likert-group">
         <h1>Como você avalia sua maturidade em PMO?</h1>
         <p className="muted center">Marque o quanto cada afirmação representa sua atuação hoje.</p>
+        <div className="qf-pmo-likert-legend" aria-label="Escala Likert"><span><b>1</b> = Discordo totalmente</span><span><b>5</b> = Concordo totalmente</span></div>
         <div className="qf-pmo-likert-scroll">
           <div className="qf-pmo-likert-matrix">
             <div className="qf-pmo-likert-header">
