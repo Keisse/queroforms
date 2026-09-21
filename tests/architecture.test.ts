@@ -66,3 +66,12 @@ test('PMO mobile mostra legenda Likert e botoes circulares',()=>{
   assert.match(css,/border-radius:999px/);
   assert.match(css,/\.qf-pmo-likert-header\{\s*display:none/);
 });
+
+
+test('PMO usa perguntas acima e opcoes circulares abaixo em todas as telas',()=>{
+  const css=readFileSync('src/styles/quizResponsiveHardening.css','utf8');
+  assert.match(css,/\.qf-pmo-likert-header\{\s*display:none/);
+  assert.match(css,/\.qf-pmo-likert-statement\{[^}]*grid-column:1\/-1/s);
+  assert.match(css,/\.qf-pmo-likert-row\{[^}]*grid-template-columns:repeat\(5,42px\)/s);
+  assert.match(css,/\.qf-pmo-likert-choice\{[^}]*border-radius:999px/s);
+});
