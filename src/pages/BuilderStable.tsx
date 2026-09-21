@@ -5,8 +5,9 @@ import { loadSteps, saveSteps } from '../lib/stepsStore';
 import { fetchBuilderSnapshot, publishSteps } from '../lib/surveyConfig';
 import { isProtectedStructuralStep, validateSurveyStructure } from '../lib/surveyValidator';
 
-const LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v4';
-const LEGACY_LOCAL_DRAFT_KEY = 'qf_gp_ia_builder_screen_draft_v3';
+function draftSlug(slug:string){ return slug.replace(/[^a-z0-9_-]/gi,'_'); }
+function localDraftKey(slug:string){ return slug==='gp-ia' ? 'qf_gp_ia_builder_screen_draft_v4' : `qf_${draftSlug(slug)}_builder_screen_draft_v4`; }
+function legacyLocalDraftKey(slug:string){ return slug==='gp-ia' ? 'qf_gp_ia_builder_screen_draft_v3' : `qf_${draftSlug(slug)}_builder_screen_draft_v3`; }
 const FLOW_WIDTH_KEY = 'queroforms-builder-flow-width';
 const PROPS_WIDTH_KEY = 'queroforms-builder-props-width';
 const INTRO_IMAGE_RE = /\s*\[\[QF_INTRO_IMAGE:([^\]]+)\]\]\s*/;
@@ -34,21 +35,21 @@ function readPanelWidth(key:string, fallback:number){
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-function readCurrentDraftRaw():Partial<LocalDraft>|null{
+function readCurrentDraftRaw(surveySlug:string):Partial<LocalDraft>|null{
   try{
-    const raw=window.localStorage.getItem(LOCAL_DRAFT_KEY);
+    const raw=window.localStorage.getItem(localDraftKey(surveySlug));
     return raw?JSON.parse(raw) as Partial<LocalDraft>:null;
   }catch{return null;}
 }
 
-function currentLocalRevision(){
-  const draft=readCurrentDraftRaw();
+function currentLocalRevision(surveySlug:string){
+  const draft=readCurrentDraftRaw(surveySlug);
   return Number(draft?.revision)||0;
 }
 
-function readLocalDraft():LocalDraft|null{
+function readLocalDraft(surveySlug:string):LocalDraft|null{
   try{
-    const parsed=readCurrentDraftRaw();
+    const parsed=readCurrentDraftRaw(surveySlug);
     if(parsed&&Array.isArray(parsed.steps)&&parsed.steps.length){
       return {
         steps:parsed.steps as Step[],
@@ -57,27 +58,27 @@ function readLocalDraft():LocalDraft|null{
         revision:Number(parsed.revision)||0,
       };
     }
-    const legacyRaw=window.localStorage.getItem(LEGACY_LOCAL_DRAFT_KEY);
+    const legacyRaw=window.localStorage.getItem(legacyLocalDraftKey(surveySlug));
     if(!legacyRaw) return null;
     const legacy=JSON.parse(legacyRaw);
     return Array.isArray(legacy)&&legacy.length ? {steps:legacy as Step[],baseVersion:0,savedAt:'',revision:0} : null;
   }catch{return null;}
 }
-function saveLocalDraft(steps:Step[],baseVersion:number,expectedRevision?:number){
-  const currentRevision=currentLocalRevision();
+function saveLocalDraft(surveySlug:string,steps:Step[],baseVersion:number,expectedRevision?:number){
+  const currentRevision=currentLocalRevision(surveySlug);
   if(expectedRevision!==undefined&&currentRevision!==expectedRevision){
     throw new Error('LOCAL_DRAFT_CONFLICT');
   }
   const revision=currentRevision+1;
   const draft:LocalDraft={steps,baseVersion,savedAt:new Date().toISOString(),revision};
-  window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify(draft));
-  window.localStorage.removeItem(LEGACY_LOCAL_DRAFT_KEY);
+  window.localStorage.setItem(localDraftKey(surveySlug),JSON.stringify(draft));
+  window.localStorage.removeItem(legacyLocalDraftKey(surveySlug));
   return revision;
 }
-function clearLocalDraft(expectedRevision?:number){
-  if(expectedRevision!==undefined&&currentLocalRevision()!==expectedRevision) return false;
-  window.localStorage.removeItem(LOCAL_DRAFT_KEY);
-  window.localStorage.removeItem(LEGACY_LOCAL_DRAFT_KEY);
+function clearLocalDraft(surveySlug:string,expectedRevision?:number){
+  if(expectedRevision!==undefined&&currentLocalRevision(surveySlug)!==expectedRevision) return false;
+  window.localStorage.removeItem(localDraftKey(surveySlug));
+  window.localStorage.removeItem(legacyLocalDraftKey(surveySlug));
   return true;
 }
 function sameSteps(a:Step[],b:Step[]){return JSON.stringify(a)===JSON.stringify(b);}
@@ -139,7 +140,7 @@ function ImagePreview({src,alt}:{src:string;alt:string}){
   return <div style={{height:190,borderRadius:16,overflow:'hidden',background:'#eef7ff',marginBottom:16}}><img src={src} alt={alt} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/></div>;
 }
 
-export default function BuilderStable(){
+export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string}){
   const [steps,setSteps]=useState<Step[]>([]);
   const [savedDraft,setSavedDraft]=useState<Step[]>([]);
   const [loading,setLoading]=useState(true);
@@ -162,8 +163,8 @@ export default function BuilderStable(){
 
   useEffect(()=>{
     let active=true;
-    const local=readLocalDraft();
-    fetchBuilderSnapshot('gp-ia').then(remote=>{
+    const local=readLocalDraft(surveySlug);
+    fetchBuilderSnapshot(surveySlug).then(remote=>{
       if(!active) return;
       setLocalRevision(local?.revision||0);
       if(!remote){
@@ -189,7 +190,7 @@ export default function BuilderStable(){
           setBaseVersion(normalizedVersion);
           if(local.baseVersion!==normalizedVersion){
             try{
-              const revision=saveLocalDraft(local.steps,normalizedVersion,local.revision);
+              const revision=saveLocalDraft(surveySlug,local.steps,normalizedVersion,local.revision);
               setLocalRevision(revision);
             }catch{
               setLocalDraftConflict(true);
@@ -212,7 +213,7 @@ export default function BuilderStable(){
       setLoading(false);
     });
     return()=>{active=false;};
-  },[]);
+  },[surveySlug]);
 
   useEffect(()=>{window.localStorage.setItem(FLOW_WIDTH_KEY,String(Math.round(flowWidth)));},[flowWidth]);
   useEffect(()=>{window.localStorage.setItem(PROPS_WIDTH_KEY,String(Math.round(propsWidth)));},[propsWidth]);
@@ -237,14 +238,14 @@ export default function BuilderStable(){
 
   useEffect(()=>{
     const handler=(event:StorageEvent)=>{
-      if(event.key!==LOCAL_DRAFT_KEY) return;
-      if(currentLocalRevision()===localRevision) return;
+      if(event.key!==localDraftKey(surveySlug)) return;
+      if(currentLocalRevision(surveySlug)===localRevision) return;
       setLocalDraftConflict(true);
       setPublishError('Outra aba alterou o rascunho deste diagnóstico. Para evitar sobrescrita, salvar e publicar foram bloqueados nesta aba.');
     };
     window.addEventListener('storage',handler);
     return()=>window.removeEventListener('storage',handler);
-  },[localRevision]);
+  },[localRevision,surveySlug]);
 
   const warnUnsavedScreen=()=>{
     setSavedMsg('');
@@ -396,7 +397,7 @@ export default function BuilderStable(){
   const saveCurrentScreen=()=>{
     if(!step||localDraftConflict) return;
     try{
-      const revision=saveLocalDraft(steps,baseVersion,localRevision);
+      const revision=saveLocalDraft(surveySlug,steps,baseVersion,localRevision);
       setLocalRevision(revision);
       setSavedDraft(steps);
       setLocalDraftExists(true);
@@ -427,13 +428,13 @@ export default function BuilderStable(){
   };
 
   const reloadPublished=async()=>{
-    const remote=await fetchBuilderSnapshot('gp-ia');
+    const remote=await fetchBuilderSnapshot(surveySlug);
     if(!remote){
       setPublishError('Ainda não foi possível carregar a versão publicada do Supabase.');
       return;
     }
-    clearLocalDraft(localRevision);
-    setLocalRevision(currentLocalRevision());
+    clearLocalDraft(surveySlug,localRevision);
+    setLocalRevision(currentLocalRevision(surveySlug));
     setSteps(remote.steps);
     setSavedDraft(remote.steps);
     setBaseVersion(remote.version);
@@ -447,7 +448,7 @@ export default function BuilderStable(){
 
   const publish=async()=>{
     if(!steps.length||publishing) return;
-    if(localDraftConflict||currentLocalRevision()!==localRevision){
+    if(localDraftConflict||currentLocalRevision(surveySlug)!==localRevision){
       setLocalDraftConflict(true);
       setPublishError('Outra aba alterou o rascunho. Publicação bloqueada para evitar perda de trabalho. Recarregue o Builder.');
       return;
@@ -468,17 +469,17 @@ export default function BuilderStable(){
     setPublishing(true);
     setPublishError('');
     try{
-      const published=await publishSteps('gp-ia',savedDraft,baseVersion);
+      const published=await publishSteps(surveySlug,savedDraft,baseVersion);
       setBaseVersion(published.version);
       setSteps(savedDraft);
       saveSteps(savedDraft);
-      clearLocalDraft(localRevision);
+      clearLocalDraft(surveySlug,localRevision);
       setLocalRevision(0);
       setLocalDraftExists(false);
       setSavedMsg(`Versão ${published.version} publicada no Supabase ✓`);
     }catch(err:unknown){
       try{
-        const revision=saveLocalDraft(savedDraft,baseVersion,localRevision);
+        const revision=saveLocalDraft(surveySlug,savedDraft,baseVersion,localRevision);
         setLocalRevision(revision);
         setLocalDraftExists(true);
       }catch{
@@ -516,7 +517,7 @@ export default function BuilderStable(){
     const next=steps.filter((_,i)=>i!==deleteIdx);
     const nextSelection=Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1));
     try{
-      const revision=saveLocalDraft(next,baseVersion,localRevision);
+      const revision=saveLocalDraft(surveySlug,next,baseVersion,localRevision);
       setLocalRevision(revision);
       setSteps(next);
       setSavedDraft(next);
@@ -544,7 +545,7 @@ export default function BuilderStable(){
 
   return <>
     <header className="page-head">
-      <div><div className="crumb">Diagnósticos › GP com IA › versão {baseVersion}</div><h1>Editor do diagnóstico</h1></div>
+      <div><div className="crumb">Diagnósticos › {surveySlug} › versão {baseVersion}</div><h1>Editor do diagnóstico</h1></div>
       <div className="head-actions">
         {hasUnsavedChanges&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>Edição ainda não salva</span>}
         {!hasUnsavedChanges&&localDraftExists&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>Rascunho salvo neste navegador ✓</span>}
@@ -552,7 +553,7 @@ export default function BuilderStable(){
         {publishError&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>{publishError}</span>}
         {localDraftConflict&&<button className="btn" onClick={()=>window.location.reload()}>Recarregar rascunho</button>}
         {versionConflict&&!localDraftConflict&&<button className="btn" onClick={reloadPublished}>Usar versão publicada</button>}
-        <a className="btn" href="/d/gp-ia" target="_blank" rel="noreferrer">Ver versão pública</a>
+        <a className="btn" href={`/d/${surveySlug}`} target="_blank" rel="noreferrer">Ver versão pública</a>
         <button className="btn dark" onClick={publish} disabled={publishing||versionConflict||localDraftConflict}>{publishing?'Publicando...':'Publicar'}</button>
       </div>
     </header>
