@@ -55,3 +55,14 @@ test('progresso salvo antigo nao sobrepoe uma versao publicada nova',()=>{
   const publicQuiz=readFileSync('src/pages/PublicQuiz.tsx','utf8');
   assert.match(publicQuiz,/saved\.surveyVersion===remote\.version/);
 });
+
+
+test('PMO mobile mostra legenda Likert e botoes circulares',()=>{
+  const publicQuiz=readFileSync('src/pages/PublicQuiz.tsx','utf8');
+  const css=readFileSync('src/styles/quizResponsiveHardening.css','utf8');
+  assert.match(publicQuiz,/1<\/b> = Discordo totalmente/);
+  assert.match(publicQuiz,/5<\/b> = Concordo totalmente/);
+  assert.match(css,/grid-template-columns:repeat\(5,36px\)/);
+  assert.match(css,/border-radius:999px/);
+  assert.match(css,/\.qf-pmo-likert-header\{\s*display:none/);
+});
