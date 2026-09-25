@@ -136,6 +136,37 @@ const tireProjeto: SurveyPresentation = {
   },
 };
 
+const gestaoAgil: SurveyPresentation = {
+  slug:'gestao-agil-sem-bagunca',
+  quizLabel:'Diagnóstico Gestão Ágil sem Bagunça',
+  branchAnswerKey:'agile-start',
+  processing:{
+    labels:['Analisando suas escolhas','Mapeando suas competências','Preparando seu próximo passo'],
+    subtitle:'Suas respostas mostram como você prioriza, entrega, colabora e se adapta no dia a dia.',
+  },
+  resultKicker:'Seu perfil em Gestão Ágil sem Bagunça',
+  levels:{
+    1:{name:'Ágil de Fachada',headline:'Você já se aproximou das práticas ágeis, mas a correria e os rituais ainda podem esconder o que realmente precisa ser entregue.',next:'Comece escolhendo uma prioridade clara, conclua uma entrega pequena e peça retorno a quem vai usá-la.'},
+    2:{name:'Organizador do Fluxo',headline:'Você já busca organizar o trabalho, mas ainda perde ritmo quando muitas demandas competem pela sua atenção.',next:'Seu próximo passo é limitar o trabalho simultâneo, tornar bloqueios visíveis e concluir antes de começar mais.'},
+    3:{name:'Praticante Adaptativo',headline:'Você já entrega em ciclos, colabora e ajusta o plano quando aprende algo novo.',next:'Fortaleça a ligação entre cada entrega e seu valor para o cliente, e transforme aprendizados em melhorias frequentes.'},
+    4:{name:'Facilitador de Valor',headline:'Você demonstra uma agilidade que vai além dos rituais: mantém o foco, faz o trabalho fluir e aprende com cada entrega.',next:'Seu próximo salto é ajudar outras pessoas a ganhar autonomia, clareza e um ritmo sustentável de entrega.'},
+  },
+  gaugeLabels:['Fachada','Fluxo','Adaptação','Valor'],
+  dimensions:[
+    ['Foco no que gera valor','foco_valor'],
+    ['Fluxo e entrega','fluxo_entrega'],
+    ['Colaboração e autonomia','colaboracao_autonomia'],
+    ['Adaptação e aprendizado','adaptacao_aprendizado'],
+  ],
+  showSalaryProjection:false,
+  insightCard:{
+    eyebrow:'PMI | Guia de práticas ágeis',
+    title:'Agilidade aparece nas decisões e nas entregas, não na quantidade de rituais.',
+    body:'O guia associa práticas ágeis à entrega frequente de valor, ciclos curtos de feedback e adaptação ao contexto. Observe a dimensão em que seu resultado aponta mais espaço para crescer e comece com um ajuste concreto.',
+    source:'PMI, Guia de práticas ágeis, 2ª edição, seções 2 e 5',
+  },
+};
+
 export function getSurveyPresentation(slug:string): SurveyPresentation {
-  return slug === 'pmo-vmo' ? pmoVmo : slug === 'tire-projeto-do-papel' ? tireProjeto : gpIa;
+  return slug === 'pmo-vmo' ? pmoVmo : slug === 'tire-projeto-do-papel' ? tireProjeto : slug === 'gestao-agil-sem-bagunca' ? gestaoAgil : gpIa;
 }

@@ -2,6 +2,7 @@ const AI_CHECKOUT_URL = 'https://chk.eduzz.com/40QR6AJP9B';
 const AI_DETAILS_URL = 'https://trentim.com/livro-gestao-de-projetos-com-ia-perpetuo/#';
 const PMO_CHECKOUT_URL = 'https://chk.eduzz.com/xgklntvt';
 const TIRE_PROJETO_CHECKOUT_URL = 'https://chk.eduzz.com/3va57nye';
+const GESTAO_AGIL_CHECKOUT_URL = 'https://chk.eduzz.com/xroaeflm';
 
 function AuthorSection(){
   return <section className="qf-sales-section qf-sales-author">
@@ -25,6 +26,17 @@ function AuthorSection(){
 }
 
 export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
+  if(surveySlug==='gestao-agil-sem-bagunca'){
+    return <div className="offer-card qf-book-offer-hero">
+      <div className="ebook-cover-real"><img src="/books/gestao-agil-sem-bagunca-cover.webp" alt="Capa original do ebook Gestão Ágil sem Bagunça, de Mario Trentim" loading="eager" decoding="async" /></div>
+      <div className="offer-copy">
+        <small className="qf-book-kicker">O PRÓXIMO PASSO DO SEU DIAGNÓSTICO</small>
+        <h2>Gestão Ágil sem Bagunça</h2>
+        <p>Aprenda a trocar o ágil de fachada por prioridades claras, entregas úteis, colaboração e adaptação na prática.</p>
+        <a className="primary big qf-sales-primary" href={GESTAO_AGIL_CHECKOUT_URL} target="_blank" rel="noreferrer">QUERO MEU EBOOK</a>
+      </div>
+    </div>;
+  }
   if(surveySlug==='pmo-vmo'){
     return <div className="offer-card qf-book-offer-hero">
       <div className="ebook-cover-real">
@@ -80,6 +92,27 @@ export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
 }
 
 export default function ResultSalesSections({surveySlug='gp-ia'}:{surveySlug?:string}){
+  if(surveySlug==='gestao-agil-sem-bagunca'){
+    return <>
+      <section className="qf-sales-section qf-sales-map">
+        <span className="qf-sales-eyebrow">DO DIAGNÓSTICO PARA A PRÁTICA</span>
+        <h2>Menos trabalho pela metade. Mais entregas que fazem diferença.</h2>
+        <p>O livro mostra como aplicar a mentalidade ágil, Scrum e Kanban sem transformar ferramentas e reuniões em um fim em si mesmas.</p>
+      </section>
+      <section className="qf-sales-section qf-sales-difference">
+        <span className="qf-sales-eyebrow">SEU PRÓXIMO SALTO</span>
+        <h2>Organize o fluxo, escute quem usa e ajuste o caminho.</h2>
+        <p>Use suas quatro dimensões como mapa para escolher onde começar e desenvolver uma forma mais clara e sustentável de trabalhar.</p>
+      </section>
+      <AuthorSection/>
+      <section className="qf-sales-section qf-sales-final">
+        <span className="qf-sales-eyebrow">COMECE AGORA</span>
+        <h2>Transforme caos em eficiência e resultados.</h2>
+        <p>Continue sua jornada com o ebook Gestão Ágil sem Bagunça.</p>
+        <a className="primary big qf-sales-primary qf-sales-final-button" href={GESTAO_AGIL_CHECKOUT_URL} target="_blank" rel="noreferrer">Quero meu ebook</a>
+      </section>
+    </>;
+  }
   if(surveySlug==='pmo-vmo'){
     return <>
       <section className="qf-sales-section qf-sales-map">
