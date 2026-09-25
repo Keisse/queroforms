@@ -28,16 +28,10 @@ export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
     return <div className="offer-card qf-book-offer-hero">
       <div className="ebook-cover-real">
         <img
-          src="https://forms.trentim.com/books/estrategia-em-acao-pmo-vmo.webp?v=20260924"
+          src="/books/estrategia-em-acao-pmo-vmo-cover.svg"
           alt="Capa do livro Estratégia em Ação: da gestão de projetos à gestão de valor com PMOs e VMOs"
           loading="eager"
           decoding="async"
-          onError={(event)=>{
-            const image=event.currentTarget;
-            if(image.dataset.fallback==='1') return;
-            image.dataset.fallback='1';
-            image.src='https://raw.githubusercontent.com/Keisse/queroforms/main/public/books/estrategia-em-acao-pmo-vmo.webp';
-          }}
         />
       </div>
       <div className="offer-copy">
