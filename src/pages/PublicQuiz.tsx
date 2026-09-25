@@ -162,15 +162,15 @@ export default function PublicQuiz(){
   const questionNumber=steps.slice(0,idx+1).filter(isDiagnosticQuestion).length;
   const progress=steps.length>1?Math.round((idx/(steps.length-1))*100):100;
   const questionCounter=step.kind==='question'&&step.id!=='salary-range'?`${questionNumber}/${questionCount}`:'';
-  const pmoLikertQuestions=surveySlug==='pmo-vmo'
-    ? steps.filter((s):s is Extract<Step,{kind:'question'}>=>s.kind==='question'&&s.input==='scale'&&/^pmo-q[1-6]$/.test(s.id))
+  const groupedLikertQuestions=surveySlug==='pmo-vmo'||surveySlug==='gestao-agil-sem-bagunca'
+    ? steps.filter((s):s is Extract<Step,{kind:'question'}>=>s.kind==='question'&&s.input==='scale'&&(surveySlug==='pmo-vmo'?/^pmo-q[1-6]$/:/^agile-q[1-6]$/).test(s.id))
     : [];
-  const pmoLikertIds=new Set(pmoLikertQuestions.map(q=>q.id));
-  const isPmoLikertScreen=step.kind==='question'&&pmoLikertIds.has(step.id);
-  const pmoLikertFirstIndex=pmoLikertQuestions.length?steps.findIndex(s=>s.id===pmoLikertQuestions[0].id):-1;
-  const pmoLikertLastIndex=pmoLikertQuestions.length?steps.findIndex(s=>s.id===pmoLikertQuestions[pmoLikertQuestions.length-1].id):-1;
-  const pmoLikertComplete=pmoLikertQuestions.length>0&&pmoLikertQuestions.every(q=>typeof answers[q.id]==='string');
-  const visibleQuestionCounter=isPmoLikertScreen?`1–${pmoLikertQuestions.length}/${questionCount}`:questionCounter;
+  const groupedLikertIds=new Set(groupedLikertQuestions.map(q=>q.id));
+  const isGroupedLikertScreen=step.kind==='question'&&groupedLikertIds.has(step.id);
+  const groupedLikertFirstIndex=groupedLikertQuestions.length?steps.findIndex(s=>s.id===groupedLikertQuestions[0].id):-1;
+  const groupedLikertLastIndex=groupedLikertQuestions.length?steps.findIndex(s=>s.id===groupedLikertQuestions[groupedLikertQuestions.length-1].id):-1;
+  const groupedLikertComplete=groupedLikertQuestions.length>0&&groupedLikertQuestions.every(q=>typeof answers[q.id]==='string');
+  const visibleQuestionCounter=isGroupedLikertScreen?`1–${groupedLikertQuestions.length}/${questionCount}`:questionCounter;
 
   const navigate=(delta:1|-1)=>{
     if(navigationLocked.current) return;
@@ -186,11 +186,11 @@ export default function PublicQuiz(){
     setIdx(Math.max(0,Math.min(target,steps.length-1)));
     window.setTimeout(()=>{navigationLocked.current=false;},260);
   };
-  const selectPmoLikert=(s:Extract<Step,{kind:'question'}>,value:string)=>{
+  const selectGroupedLikert=(s:Extract<Step,{kind:'question'}>,value:string)=>{
     setAnswers(current=>({...current,[s.id]:value}));
   };
-  const finishPmoLikert=()=>{
-    if(pmoLikertComplete&&pmoLikertLastIndex>=0) goTo(pmoLikertLastIndex+1);
+  const finishGroupedLikert=()=>{
+    if(groupedLikertComplete&&groupedLikertLastIndex>=0) goTo(groupedLikertLastIndex+1);
   };
 
   const select=(s:Extract<Step,{kind:'question'}>, value:string)=>{
@@ -263,7 +263,7 @@ export default function PublicQuiz(){
   };
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><button onClick={()=>isPmoLikertScreen&&pmoLikertFirstIndex>0?goTo(pmoLikertFirstIndex-1):back()} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">{previewMode?'Prévia do rascunho':presentation.quizLabel}</div><div className="counter">{visibleQuestionCounter}</div></div>
+    <div className="quiz-top"><button onClick={()=>isGroupedLikertScreen&&groupedLikertFirstIndex>0?goTo(groupedLikertFirstIndex-1):back()} disabled={idx===0}><ArrowLeft/></button><div className="quiz-logo">{previewMode?'Prévia do rascunho':presentation.quizLabel}</div><div className="counter">{visibleQuestionCounter}</div></div>
     <div className="quiz-progress"><span style={{width:`${progress}%`}}/></div>
     <div className="quiz-stage">
       {step.kind==='branch' && (()=>{
@@ -295,38 +295,38 @@ export default function PublicQuiz(){
       })()}
       {step.kind==='intro' && intro && <div className="intro-card intro-certificate-screen" data-step-id={step.id}>
         <div className="certificate-image-wrap">
-          <img className="certificate-image" src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt={surveySlug==='pmo-vmo'?'Capa do livro Estratégia em Ação':'Certificado Gestão de Projetos com IA - Formação Mestre GP'} loading="eager" decoding="async" />
+          <img className="certificate-image" src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt={surveySlug==='pmo-vmo'?'Capa do livro Estratégia em Ação':surveySlug==='gestao-agil-sem-bagunca'?'Capa do ebook Gestão Ágil sem Bagunça':'Certificado Gestão de Projetos com IA - Formação Mestre GP'} loading="eager" decoding="async" />
         </div>
         <h1>{introHeading(text(step.title))}</h1>
         <p className="intro-question">{text(intro.text)}</p>
-        <div className="intro-choice-row">
+        {surveySlug==='gestao-agil-sem-bagunca'?<button className="primary big" onClick={()=>chooseBranch('sim')}>{text(step.cta)}</button>:<div className="intro-choice-row">
           <button className="primary intro-choice" onClick={()=>chooseBranch('sim')}>Sim <span>→</span></button>
           <button className="primary intro-choice" onClick={()=>chooseBranch('nao')}>Não <span>→</span></button>
-        </div>
+        </div>}
       </div>}
-      {isPmoLikertScreen && <div className="question-view qf-pmo-likert-group" data-step-id="pmo-likert-group">
-        <h1>Como você avalia sua maturidade em PMO?</h1>
+      {isGroupedLikertScreen && <div className="question-view qf-pmo-likert-group" data-step-id="grouped-likert">
+        <h1>{surveySlug==='pmo-vmo'?'Como você avalia sua maturidade em PMO?':'Como você trabalha hoje?'}</h1>
         <p className="muted center">Marque o quanto cada afirmação representa sua atuação hoje.</p>
         <div className="qf-pmo-likert-legend" aria-label="Escala Likert"><span><b>1</b> = Discordo totalmente</span><span><b>5</b> = Concordo totalmente</span></div>
         <div className="qf-pmo-likert-scroll">
           <div className="qf-pmo-likert-matrix">
             <div className="qf-pmo-likert-header">
               <span/>
-              {pmoLikertQuestions[0]?.options.map(o=><span key={o.value}>{text(o.label)}</span>)}
+              {groupedLikertQuestions[0]?.options.map(o=><span key={o.value}>{text(o.label)}</span>)}
             </div>
-            {pmoLikertQuestions.map((q,qIndex)=><div className="qf-pmo-likert-row" key={q.id}>
+            {groupedLikertQuestions.map((q,qIndex)=><div className="qf-pmo-likert-row" key={q.id}>
               <div className="qf-pmo-likert-statement"><b>{qIndex+1}.</b> {text(q.title)}</div>
               {q.options.map(o=>{
                 const selected=answers[q.id]===o.value;
-                return <button type="button" className={`qf-pmo-likert-choice ${selected?'selected':''}`} aria-label={`${text(q.title)} — ${text(o.label)}`} aria-pressed={selected} key={o.value} onClick={()=>selectPmoLikert(q,o.value)}><span>{o.value}</span></button>;
+                return <button type="button" className={`qf-pmo-likert-choice ${selected?'selected':''}`} aria-label={`${text(q.title)} — ${text(o.label)}`} aria-pressed={selected} key={o.value} onClick={()=>selectGroupedLikert(q,o.value)}><span>{o.value}</span></button>;
               })}
             </div>)}
           </div>
         </div>
-        <button className="primary big" disabled={!pmoLikertComplete} onClick={finishPmoLikert}>Continuar</button>
+        <button className="primary big" disabled={!groupedLikertComplete} onClick={finishGroupedLikert}>Continuar</button>
       </div>}
-      {step.kind==='question' && !isPmoLikertScreen && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{text(o.label)}</span></button>})}</div></div>}
-      {step.kind==='question' && !isPmoLikertScreen && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{text(o.label)}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
+      {step.kind==='question' && !isGroupedLikertScreen && step.layout==='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className="photo-choice-row">{step.options.map(o=>{const selected=answers[step.id]===o.value;return <button key={o.value} className={`photo-choice ${selected?'selected':''}`} onClick={()=>select(step,o.value)}><div className="photo-choice-art">{o.photo==='female'?<img src="/avatars/woman.webp" alt="Feminino"/>:<img src="/avatars/man.webp" alt="Masculino"/>}</div><span>{text(o.label)}</span></button>})}</div></div>}
+      {step.kind==='question' && !isGroupedLikertScreen && step.layout!=='photo' && <div className="question-view" data-step-id={step.id}><h1>{text(step.title)}</h1>{step.subtitle&&<p className="muted center">{text(step.subtitle)}</p>}<div className={step.input==='scale'?'scale-row':'answer-stack'}>{step.options.map(o=>{const val=answers[step.id];const selected=Array.isArray(val)?val.includes(o.value):val===o.value;return <button className={`answer ${selected?'selected':''}`} key={o.value} onClick={()=>select(step,o.value)}><span>{o.emoji}</span><span className="answer-label">{text(o.label)}</span>{step.input==='multi'&&<i>{selected?<Check size={18}/>:''}</i>}</button>})}</div>{step.input==='multi'&&<button className="primary big" disabled={!Array.isArray(answers[step.id])||!(answers[step.id] as string[]).length} onClick={next}>Continuar</button>}</div>}
       {step.kind==='insight' && insight && surveySlug==='pmo-vmo' && step.id==='insight-pre-result-guide' && <div className="insight-view qf-pmo-impact-context" data-step-id={step.id}>
         <h1>{text(step.title)}</h1>
         {step.icons && <ul className="qf-pmo-impact-list">{step.icons.map(item=><li key={item.text}><strong>{text(item.emoji)}:</strong> <span>{text(item.text)}</span></li>)}</ul>}
@@ -353,6 +353,8 @@ function Result({surveySlug,name,pct,level,dimensions,salaryRange,onRestart}:{su
   const chartData=presentation.dimensions
     .filter(([,key])=>Object.prototype.hasOwnProperty.call(dimensions,key))
     .map(([label,key])=>[label,dimensions[key]] as const);
+  const strongest=chartData.reduce<(typeof chartData)[number]|null>((best,item)=>!best||item[1]>best[1]?item:best,null);
+  const nextFocus=chartData.reduce<(typeof chartData)[number]|null>((lowest,item)=>!lowest||item[1]<lowest[1]?item:lowest,null);
   const baseline = presentation.showSalaryProjection && salaryRange ? salaryMidpoints[salaryRange] : undefined;
   const projection = baseline ? projectSalary(baseline) : null;
   const fmt = (n:number)=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
@@ -363,8 +365,14 @@ function Result({surveySlug,name,pct,level,dimensions,salaryRange,onRestart}:{su
     <div className="score-card"><div className="gauge"><i style={{left:`calc(${pct}% - 10px)`}}/></div><div className="gauge-labels">{presentation.gaugeLabels.map(label=><span key={label}>{label}</span>)}</div><b className="score-number">{pct}%</b></div>
     <div className="result-copy"><h2>{copy.headline}</h2><p>{copy.next}</p></div>
 
+    {surveySlug==='gestao-agil-sem-bagunca'&&strongest&&nextFocus&&<section className="dimension-card">
+      <div className="section-heading"><small>Leitura do seu resultado</small><h2>Seu ponto forte e seu próximo foco</h2></div>
+      <p><strong>Você já mostra força em {strongest[0].toLowerCase()} ({strongest[1]}%).</strong></p>
+      <p><strong>Seu maior espaço para evoluir é {nextFocus[0].toLowerCase()} ({nextFocus[1]}%).</strong> Use essa dimensão para escolher uma melhoria pequena e aplicá-la na próxima entrega.</p>
+    </section>}
+
     {chartData.length>0&&<section className="dimension-card">
-      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>{surveySlug==='pmo-vmo'?'As competências que já sustentam sua atuação e onde está o próximo salto':surveySlug==='tire-projeto-do-papel'?'Onde você já consegue fazer acontecer e onde ainda existe espaço para evoluir':'Onde sua IA já gera valor e onde ainda existe espaço para crescer'}</h2></div>
+      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>{surveySlug==='pmo-vmo'?'As competências que já sustentam sua atuação e onde está o próximo salto':surveySlug==='tire-projeto-do-papel'?'Onde você já consegue fazer acontecer e onde ainda existe espaço para evoluir':surveySlug==='gestao-agil-sem-bagunca'?'Onde seu trabalho já flui e onde a bagunça ainda atrapalha':'Onde sua IA já gera valor e onde ainda existe espaço para crescer'}</h2></div>
       <div className="dimension-bars">{chartData.map(([label,value])=><div className="dimension-row" key={label}><div className="dimension-meta"><span>{label}</span><b>{value}%</b></div><div className="dimension-track"><i style={{width:`${value}%`}}/></div></div>)}</div>
     </section>}
 
