@@ -30,7 +30,13 @@
   background:radial-gradient(circle,rgba(74,169,255,.36),transparent 68%);
   pointer-events:none;
 }
-.qf-book-offer-hero .ebook-cover-real{position:relative;z-index:1;display:grid;place-items:center}
+.qf-book-offer-hero .ebook-cover-real{
+  position:relative;
+  z-index:1;
+  display:grid;
+  place-items:center;
+  min-height:330px;
+}
 .qf-book-offer-hero .ebook-cover-real img{
   width:min(230px,100%);
   max-height:330px;
