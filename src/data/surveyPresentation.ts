@@ -104,6 +104,38 @@ const pmoVmo: SurveyPresentation = {
   },
 };
 
+
+const tireProjeto: SurveyPresentation = {
+  slug:'tire-projeto-do-papel',
+  quizLabel:'Diagnóstico Tire Esse Projeto do Papel',
+  branchAnswerKey:'project-start',
+  processing:{
+    labels:['Mapeando como você lida com projetos','Analisando sua forma de planejar e executar','Identificando seu próximo salto'],
+    subtitle:'Cruzamos suas respostas para entender como você transforma ideias em projetos claros, executáveis e capazes de gerar resultado.',
+  },
+  resultKicker:'Sua maturidade para tirar projetos do papel',
+  levels:{
+    1:{name:'Idealizador Travado',headline:'Você tem boas ideias, mas ainda perde força na hora de transformar intenção em execução.',next:'Seu próximo passo é ganhar clareza, estruturar melhor o início e criar um caminho executável antes de sair fazendo.'},
+    2:{name:'Organizador em Evolução',headline:'Você já consegue dar alguma estrutura aos projetos, mas ainda há pontos frágeis entre planejar, executar e ajustar.',next:'Seu próximo salto é transformar planejamento em rotina prática, antecipar riscos e acompanhar o projeto com mais consistência.'},
+    3:{name:'Executor Estruturado',headline:'Você já demonstra boa capacidade de transformar ideias em projetos organizados e conduzir a execução com método.',next:'Agora o desafio é elevar a qualidade das decisões, adaptação e conexão entre entrega, benefício e resultado.'},
+    4:{name:'Realizador de Projetos',headline:'Você já pensa o projeto do início ao fim, conectando clareza, planejamento, execução, adaptação e valor.',next:'Seu próximo nível é tornar essa capacidade cada vez mais previsível, replicável e orientada a benefícios.'},
+  },
+  gaugeLabels:['Ideia','Estrutura','Execução','Resultado'],
+  dimensions:[
+    ['Clareza e Viabilidade','clareza_viabilidade'],
+    ['Planejamento e Estruturação','planejamento_estruturacao'],
+    ['Execução e Adaptação','execucao_adaptacao'],
+    ['Controle, Entrega e Valor','controle_valor'],
+  ],
+  showSalaryProjection:false,
+  insightCard:{
+    eyebrow:'PMI | Benefits Realization Management',
+    title:'Tirar um projeto do papel é mais do que concluir tarefas. É transformar esforço em resultado e benefício.',
+    body:'O guia do PMI reforça que entregas, resultados, benefícios e valor fazem parte de uma mesma cadeia. Projetos bem conduzidos mantêm essa conexão visível do início ao encerramento.',
+    source:'PMI, Benefits Realization Management: A Practice Guide, 2019',
+  },
+};
+
 export function getSurveyPresentation(slug:string): SurveyPresentation {
-  return slug === 'pmo-vmo' ? pmoVmo : gpIa;
+  return slug === 'pmo-vmo' ? pmoVmo : slug === 'tire-projeto-do-papel' ? tireProjeto : gpIa;
 }
