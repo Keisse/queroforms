@@ -386,6 +386,15 @@ function Result({surveySlug,name,pct,level,dimensions,salaryRange,onRestart}:{su
       {presentation.insightCard.source&&<div className="source-note">Fonte: {presentation.insightCard.source}</div>}
     </section>
 
+    {surveySlug==='pmo-vmo'&&<div className="qf-result-book-cover-standalone">
+      <img
+        src="/books/estrategia-em-acao-pmo-vmo.webp"
+        alt="Capa do livro Estratégia em Ação: da gestão de projetos à gestão de valor com PMOs e VMOs"
+        loading="eager"
+        decoding="async"
+      />
+    </div>}
+
     <ResultBookOffer surveySlug={surveySlug}/>
     <ResultSalesSections surveySlug={surveySlug}/>
 
