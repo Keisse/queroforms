@@ -364,7 +364,7 @@ function Result({surveySlug,name,pct,level,dimensions,salaryRange,onRestart}:{su
     <div className="result-copy"><h2>{copy.headline}</h2><p>{copy.next}</p></div>
 
     {chartData.length>0&&<section className="dimension-card">
-      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>{surveySlug==='pmo-vmo'?'As competências que já sustentam sua atuação e onde está o próximo salto':'Onde sua IA já gera valor e onde ainda existe espaço para crescer'}</h2></div>
+      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>{surveySlug==='pmo-vmo'?'As competências que já sustentam sua atuação e onde está o próximo salto':surveySlug==='tire-projeto-do-papel'?'Onde você já consegue fazer acontecer e onde ainda existe espaço para evoluir':'Onde sua IA já gera valor e onde ainda existe espaço para crescer'}</h2></div>
       <div className="dimension-bars">{chartData.map(([label,value])=><div className="dimension-row" key={label}><div className="dimension-meta"><span>{label}</span><b>{value}%</b></div><div className="dimension-track"><i style={{width:`${value}%`}}/></div></div>)}</div>
     </section>}
 
