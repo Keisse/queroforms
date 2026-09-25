@@ -49,7 +49,7 @@ export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
     return <div className="offer-card qf-book-offer-hero">
       <div className="ebook-cover-real">
         <img
-          src="/books/tire-projeto-do-papel-cover.webp"
+          src="/books/tire-cover-validated.jpg"
           alt="Capa do livro Tire Esse Projeto do Papel, de Mario Trentim"
           loading="eager"
           decoding="async"
