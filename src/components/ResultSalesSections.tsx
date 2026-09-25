@@ -1,6 +1,7 @@
 const AI_CHECKOUT_URL = 'https://chk.eduzz.com/40QR6AJP9B';
 const AI_DETAILS_URL = 'https://trentim.com/livro-gestao-de-projetos-com-ia-perpetuo/#';
 const PMO_CHECKOUT_URL = 'https://chk.eduzz.com/xgklntvt';
+const TIRE_PROJETO_CHECKOUT_URL = 'https://chk.eduzz.com/3va57nye';
 
 function AuthorSection(){
   return <section className="qf-sales-section qf-sales-author">
@@ -44,6 +45,26 @@ export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
     </div>;
   }
 
+  if(surveySlug==='tire-projeto-do-papel'){
+    return <div className="offer-card qf-book-offer-hero">
+      <div className="ebook-cover-real">
+        <img
+          src="/books/tire-projeto-do-papel-cover.svg"
+          alt="Capa do livro Tire Esse Projeto do Papel, de Mario Trentim"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+      <div className="offer-copy">
+        <small className="qf-book-kicker">O PRÓXIMO PASSO DO SEU DIAGNÓSTICO</small>
+        <h2>Tire Esse Projeto do Papel!</h2>
+        <p>Um guia prático para transformar boas ideias em projetos claros, organizados, executáveis e capazes de gerar resultado.</p>
+        <a className="primary big qf-sales-primary" href={TIRE_PROJETO_CHECKOUT_URL} target="_blank" rel="noreferrer">QUERO TIRAR MEU PROJETO DO PAPEL</a>
+        <div className="secondary big qf-price-link"><strong>R$ 47</strong></div>
+      </div>
+    </div>;
+  }
+
   return <div className="offer-card qf-book-offer-hero">
     <div className="ebook-cover-real">
       <img src="https://allevotech.com.br/wp-content/uploads/2026/06/Capa-760.webp" alt="Capa do livro Gestão de Projetos com Inteligência Artificial, de Mario Trentim" />
@@ -80,6 +101,31 @@ export default function ResultSalesSections({surveySlug='gp-ia'}:{surveySlug?:st
         <h2>Estratégia em Ação por <strong>R$ 47</strong></h2>
         <p>Da gestão de projetos à gestão de valor com PMOs &amp; VMOs.</p>
         <a className="primary big qf-sales-primary qf-sales-final-button" href={PMO_CHECKOUT_URL} target="_blank" rel="noreferrer">Quero meu exemplar por R$47</a>
+      </section>
+    </>;
+  }
+
+  if(surveySlug==='tire-projeto-do-papel'){
+    return <>
+      <section className="qf-sales-section qf-sales-map">
+        <span className="qf-sales-eyebrow">DO DIAGNÓSTICO PARA A PRÁTICA</span>
+        <h2>Você não precisa de mais uma ideia. Precisa de um caminho para fazer acontecer.</h2>
+        <p>O livro transforma os fundamentos da Gestão de Projetos em uma sequência prática para sair da intenção, organizar o trabalho e conduzir o projeto até a entrega.</p>
+      </section>
+
+      <section className="qf-sales-section qf-sales-difference">
+        <span className="qf-sales-eyebrow">DA IDEIA AO RESULTADO</span>
+        <h2>Clareza para começar. Estrutura para planejar. Método para executar. Controle para chegar ao resultado.</h2>
+        <p>Use o seu diagnóstico como ponto de partida para fortalecer exatamente as competências que fazem um projeto deixar de ser promessa e virar realidade.</p>
+      </section>
+
+      <AuthorSection/>
+
+      <section className="qf-sales-section qf-sales-final">
+        <span className="qf-sales-eyebrow">COMECE AGORA</span>
+        <h2>Tire Esse Projeto do Papel por <strong>R$ 47</strong></h2>
+        <p>Fundamentos da Gestão de Projetos para descomplicar sua vida e transformar ideias em projetos reais.</p>
+        <a className="primary big qf-sales-primary qf-sales-final-button" href={TIRE_PROJETO_CHECKOUT_URL} target="_blank" rel="noreferrer">Quero tirar meu projeto do papel por R$47</a>
       </section>
     </>;
   }
