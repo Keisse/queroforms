@@ -1,0 +1,634 @@
+[
+  {
+    "id": "intro",
+    "kind": "intro",
+    "title": "Seu trabalho é ágil ou só parece ágil? 👀",
+    "body": "Reuniões, post-its e tarefas em um quadro podem até parecer agilidade. Mas o que acontece quando as prioridades mudam, o trabalho trava ou chega a hora de entregar?\n\nEm poucos minutos, descubra como você lida com essas situações — e onde pode trocar a correria por resultados.\n[[QF_INTRO_IMAGE:https://forms.trentim.com/books/gestao-agil-sem-bagunca-cover.webp]]",
+    "cta": "Começar diagnóstico",
+    "art": "hero"
+  },
+  {
+    "id": "agile-start-response",
+    "kind": "branch",
+    "variants": {
+      "sim": {
+        "title": "Vamos ver o que acontece na prática.",
+        "body": "Agilidade de verdade aparece nas decisões do dia a dia. Responda pensando em como você costuma agir, não em como gostaria de agir."
+      },
+      "nao": {
+        "title": "Vamos começar por onde você está.",
+        "body": "Você não precisa conhecer Scrum ou Kanban para responder. Pense no que faz quando precisa organizar, entregar e ajustar seu trabalho."
+      }
+    }
+  },
+  {
+    "id": "agile-q1",
+    "kind": "question",
+    "title": "Quando tudo parece urgente, consigo escolher o que gera mais valor.",
+    "input": "scale",
+    "dimension": "foco_valor",
+    "options": [
+      {
+        "label": "Discordo totalmente",
+        "value": "1",
+        "score": 0
+      },
+      {
+        "label": "Discordo",
+        "value": "2",
+        "score": 1
+      },
+      {
+        "label": "Nem concordo nem discordo",
+        "value": "3",
+        "score": 2
+      },
+      {
+        "label": "Concordo",
+        "value": "4",
+        "score": 3
+      },
+      {
+        "label": "Concordo totalmente",
+        "value": "5",
+        "score": 4
+      }
+    ]
+  },
+  {
+    "id": "agile-q2",
+    "kind": "question",
+    "title": "Antes de começar uma tarefa, procuro entender para quem ela será útil.",
+    "input": "scale",
+    "dimension": "foco_valor",
+    "options": [
+      {
+        "label": "Discordo totalmente",
+        "value": "1",
+        "score": 0
+      },
+      {
+        "label": "Discordo",
+        "value": "2",
+        "score": 1
+      },
+      {
+        "label": "Nem concordo nem discordo",
+        "value": "3",
+        "score": 2
+      },
+      {
+        "label": "Concordo",
+        "value": "4",
+        "score": 3
+      },
+      {
+        "label": "Concordo totalmente",
+        "value": "5",
+        "score": 4
+      }
+    ]
+  },
+  {
+    "id": "agile-q3",
+    "kind": "question",
+    "title": "Evito começar muitas coisas ao mesmo tempo.",
+    "input": "scale",
+    "dimension": "fluxo_entrega",
+    "options": [
+      {
+        "label": "Discordo totalmente",
+        "value": "1",
+        "score": 0
+      },
+      {
+        "label": "Discordo",
+        "value": "2",
+        "score": 1
+      },
+      {
+        "label": "Nem concordo nem discordo",
+        "value": "3",
+        "score": 2
+      },
+      {
+        "label": "Concordo",
+        "value": "4",
+        "score": 3
+      },
+      {
+        "label": "Concordo totalmente",
+        "value": "5",
+        "score": 4
+      }
+    ]
+  },
+  {
+    "id": "agile-q4",
+    "kind": "question",
+    "title": "Consigo transformar trabalho em entregas pequenas e concluídas.",
+    "input": "scale",
+    "dimension": "fluxo_entrega",
+    "options": [
+      {
+        "label": "Discordo totalmente",
+        "value": "1",
+        "score": 0
+      },
+      {
+        "label": "Discordo",
+        "value": "2",
+        "score": 1
+      },
+      {
+        "label": "Nem concordo nem discordo",
+        "value": "3",
+        "score": 2
+      },
+      {
+        "label": "Concordo",
+        "value": "4",
+        "score": 3
+      },
+      {
+        "label": "Concordo totalmente",
+        "value": "5",
+        "score": 4
+      }
+    ]
+  },
+  {
+    "id": "agile-q5",
+    "kind": "question",
+    "title": "Quando algo trava, converso com as pessoas envolvidas para encontrar uma saída.",
+    "input": "scale",
+    "dimension": "colaboracao_autonomia",
+    "options": [
+      {
+        "label": "Discordo totalmente",
+        "value": "1",
+        "score": 0
+      },
+      {
+        "label": "Discordo",
+        "value": "2",
+        "score": 1
+      },
+      {
+        "label": "Nem concordo nem discordo",
+        "value": "3",
+        "score": 2
+      },
+      {
+        "label": "Concordo",
+        "value": "4",
+        "score": 3
+      },
+      {
+        "label": "Concordo totalmente",
+        "value": "5",
+        "score": 4
+      }
+    ]
+  },
+  {
+    "id": "agile-q6",
+    "kind": "question",
+    "title": "Uso o feedback para mudar meu plano quando necessário.",
+    "input": "scale",
+    "dimension": "adaptacao_aprendizado",
+    "options": [
+      {
+        "label": "Discordo totalmente",
+        "value": "1",
+        "score": 0
+      },
+      {
+        "label": "Discordo",
+        "value": "2",
+        "score": 1
+      },
+      {
+        "label": "Nem concordo nem discordo",
+        "value": "3",
+        "score": 2
+      },
+      {
+        "label": "Concordo",
+        "value": "4",
+        "score": 3
+      },
+      {
+        "label": "Concordo totalmente",
+        "value": "5",
+        "score": 4
+      }
+    ]
+  },
+  {
+    "id": "agile-context-1",
+    "kind": "insight",
+    "eyebrow": "PMI | Guia de práticas ágeis",
+    "title": "Ter um quadro cheio não significa avançar.",
+    "body": "O que importa é fazer o trabalho fluir até uma entrega útil. Ao limitar tarefas simultâneas, você enxerga melhor os bloqueios e abre espaço para concluir.",
+    "source": "PMI, Guia de práticas ágeis, 2ª edição, seção 5.5, pp. 80–82",
+    "visual": "chart",
+    "icons": [
+      {
+        "emoji": "1",
+        "text": "Visualize o trabalho"
+      },
+      {
+        "emoji": "2",
+        "text": "Limite o que está em andamento"
+      },
+      {
+        "emoji": "3",
+        "text": "Conclua e aprenda"
+      }
+    ]
+  },
+  {
+    "id": "agile-q7",
+    "kind": "question",
+    "title": "Sua semana começou com mais pedidos do que cabe na agenda. O que você faz?",
+    "input": "single",
+    "dimension": "foco_valor",
+    "options": [
+      {
+        "label": "Começo pelo pedido que chegou primeiro.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Tento avançar um pouco em todos.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Escolho os mais urgentes e adio o restante.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Alinho o que gera mais valor, escolho o que cabe e deixo claras as trocas.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-q8",
+    "kind": "question",
+    "title": "Você percebe que há muitas tarefas em andamento e poucas concluídas. Qual é sua reação?",
+    "input": "single",
+    "dimension": "fluxo_entrega",
+    "options": [
+      {
+        "label": "Abro novas tarefas para não deixar ninguém parado.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Peço atualizações sobre tudo que está aberto.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Escolho algumas tarefas para concluir primeiro.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Identifico onde o fluxo travou, limito o trabalho simultâneo e ajudo a concluir.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-q9",
+    "kind": "question",
+    "title": "Uma pessoa da equipe está bloqueada e precisa da sua ajuda. O que você faz?",
+    "input": "single",
+    "dimension": "colaboracao_autonomia",
+    "options": [
+      {
+        "label": "Aguardo a próxima reunião para tratar do assunto.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Peço que ela registre o bloqueio no quadro.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Converso com ela e tento encontrar uma solução.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Entendo a causa com ela, envolvo quem pode decidir e combino como evitar a mesma trava.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-context-2",
+    "kind": "insight",
+    "eyebrow": "PMI | Guia de práticas ágeis",
+    "title": "Entregue algo útil. Ouça. Ajuste.",
+    "body": "Quando ainda há incerteza, uma entrega pequena permite descobrir cedo se a solução ajuda quem vai usá-la. O retorno orienta o próximo passo antes de investir na direção errada.",
+    "source": "PMI, Guia de práticas ágeis, 2ª edição, seção 2.1, pp. 9–10",
+    "visual": "sparkle",
+    "icons": [
+      {
+        "emoji": "1",
+        "text": "Entregue"
+      },
+      {
+        "emoji": "2",
+        "text": "Ouça"
+      },
+      {
+        "emoji": "3",
+        "text": "Ajuste"
+      }
+    ]
+  },
+  {
+    "id": "agile-q10",
+    "kind": "question",
+    "title": "Você tem uma ideia promissora, mas ainda não sabe se ela será útil para quem vai usá-la. Como começa?",
+    "input": "single",
+    "dimension": "foco_valor",
+    "options": [
+      {
+        "label": "Desenvolvo a solução completa antes de mostrar.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Planejo todos os detalhes para reduzir as dúvidas.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Preparo uma primeira versão pequena para apresentar.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Defino o que preciso aprender, testo uma versão pequena e uso o retorno para decidir o próximo passo.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-q11",
+    "kind": "question",
+    "title": "No meio do trabalho, surge uma nova prioridade. O que você faz?",
+    "input": "single",
+    "dimension": "adaptacao_aprendizado",
+    "options": [
+      {
+        "label": "Acrescento a demanda à lista sem mudar o plano.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Interrompo tudo e começo a nova demanda.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Comparo a nova prioridade com as tarefas atuais.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Confirmo seu valor e urgência, negocio o que sai ou espera e ajusto o plano com os envolvidos.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-q12",
+    "kind": "question",
+    "title": "Você precisa mostrar progresso em um projeto. O que apresenta?",
+    "input": "single",
+    "dimension": "fluxo_entrega",
+    "options": [
+      {
+        "label": "Quantas tarefas foram iniciadas.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "O percentual estimado de conclusão.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "O que foi concluído e o que falta entregar.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "O que já funciona, o retorno recebido e o que será ajustado a seguir.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-context-3",
+    "kind": "insight",
+    "eyebrow": "PMI | Guia de práticas ágeis",
+    "title": "Autonomia precisa de clareza.",
+    "body": "Saber quem decide, quem contribui e quem remove obstáculos ajuda as pessoas a agir com liberdade e responsabilidade. A clareza deve facilitar a entrega, sem virar mais uma camada de burocracia.",
+    "source": "PMI, Guia de práticas ágeis, 2ª edição, seção 4.5, pp. 57–58",
+    "visual": "people"
+  },
+  {
+    "id": "agile-q13",
+    "kind": "question",
+    "title": "Uma reunião recorrente ocupa muito tempo e raramente muda alguma decisão. O que você faz?",
+    "input": "single",
+    "dimension": "colaboracao_autonomia",
+    "options": [
+      {
+        "label": "Continuo participando para não perder informações.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Peço que a reunião seja mais curta.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Proponho uma pauta e uma decisão esperada.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Verifico se ela ainda é necessária e proponho o formato mais simples que resolva seu propósito.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-q14",
+    "kind": "question",
+    "title": "Alguém aponta um problema em uma entrega sua. Como você reage?",
+    "input": "single",
+    "dimension": "adaptacao_aprendizado",
+    "options": [
+      {
+        "label": "Explico por que segui o plano combinado.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Anoto o comentário para uma revisão futura.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Pergunto o que não funcionou e faço a correção.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Entendo o impacto para quem usa, ajusto a entrega e aplico o aprendizado no próximo ciclo.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-q15",
+    "kind": "question",
+    "title": "Sua equipe repete o mesmo problema a cada entrega. Qual é seu próximo passo?",
+    "input": "single",
+    "dimension": "colaboracao_autonomia",
+    "options": [
+      {
+        "label": "Reforço que todos precisam ter mais atenção.",
+        "value": "0",
+        "score": 0
+      },
+      {
+        "label": "Crio uma regra para evitar o erro.",
+        "value": "1",
+        "score": 1
+      },
+      {
+        "label": "Reúno a equipe para discutir o que aconteceu.",
+        "value": "2",
+        "score": 2
+      },
+      {
+        "label": "Investigo a causa com a equipe, testo uma mudança pequena e verifico se ela resolveu o problema.",
+        "value": "3",
+        "score": 3
+      }
+    ]
+  },
+  {
+    "id": "agile-context-4",
+    "kind": "insight",
+    "eyebrow": "PMI | Guia de práticas ágeis",
+    "title": "Mais velocidade não garante mais valor.",
+    "body": "Um número maior de tarefas ou pontos concluídos pode esconder desperdício. Observe o que foi entregue, quanto tempo o trabalho levou e se produziu o resultado esperado.",
+    "source": "PMI, Guia de práticas ágeis, 2ª edição, seção 5.5, pp. 80–82",
+    "visual": "chart",
+    "icons": [
+      {
+        "emoji": "↗",
+        "text": "Fluxo: o trabalho consegue chegar ao fim?"
+      },
+      {
+        "emoji": "◎",
+        "text": "Resultado: a entrega ajudou quem precisava?"
+      }
+    ]
+  },
+  {
+    "id": "agile-pattern",
+    "kind": "insight",
+    "eyebrow": "Quase lá",
+    "title": "Seu diagnóstico já consegue enxergar um padrão claro.",
+    "body": "Estamos cruzando suas escolhas sobre prioridades, fluxo, colaboração e adaptação para mostrar seu momento atual.",
+    "stat": "Seu resultado se baseia nas suas respostas, não em quantos termos ágeis você conhece.",
+    "visual": "sparkle"
+  },
+  {
+    "id": "salary-range",
+    "kind": "question",
+    "title": "Qual é sua faixa salarial atual?",
+    "subtitle": "Isso nos ajuda a contextualizar seu momento profissional. Não altera sua pontuação.",
+    "input": "single",
+    "options": [
+      {
+        "label": "Até R$ 5.000",
+        "value": "faixa1",
+        "emoji": "💵"
+      },
+      {
+        "label": "R$ 5.001 a R$ 10.000",
+        "value": "faixa2",
+        "emoji": "💼"
+      },
+      {
+        "label": "R$ 10.001 a R$ 15.000",
+        "value": "faixa3",
+        "emoji": "📈"
+      },
+      {
+        "label": "R$ 15.001 a R$ 25.000",
+        "value": "faixa4",
+        "emoji": "🚀"
+      },
+      {
+        "label": "Acima de R$ 25.000",
+        "value": "faixa5",
+        "emoji": "🏆"
+      }
+    ]
+  },
+  {
+    "id": "email",
+    "kind": "email",
+    "title": "Seu diagnóstico está quase pronto. Qual e-mail devemos usar para liberar o resultado?"
+  },
+  {
+    "id": "name",
+    "kind": "name",
+    "title": "E como podemos chamar você?"
+  },
+  {
+    "id": "processing",
+    "kind": "processing",
+    "title": "Seu resultado está sendo gerado."
+  },
+  {
+    "id": "insight-pre-result-guide",
+    "kind": "insight",
+    "eyebrow": "PMI | Guia de práticas ágeis",
+    "title": "Agilidade de verdade se revela na prática.",
+    "body": "Seu resultado conecta foco no valor, fluxo, colaboração e aprendizado. Veja onde você já manda bem e escolha um ajuste concreto para começar hoje.",
+    "source": "PMI, Guia de práticas ágeis, 2ª edição, seções 2 e 5",
+    "visual": "sparkle"
+  },
+  {
+    "id": "result",
+    "kind": "result"
+  }
+]
