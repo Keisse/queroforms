@@ -3,7 +3,7 @@ export type ChartBar = { label: string; value: number; suffix?: string; highligh
 export type IconItem = { emoji: string; text: string };
 export type Step =
   | { id: string; kind: 'intro'; title: string; body: string; cta: string; art?: 'hero' }
-  | { id: string; kind: 'branch'; variants: Record<string, { title: string; body: string }> }
+  | { id: string; kind: 'branch'; imageUrl?: string; variants: Record<string, { title: string; body: string }> }
   | { id: string; kind: 'question'; title: string; subtitle?: string; input: 'single'|'multi'|'scale'; options: Option[]; dimension?: string; layout?: 'photo' }
   | { id: string; kind: 'insight'; eyebrow?: string; title: string; body: string; stat?: string; source?: string; chart?: ChartBar[]; icons?: IconItem[]; visual?: 'chart'|'people'|'sparkle' }
   | { id: string; kind: 'processing'; title: string }

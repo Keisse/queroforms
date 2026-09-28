@@ -276,7 +276,7 @@ export default function PublicQuiz(){
       {step.kind==='branch' && (()=>{
         const variant = step.variants[(answers[presentation.branchAnswerKey] as string) || 'sim'] || Object.values(step.variants)[0];
         return <div className="intro-card branch-view" data-step-id={step.id}>
-          <div className="cloud-orbit">
+          {step.imageUrl?<div className="cloud-orbit qf-branch-upload-host"><img src={step.imageUrl} alt="Ilustração desta etapa do diagnóstico"/></div>:<div className="cloud-orbit">
             <span className="cloud-ring cloud-ring-out"/>
             <span className="cloud-ring cloud-ring-in"/>
             <div className="cloud-orbit-center"><Sparkles size={26}/></div>
@@ -288,13 +288,18 @@ export default function PublicQuiz(){
               <span className="cloud-pill p5">💬 Comunicação</span>
               <span className="cloud-pill p6">⚙️ Automação</span>
               <span className="cloud-pill p7">📅 Cronograma</span>
+            </>:surveySlug==='gestao-agil-sem-bagunca'?<>
+              <span className="cloud-pill p1">🎯 Foco</span>
+              <span className="cloud-pill p2">🔄 Fluxo</span>
+              <span className="cloud-pill p4">🤝 Colaboração</span>
+              <span className="cloud-pill p6">📈 Adaptação</span>
             </>:<>
               <span className="cloud-pill p1">🎯 Estratégia</span>
               <span className="cloud-pill p2">🏢 Arquitetura</span>
               <span className="cloud-pill p4">🤝 Influência</span>
               <span className="cloud-pill p6">💎 Valor</span>
             </>}
-          </div>
+          </div>}
           <h1>{text(variant.title)}</h1>
           <p>{text(variant.body)}</p>
           <button className="primary big" onClick={next}>Continuar</button>
