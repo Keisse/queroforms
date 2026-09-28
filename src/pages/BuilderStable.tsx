@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent as ReactChangeEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Option, Step } from '../data/gpIa';
 import { loadSteps, saveSteps } from '../lib/stepsStore';
 import { fetchBuilderSnapshot, publishSteps } from '../lib/surveyConfig';
 import { isProtectedStructuralStep, validateSurveyStructure } from '../lib/surveyValidator';
+import { supabase } from '../lib/supabase';
 
 function draftSlug(slug:string){ return slug.replace(/[^a-z0-9_-]/gi,'_'); }
 function localDraftKey(slug:string){ return slug==='gp-ia' ? 'qf_gp_ia_builder_screen_draft_v4' : `qf_${draftSlug(slug)}_builder_screen_draft_v4`; }
@@ -160,6 +161,8 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
   const [dropTarget,setDropTarget]=useState<{id:string;position:DropPosition}|null>(null);
   const [deleteIdx,setDeleteIdx]=useState<number|null>(null);
   const [confirmText,setConfirmText]=useState('');
+  const [imageUploading,setImageUploading]=useState(false);
+  const [imageUploadError,setImageUploadError]=useState('');
 
   useEffect(()=>{
     let active=true;
@@ -394,6 +397,44 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
     setSavedMsg('Cópia criada. Revise a nova tela e salve a edição antes de publicar.');
   };
 
+
+  const uploadInsightImage=async(event:ReactChangeEvent<HTMLInputElement>)=>{
+    const file=event.target.files?.[0];
+    event.target.value='';
+    if(!file||!step||step.kind!=='insight'||surveySlug!=='gestao-agil-sem-bagunca') return;
+    setImageUploadError('');
+    const allowed=['image/png','image/jpeg','image/webp'];
+    if(!allowed.includes(file.type)){
+      setImageUploadError('Use uma imagem PNG, JPG ou WebP.');
+      return;
+    }
+    if(file.size>5*1024*1024){
+      setImageUploadError('A imagem deve ter no máximo 5 MB.');
+      return;
+    }
+    setImageUploading(true);
+    try{
+      const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+      const safeStep=step.id.replace(/[^a-z0-9_-]/gi,'_');
+      const path=`${surveySlug}/${safeStep}/${Date.now()}.${ext}`;
+      const {error}=await supabase.storage.from('survey-assets').upload(path,file,{
+        cacheControl:'3600',
+        contentType:file.type,
+        upsert:false,
+      });
+      if(error) throw error;
+      const {data}=supabase.storage.from('survey-assets').getPublicUrl(path);
+      if(!data.publicUrl) throw new Error('PUBLIC_URL_NOT_AVAILABLE');
+      update({source:composeInsightSource(insightSource(step).text,data.publicUrl,false)} as Partial<Step>);
+      setSavedMsg('Imagem enviada. Salve a edição desta tela para guardar a alteração.');
+    }catch(err:unknown){
+      const message=err instanceof Error?err.message:'';
+      setImageUploadError(message||'Não foi possível enviar a imagem. Tente novamente.');
+    }finally{
+      setImageUploading(false);
+    }
+  };
+
   const saveCurrentScreen=()=>{
     if(!step||localDraftConflict) return;
     try{
@@ -624,6 +665,15 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
           <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
           <label>Texto</label><textarea value={step.body} onChange={e=>update({body:e.target.value} as Partial<Step>)}/>
           <label>Destaque (stat)</label><textarea value={step.stat||''} onChange={e=>update({stat:e.target.value} as Partial<Step>)}/>
+          {surveySlug==='gestao-agil-sem-bagunca'&&<>
+            <label>Imagem desta tela</label>
+            <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadInsightImage} disabled={imageUploading} style={{display:'none'}}/>
+              {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
+            </label>
+            <small className="muted" style={{display:'block',margin:'0 0 10px'}}>PNG, JPG ou WebP, até 5 MB. A nova imagem substitui a imagem atual desta tela.</small>
+            {imageUploadError&&<div className="save-error" style={{marginBottom:10,padding:'8px 10px'}}>{imageUploadError}</div>}
+          </>}
           <label>URL da imagem</label><input type="url" value={insight.imageUrl} placeholder="https://.../imagem.webp" onChange={e=>update({source:composeInsightSource(insight.text,e.target.value,insight.hideImage)} as Partial<Step>)}/>
           <label style={{display:'flex',alignItems:'center',gap:10,margin:'12px 0 14px',cursor:'pointer',fontWeight:600}}><input type="checkbox" checked={insight.hideImage} onChange={e=>update({source:composeInsightSource(insight.text,insight.imageUrl,e.target.checked)} as Partial<Step>)} style={{width:18,height:18,margin:0,flex:'0 0 auto'}}/><span>Ocultar imagem nesta tela</span></label>
           {insight.hideImage&&<small className="muted" style={{display:'block',margin:'-6px 0 12px'}}>A imagem continua configurada, mas não aparecerá no diagnóstico público.</small>}
