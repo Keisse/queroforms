@@ -33,6 +33,14 @@ test('formulario estruturalmente valido passa', () => {
   assert.deepEqual(result.errors, []);
 });
 
+test('imagem da resposta condicional aceita URL publica e rejeita caminho local', () => {
+  const valid=validSurvey();
+  valid[1]={...valid[1],imageUrl:'https://example.com/gestao-agil.webp'} as Step;
+  assert.equal(validateSurveyStructure(valid).valid,true);
+  valid[1]={...valid[1],imageUrl:'/imagem-local.png'} as Step;
+  assert.match(validateSurveyStructure(valid).errors.join(' '),/imagem da resposta condicional/i);
+});
+
 test('publicacao sem resultado e rejeitada', () => {
   const steps = validSurvey().filter(step => step.kind !== 'result');
   const result = validateSurveyStructure(steps);

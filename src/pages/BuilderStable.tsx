@@ -398,10 +398,10 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
   };
 
 
-  const uploadInsightImage=async(event:ReactChangeEvent<HTMLInputElement>)=>{
+  const uploadScreenImage=async(event:ReactChangeEvent<HTMLInputElement>)=>{
     const file=event.target.files?.[0];
     event.target.value='';
-    if(!file||!step||step.kind!=='insight'||surveySlug!=='gestao-agil-sem-bagunca') return;
+    if(!file||!step||(step.kind!=='insight'&&step.kind!=='branch')||surveySlug!=='gestao-agil-sem-bagunca') return;
     setImageUploadError('');
     const allowed=['image/png','image/jpeg','image/webp'];
     if(!allowed.includes(file.type)){
@@ -425,7 +425,8 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
       if(error) throw error;
       const {data}=supabase.storage.from('survey-assets').getPublicUrl(path);
       if(!data.publicUrl) throw new Error('PUBLIC_URL_NOT_AVAILABLE');
-      update({source:composeInsightSource(insightSource(step).text,data.publicUrl,false)} as Partial<Step>);
+      if(step.kind==='insight') update({source:composeInsightSource(insightSource(step).text,data.publicUrl,false)} as Partial<Step>);
+      else update({imageUrl:data.publicUrl} as Partial<Step>);
       setSavedMsg('Imagem enviada. Salve a edição desta tela para guardar a alteração.');
     }catch(err:unknown){
       const message=err instanceof Error?err.message:'';
@@ -636,7 +637,7 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
             {step.kind==='question'&&<><h2>{step.title}</h2>{step.subtitle&&<p style={{textAlign:'center',color:'#7a8b9c',marginTop:-8}}>{step.subtitle}</p>}{step.options.map(o=><div className="option-card" key={o.value}>{o.emoji?`${o.emoji} `:''}{o.label}</div>)}</>}
             {step.kind==='insight'&&<>{insight?.imageUrl&&!insight.hideImage&&<ImagePreview src={insight.imageUrl} alt="Imagem da tela de contexto"/>}<h2>{step.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>{step.stat&&<div className="option-card"><b>{step.stat}</b></div>}</>}
             {step.kind==='intro'&&intro&&<div className="builder-intro-preview"><div className="builder-certificate-image-wrap"><img src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Imagem da tela inicial"/></div><h2>{step.title}</h2><p className="builder-intro-question">{intro.text}</p><div className="builder-intro-choices"><div>Sim <span>→</span></div><div>Não <span>→</span></div></div></div>}
-            {step.kind==='branch'&&<><h2>{Object.values(step.variants)[0]?.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>Varia conforme a resposta anterior</p></>}
+            {step.kind==='branch'&&<>{step.imageUrl&&<ImagePreview src={step.imageUrl} alt="Imagem da resposta condicional"/>}<h2>{Object.values(step.variants)[0]?.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>Varia conforme a resposta anterior</p></>}
             {(step.kind==='email'||step.kind==='name'||step.kind==='processing')&&<h2>{step.title}</h2>}
             {step.kind==='result'&&<p style={{textAlign:'center',color:'#7a8b9c'}}>Tela de resultado composta a partir das respostas.</p>}
           </div>
@@ -668,7 +669,7 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
           {surveySlug==='gestao-agil-sem-bagunca'&&<>
             <label>Imagem desta tela</label>
             <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
-              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadInsightImage} disabled={imageUploading} style={{display:'none'}}/>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadScreenImage} disabled={imageUploading} style={{display:'none'}}/>
               {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
             </label>
             <small className="muted" style={{display:'block',margin:'0 0 10px'}}>PNG, JPG ou WebP, até 5 MB. A nova imagem substitui a imagem atual desta tela.</small>
@@ -688,7 +689,20 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
           <ImagePreview src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Prévia da imagem da Tela 1"/>
         </>}
 
-        {step.kind==='branch'&&<>{Object.entries(step.variants).map(([key,v])=><div key={key} style={{marginBottom:14}}><label>Título ({key})</label><textarea value={v.title} onChange={e=>update({variants:{...step.variants,[key]:{...v,title:e.target.value}}} as Partial<Step>)}/><label>Texto ({key})</label><textarea value={v.body} onChange={e=>update({variants:{...step.variants,[key]:{...v,body:e.target.value}}} as Partial<Step>)}/></div>)}</>}
+        {step.kind==='branch'&&<>
+          {surveySlug==='gestao-agil-sem-bagunca'&&<>
+            <label>Imagem desta tela (para as duas respostas)</label>
+            <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadScreenImage} disabled={imageUploading} style={{display:'none'}}/>
+              {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
+            </label>
+            <small className="muted" style={{display:'block',marginBottom:10}}>PNG, JPG ou WebP, até 5 MB. Salve esta tela e publique para atualizar o público.</small>
+            {imageUploadError&&<div className="save-error" style={{marginBottom:10,padding:'8px 10px'}}>{imageUploadError}</div>}
+            <label>URL da imagem</label><input type="url" value={step.imageUrl||''} placeholder="https://.../imagem.webp" onChange={e=>update({imageUrl:e.target.value} as Partial<Step>)}/>
+            <ImagePreview src={step.imageUrl||''} alt="Prévia da imagem condicional"/>
+          </>}
+          {Object.entries(step.variants).map(([key,v])=><div key={key} style={{marginBottom:14}}><label>Título ({key})</label><textarea value={v.title} onChange={e=>update({variants:{...step.variants,[key]:{...v,title:e.target.value}}} as Partial<Step>)}/><label>Texto ({key})</label><textarea value={v.body} onChange={e=>update({variants:{...step.variants,[key]:{...v,body:e.target.value}}} as Partial<Step>)}/></div>)}
+        </>}
 
         {(step.kind==='email'||step.kind==='name'||step.kind==='processing')&&<><label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/></>}
         {step.kind==='result'&&<p className="muted">A tela de resultado é composta a partir das respostas.</p>}

@@ -77,6 +77,7 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
     }
 
     if (step.kind === 'branch') {
+      if(step.imageUrl && !/^https?:\/\//i.test(step.imageUrl.trim())) errors.push('A imagem da resposta condicional precisa de uma URL http:// ou https://.');
       for (const key of ['sim', 'nao']) {
         const variant = step.variants[key];
         if (!variant) {
