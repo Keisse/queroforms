@@ -167,6 +167,37 @@ const tireProjeto: SurveyPresentation = {
   },
 };
 
+const promptGp: SurveyPresentation = {
+  slug:'prompt-gp',
+  quizLabel:'Diagnóstico PromptGP',
+  branchAnswerKey:'prompt-start',
+  processing:{
+    labels:['Analisando a estrutura dos seus prompts','Cruzando seus desafios de projeto','Identificando seu próximo passo'],
+    subtitle:'Comparamos suas respostas sobre contexto, planejamento, análise e comunicação para encontrar onde um prompt melhor pode ajudar.',
+  },
+  resultKicker:'Sua maturidade em prompts para projetos',
+  levels:{
+    1:{name:'Improvisador',headline:'Você já recorre à IA, mas suas perguntas ainda deixam informações importantes de fora.',next:'Comece pela estrutura: contexto do projeto, objetivo, formato e critérios. A IA precisa saber que problema deve ajudar você a resolver.'},
+    2:{name:'Explorador de Prompts',headline:'Você já percebe o potencial da IA, mas ainda depende de tentativas para chegar a uma resposta útil.',next:'Seu próximo passo é criar prompts reutilizáveis para os desafios que mais se repetem no seu projeto e revisar as respostas com dados reais.'},
+    3:{name:'Projetista de Prompts',headline:'Você já transforma desafios de gestão em pedidos mais claros e aplicáveis.',next:'Agora vale ampliar seu repertório para escopo, cronograma, riscos, comunicação e acompanhamento, com critérios para comparar alternativas.'},
+    4:{name:'Estrategista de Prompts',headline:'Você já sabe dar contexto, orientar a análise e pedir saídas que apoiam decisões.',next:'Continue refinando sua biblioteca de prompts, validando premissas e ajudando sua equipe a usar IA com método e responsabilidade.'},
+  },
+  gaugeLabels:['Improviso','Exploração','Estrutura','Estratégia'],
+  dimensions:[
+    ['Estrutura do Prompt','estrutura_prompt'],
+    ['Planejamento e Escopo','planejamento_escopo'],
+    ['Análise e Decisão','analise_decisao'],
+    ['Comunicação e Acompanhamento','comunicacao_monitoramento'],
+  ],
+  showSalaryProjection:false,
+  insightCard:{
+    eyebrow:'PromptGP | do comando à decisão',
+    title:'Pare de improvisar perguntas para a IA. Tenha o prompt certo para cada desafio da gestão de projetos.',
+    body:'O livro combina fundamentos de gestão de projetos com prompts organizados por aplicação: iniciação, escopo, cronograma, custos, comunicação, riscos, qualidade, equipes e monitoramento. Adapte cada comando ao contexto e revise o resultado antes de agir.',
+    source:'Mario Trentim, Prompt GP, 1ª edição, 2026',
+  },
+};
+
 export function getSurveyPresentation(slug:string): SurveyPresentation {
-  return slug === 'pmo-vmo' ? pmoVmo : slug === 'tire-projeto-do-papel' ? tireProjeto : slug === 'gestao-agil-sem-bagunca' ? gestaoAgil : gpIa;
+  return slug === 'pmo-vmo' ? pmoVmo : slug === 'tire-projeto-do-papel' ? tireProjeto : slug === 'gestao-agil-sem-bagunca' ? gestaoAgil : slug === 'prompt-gp' ? promptGp : gpIa;
 }
