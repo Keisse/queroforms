@@ -47,6 +47,13 @@ function currentSurveySlug(){
   return match?.[1] ? decodeURIComponent(match[1]) : 'gp-ia';
 }
 
+function publicStepsForSurvey(slug:string, steps:Step[]){
+  if(slug==='gestao-agil-sem-bagunca'){
+    return steps.filter(step=>step.id!=='insight-pre-result-guide');
+  }
+  return steps;
+}
+
 function isValidEmail(value:string){
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
@@ -95,13 +102,13 @@ export default function PublicQuiz(){
       const draftPreview=wantsDraftPreview?readBuilderDraftPreview(remote.version):null;
       const isDraftPreview=Boolean(draftPreview);
       const saved=!isDraftPreview?readQuizProgress():null;
-      let resolvedSteps=draftPreview||remote.steps;
+      let resolvedSteps=publicStepsForSurvey(surveySlug,draftPreview||remote.steps);
       let resolvedVersion=remote.version;
 
       if(saved){
         if(saved.surveyVersion===remote.version){
           if(saved.steps?.length){
-            resolvedSteps=saved.steps;
+            resolvedSteps=publicStepsForSurvey(surveySlug,saved.steps);
             resolvedVersion=saved.surveyVersion;
           }
           setIdx(Math.min(saved.idx,resolvedSteps.length-1));
