@@ -1,6 +1,7 @@
 const AI_CHECKOUT_URL = 'https://chk.eduzz.com/40QR6AJP9B';
 const AI_DETAILS_URL = 'https://trentim.com/livro-gestao-de-projetos-com-ia-perpetuo/#';
 const PMO_CHECKOUT_URL = 'https://chk.eduzz.com/xgklntvt';
+const AGIL_CHECKOUT_URL = 'https://chk.eduzz.com/xroaeflm';
 const TIRE_PROJETO_CHECKOUT_URL = 'https://chk.eduzz.com/3va57nye';
 
 function AuthorSection(){
@@ -25,6 +26,20 @@ function AuthorSection(){
 }
 
 export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
+  if(surveySlug==='gestao-agil-sem-bagunca'){
+    return <div className="offer-card qf-book-offer-hero">
+      <div className="ebook-cover-real">
+        <img src="/books/gestao-agil-sem-bagunca-offer.webp" alt="Capa do livro Gestão Ágil sem Bagunça, de Mario Trentim" loading="eager" decoding="async" />
+      </div>
+      <div className="offer-copy">
+        <small className="qf-book-kicker">O PRÓXIMO PASSO DO SEU DIAGNÓSTICO</small>
+        <h2>Gestão Ágil sem Bagunça</h2>
+        <p>Um caminho prático para escolher o que gera valor, organizar o fluxo de trabalho, colaborar melhor e ajustar a rota sem perder clareza.</p>
+        <a className="primary big qf-sales-primary" href={AGIL_CHECKOUT_URL} target="_blank" rel="noreferrer">QUERO GESTÃO ÁGIL SEM BAGUNÇA</a>
+      </div>
+    </div>;
+  }
+
   if(surveySlug==='pmo-vmo'){
     return <div className="offer-card qf-book-offer-hero">
       <div className="ebook-cover-real">
@@ -49,7 +64,7 @@ export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
     return <div className="offer-card qf-book-offer-hero">
       <div className="ebook-cover-real">
         <img
-          src="/books/tire-cover-validated.jpg"
+          src="/books/tire-projeto-do-papel-offer.webp"
           alt="Capa do livro Tire Esse Projeto do Papel, de Mario Trentim"
           loading="eager"
           decoding="async"
@@ -80,6 +95,28 @@ export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
 }
 
 export default function ResultSalesSections({surveySlug='gp-ia'}:{surveySlug?:string}){
+  if(surveySlug==='gestao-agil-sem-bagunca'){
+    return <>
+      <section className="qf-sales-section qf-sales-map">
+        <span className="qf-sales-eyebrow">DO DIAGNÓSTICO PARA A PRÁTICA</span>
+        <h2>Agilidade começa com clareza sobre o que importa.</h2>
+        <p>O livro Gestão Ágil sem Bagunça ajuda você a organizar prioridades e transformar trabalho acumulado em entregas úteis, com espaço para ouvir e ajustar.</p>
+      </section>
+      <section className="qf-sales-section qf-sales-difference">
+        <span className="qf-sales-eyebrow">FOCO, FLUXO E APRENDIZADO</span>
+        <h2>Menos tarefas soltas. Mais colaboração e entregas que fazem diferença.</h2>
+        <p>Use as quatro dimensões do seu resultado para identificar o próximo ajuste na sua forma de trabalhar: valor, fluxo, autonomia e adaptação.</p>
+      </section>
+      <AuthorSection/>
+      <section className="qf-sales-section qf-sales-final">
+        <span className="qf-sales-eyebrow">COMECE AGORA</span>
+        <h2>Leve o Gestão Ágil sem Bagunça para sua rotina</h2>
+        <p>Um guia para transformar práticas ágeis em trabalho mais claro, colaborativo e orientado a valor.</p>
+        <a className="primary big qf-sales-primary qf-sales-final-button" href={AGIL_CHECKOUT_URL} target="_blank" rel="noreferrer">Quero meu exemplar</a>
+      </section>
+    </>;
+  }
+
   if(surveySlug==='pmo-vmo'){
     return <>
       <section className="qf-sales-section qf-sales-map">
