@@ -257,6 +257,7 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
 
   const requestSelect=(index:number)=>{
     if(index===sel) return;
+    if(imageUploading){setPublishError('Aguarde o envio da imagem antes de mudar de tela.');return;}
     if(!currentScreenSaved){warnUnsavedScreen();return;}
     if(!versionConflict&&!localDraftConflict) setPublishError('');
     setSel(index);
@@ -401,7 +402,7 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
   const uploadScreenImage=async(event:ReactChangeEvent<HTMLInputElement>)=>{
     const file=event.target.files?.[0];
     event.target.value='';
-    if(!file||!step||(step.kind!=='insight'&&step.kind!=='branch')||surveySlug!=='gestao-agil-sem-bagunca') return;
+    if(!file||!step||(step.kind!=='insight'&&step.kind!=='branch'&&step.kind!=='intro')) return;
     setImageUploadError('');
     const allowed=['image/png','image/jpeg','image/webp'];
     if(!allowed.includes(file.type)){
@@ -425,8 +426,13 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
       if(error) throw error;
       const {data}=supabase.storage.from('survey-assets').getPublicUrl(path);
       if(!data.publicUrl) throw new Error('PUBLIC_URL_NOT_AVAILABLE');
-      if(step.kind==='insight') update({source:composeInsightSource(insightSource(step).text,data.publicUrl,false)} as Partial<Step>);
-      else update({imageUrl:data.publicUrl} as Partial<Step>);
+      setSteps(prev=>prev.map((current,index)=>{
+        if(index!==sel||current.id!==step.id) return current;
+        if(current.kind==='insight') return {...current,source:composeInsightSource(insightSource(current).text,data.publicUrl,false)};
+        if(current.kind==='intro') return {...current,body:composeMarked(introData(current).text,data.publicUrl,'QF_INTRO_IMAGE')};
+        if(current.kind==='branch') return {...current,imageUrl:data.publicUrl};
+        return current;
+      }));
       setSavedMsg('Imagem enviada. Salve a edição desta tela para guardar a alteração.');
     }catch(err:unknown){
       const message=err instanceof Error?err.message:'';
@@ -666,15 +672,13 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
           <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
           <label>Texto</label><textarea value={step.body} onChange={e=>update({body:e.target.value} as Partial<Step>)}/>
           <label>Destaque (stat)</label><textarea value={step.stat||''} onChange={e=>update({stat:e.target.value} as Partial<Step>)}/>
-          {surveySlug==='gestao-agil-sem-bagunca'&&<>
-            <label>Imagem desta tela</label>
+          <label>Imagem desta tela</label>
             <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadScreenImage} disabled={imageUploading} style={{display:'none'}}/>
               {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
             </label>
             <small className="muted" style={{display:'block',margin:'0 0 10px'}}>PNG, JPG ou WebP, até 5 MB. A nova imagem substitui a imagem atual desta tela.</small>
             {imageUploadError&&<div className="save-error" style={{marginBottom:10,padding:'8px 10px'}}>{imageUploadError}</div>}
-          </>}
           <label>URL da imagem</label><input type="url" value={insight.imageUrl} placeholder="https://.../imagem.webp" onChange={e=>update({source:composeInsightSource(insight.text,e.target.value,insight.hideImage)} as Partial<Step>)}/>
           <label style={{display:'flex',alignItems:'center',gap:10,margin:'12px 0 14px',cursor:'pointer',fontWeight:600}}><input type="checkbox" checked={insight.hideImage} onChange={e=>update({source:composeInsightSource(insight.text,insight.imageUrl,e.target.checked)} as Partial<Step>)} style={{width:18,height:18,margin:0,flex:'0 0 auto'}}/><span>Ocultar imagem nesta tela</span></label>
           {insight.hideImage&&<small className="muted" style={{display:'block',margin:'-6px 0 12px'}}>A imagem continua configurada, mas não aparecerá no diagnóstico público.</small>}
@@ -685,13 +689,19 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
         {step.kind==='intro'&&intro&&<>
           <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
           <label>Pergunta</label><textarea value={intro.text} onChange={e=>update({body:composeMarked(e.target.value,intro.imageUrl,'QF_INTRO_IMAGE')} as Partial<Step>)}/>
+          <label>Imagem da abertura</label>
+          <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadScreenImage} disabled={imageUploading} style={{display:'none'}}/>
+            {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
+          </label>
+          <small className="muted" style={{display:'block',marginBottom:10}}>PNG, JPG ou WebP, até 5 MB. Salve esta tela e publique para atualizar o público.</small>
+          {imageUploadError&&<div className="save-error" style={{marginBottom:10,padding:'8px 10px'}}>{imageUploadError}</div>}
           <label>URL da imagem da Tela 1</label><input type="url" value={intro.imageUrl} placeholder="https://.../certificado.webp" onChange={e=>update({body:composeMarked(intro.text,e.target.value,'QF_INTRO_IMAGE')} as Partial<Step>)}/>
           <ImagePreview src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Prévia da imagem da Tela 1"/>
         </>}
 
         {step.kind==='branch'&&<>
-          {surveySlug==='gestao-agil-sem-bagunca'&&<>
-            <label>Imagem desta tela (para as duas respostas)</label>
+          <label>Imagem desta tela (para as duas respostas)</label>
             <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadScreenImage} disabled={imageUploading} style={{display:'none'}}/>
               {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
@@ -700,7 +710,6 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
             {imageUploadError&&<div className="save-error" style={{marginBottom:10,padding:'8px 10px'}}>{imageUploadError}</div>}
             <label>URL da imagem</label><input type="url" value={step.imageUrl||''} placeholder="https://.../imagem.webp" onChange={e=>update({imageUrl:e.target.value} as Partial<Step>)}/>
             <ImagePreview src={step.imageUrl||''} alt="Prévia da imagem condicional"/>
-          </>}
           {Object.entries(step.variants).map(([key,v])=><div key={key} style={{marginBottom:14}}><label>Título ({key})</label><textarea value={v.title} onChange={e=>update({variants:{...step.variants,[key]:{...v,title:e.target.value}}} as Partial<Step>)}/><label>Texto ({key})</label><textarea value={v.body} onChange={e=>update({variants:{...step.variants,[key]:{...v,body:e.target.value}}} as Partial<Step>)}/></div>)}
         </>}
 
