@@ -293,6 +293,11 @@ export default function PublicQuiz(){
               <span className="cloud-pill p2">🔄 Fluxo</span>
               <span className="cloud-pill p4">🤝 Colaboração</span>
               <span className="cloud-pill p6">📈 Adaptação</span>
+            </>:surveySlug==='prompt-gp'?<>
+              <span className="cloud-pill p1">🧩 Contexto</span>
+              <span className="cloud-pill p2">🎯 Objetivo</span>
+              <span className="cloud-pill p4">📋 Formato</span>
+              <span className="cloud-pill p6">✅ Critérios</span>
             </>:<>
               <span className="cloud-pill p1">🎯 Estratégia</span>
               <span className="cloud-pill p2">🏢 Arquitetura</span>
@@ -307,7 +312,7 @@ export default function PublicQuiz(){
       })()}
       {step.kind==='intro' && intro && <div className="intro-card intro-certificate-screen" data-step-id={step.id}>
         <div className="certificate-image-wrap">
-          <img className="certificate-image" src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt={surveySlug==='pmo-vmo'?'Capa do livro Estratégia em Ação':'Certificado Gestão de Projetos com IA - Formação Mestre GP'} loading="eager" decoding="async" />
+          <img className="certificate-image" src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt={surveySlug==='pmo-vmo'?'Capa do livro Estratégia em Ação':surveySlug==='prompt-gp'?'Capa do livro PromptGP':'Certificado Gestão de Projetos com IA - Formação Mestre GP'} loading="eager" decoding="async" />
         </div>
         <h1>{introHeading(text(step.title))}</h1>
         <p className="intro-question">{text(intro.text)}</p>
@@ -376,7 +381,7 @@ function Result({surveySlug,name,pct,level,dimensions,salaryRange,onRestart}:{su
     <div className="result-copy"><h2>{copy.headline}</h2><p>{copy.next}</p></div>
 
     {chartData.length>0&&<section className="dimension-card">
-      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>{surveySlug==='pmo-vmo'?'As competências que já sustentam sua atuação e onde está o próximo salto':surveySlug==='tire-projeto-do-papel'?'Onde você já consegue fazer acontecer e onde ainda existe espaço para evoluir':surveySlug==='gestao-agil-sem-bagunca'?'Como você está em foco, fluxo, colaboração e adaptação':'Onde sua IA já gera valor e onde ainda existe espaço para crescer'}</h2></div>
+      <div className="section-heading"><small>Seu mapa de maturidade</small><h2>{surveySlug==='pmo-vmo'?'As competências que já sustentam sua atuação e onde está o próximo salto':surveySlug==='tire-projeto-do-papel'?'Onde você já consegue fazer acontecer e onde ainda existe espaço para evoluir':surveySlug==='gestao-agil-sem-bagunca'?'Como você está em foco, fluxo, colaboração e adaptação':surveySlug==='prompt-gp'?'Onde seus prompts já ajudam e onde ainda falta estrutura':'Onde sua IA já gera valor e onde ainda existe espaço para crescer'}</h2></div>
       <div className="dimension-bars">{chartData.map(([label,value])=><div className="dimension-row" key={label}><div className="dimension-meta"><span>{label}</span><b>{value}%</b></div><div className="dimension-track"><i style={{width:`${value}%`}}/></div></div>)}</div>
     </section>}
 

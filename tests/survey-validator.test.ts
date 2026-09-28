@@ -159,3 +159,14 @@ test('resultado agil usa niveis e dimensoes do proprio diagnostico', () => {
   assert.doesNotMatch(JSON.stringify(presentation),/inteligência artificial|\bIA\b|PMBOK® 8ª edição/i);
   assert.match(presentation.levels[4].name,/Agilidade/);
 });
+
+test('resultado PromptGP apresenta quatro desafios de prompts sem herdar o resultado de IA', () => {
+  const presentation=getSurveyPresentation('prompt-gp');
+  assert.deepEqual(presentation.dimensions.map(([,key])=>key),[
+    'estrutura_prompt','planejamento_escopo','analise_decisao','comunicacao_monitoramento',
+  ]);
+  assert.equal(presentation.showSalaryProjection,false);
+  assert.match(presentation.insightCard.title,/Pare de improvisar perguntas para a IA/);
+  assert.equal(presentation.levels[1].name,'Improvisador');
+  assert.equal(presentation.levels[4].name,'Estrategista de Prompts');
+});
