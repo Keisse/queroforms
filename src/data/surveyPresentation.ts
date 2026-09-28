@@ -105,6 +105,18 @@ const pmoVmo: SurveyPresentation = {
 };
 
 
+
+const gestaoAgil: SurveyPresentation = {
+  ...gpIa,
+  slug:'gestao-agil-sem-bagunca',
+  quizLabel:'Diagnóstico de Maturidade Ágil',
+  processing:{
+    labels:['Mapeando sua forma de trabalhar','Analisando sua maturidade ágil','Identificando seu próximo ajuste'],
+    subtitle:'Cruzamos suas respostas sobre valor, fluxo, colaboração e adaptação para identificar seu nível de maturidade em Gestão Ágil.',
+  },
+  showSalaryProjection:false,
+};
+
 const tireProjeto: SurveyPresentation = {
   slug:'tire-projeto-do-papel',
   quizLabel:'Diagnóstico Tire Esse Projeto do Papel',
@@ -137,5 +149,5 @@ const tireProjeto: SurveyPresentation = {
 };
 
 export function getSurveyPresentation(slug:string): SurveyPresentation {
-  return slug === 'pmo-vmo' ? pmoVmo : slug === 'tire-projeto-do-papel' ? tireProjeto : gpIa;
+  return slug === 'pmo-vmo' ? pmoVmo : slug === 'tire-projeto-do-papel' ? tireProjeto : slug === 'gestao-agil-sem-bagunca' ? gestaoAgil : gpIa;
 }
