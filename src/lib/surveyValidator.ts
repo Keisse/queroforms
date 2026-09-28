@@ -122,8 +122,8 @@ export function validateSurveyStructure(steps: Step[]): SurveyValidation {
   }
 
   const preResultCount = steps.filter(step => step.id === PRE_RESULT_STEP_ID).length;
-  if (preResultCount !== 1) {
-    errors.push(`O diagnóstico precisa ter exatamente uma tela de preparação do resultado; encontrou ${preResultCount}.`);
+  if (preResultCount > 1) {
+    errors.push(`O diagnóstico pode ter no máximo uma tela de preparação do resultado; encontrou ${preResultCount}.`);
   }
 
   const scoreableQuestions = steps.filter(isScoreableQuestion);

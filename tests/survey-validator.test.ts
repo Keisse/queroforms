@@ -113,15 +113,16 @@ test('URL de imagem fora de http ou https bloqueia publicacao', () => {
   assert.match(result.errors.join(' '), /URL de imagem inválida/);
 });
 
-test('tela de preparacao do resultado e obrigatoria e protegida', () => {
+test('tela de preparacao do resultado e opcional e protegida quando presente', () => {
   const steps = validSurvey();
   const preResult = steps.find(step => step.id === 'insight-pre-result-guide')!;
   assert.equal(isProtectedStructuralStep(preResult), true);
 
   const withoutPreResult = steps.filter(step => step.id !== 'insight-pre-result-guide');
   const validation = validateSurveyStructure(withoutPreResult);
-  assert.equal(validation.valid, false);
-  assert.match(validation.errors.join(' '), /preparação do resultado/);
+  assert.equal(validation.valid, true);
+  const duplicate = [...steps.slice(0, -1), {...preResult}, steps.at(-1)!];
+  assert.match(validateSurveyStructure(duplicate).errors.join(' '), /no máximo uma tela de preparação do resultado/);
 });
 
 test('telas estruturais sao protegidas', () => {
