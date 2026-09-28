@@ -149,3 +149,13 @@ test('apresentacao de IA continua isolada no diagnostico gp-ia', () => {
   assert.equal(presentation.showSalaryProjection, true);
   assert.match(JSON.stringify(presentation), /IA/);
 });
+
+test('resultado agil usa niveis e dimensoes do proprio diagnostico', () => {
+  const presentation=getSurveyPresentation('gestao-agil-sem-bagunca');
+  assert.deepEqual(presentation.dimensions.map(([,key])=>key),[
+    'foco_valor','fluxo_entrega','colaboracao_autonomia','adaptacao_aprendizado',
+  ]);
+  assert.equal(presentation.showSalaryProjection,false);
+  assert.doesNotMatch(JSON.stringify(presentation),/inteligência artificial|\bIA\b|PMBOK® 8ª edição/i);
+  assert.match(presentation.levels[4].name,/Agilidade/);
+});

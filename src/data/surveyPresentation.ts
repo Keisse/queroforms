@@ -107,14 +107,33 @@ const pmoVmo: SurveyPresentation = {
 
 
 const gestaoAgil: SurveyPresentation = {
-  ...gpIa,
   slug:'gestao-agil-sem-bagunca',
   quizLabel:'Diagnóstico de Maturidade Ágil',
+  branchAnswerKey:'agile-experience',
   processing:{
     labels:['Mapeando sua forma de trabalhar','Analisando sua maturidade ágil','Identificando seu próximo ajuste'],
     subtitle:'Cruzamos suas respostas sobre valor, fluxo, colaboração e adaptação para identificar seu nível de maturidade em Gestão Ágil.',
   },
+  resultKicker:'Sua maturidade em Gestão Ágil',
+  levels:{
+    1:{name:'Agilidade em Construção',headline:'Você já percebe onde o trabalho emperra. Agora é hora de criar uma base simples para avançar.',next:'Comece tornando as prioridades visíveis, limitando o trabalho em andamento e entregando algo útil para aprender com o retorno.'},
+    2:{name:'Praticante em Evolução',headline:'Você já aplica práticas ágeis, mas ainda encontra obstáculos para manter foco e ritmo de entrega.',next:'Seu próximo passo é melhorar o fluxo, combinar decisões com as pessoas envolvidas e transformar feedback em pequenos ajustes frequentes.'},
+    3:{name:'Gestor de Fluxo',headline:'Você já conecta prioridades, colaboração e entregas com consistência.',next:'Agora vale fortalecer a autonomia do time e usar evidências das entregas para adaptar o caminho sem perder de vista o valor.'},
+    4:{name:'Agilidade Sustentável',headline:'Você já trabalha com foco em valor, fluxo contínuo, colaboração e aprendizado.',next:'Seu próximo desafio é manter essa capacidade mesmo quando as prioridades mudam e ajudar outras pessoas a trabalhar com mais clareza.'},
+  },
+  gaugeLabels:['Construção','Evolução','Fluxo','Sustentável'],
+  dimensions:[
+    ['Foco no que gera valor','foco_valor'],
+    ['Fluxo e entrega','fluxo_entrega'],
+    ['Colaboração e autonomia','colaboracao_autonomia'],
+    ['Adaptação e aprendizado','adaptacao_aprendizado'],
+  ],
   showSalaryProjection:false,
+  insightCard:{
+    eyebrow:'Gestão Ágil sem Bagunça',
+    title:'Entregue algo útil. Ouça. Ajuste.',
+    body:'Agilidade ganha forma quando você esclarece o valor esperado, organiza o fluxo de trabalho, envolve as pessoas certas e usa o aprendizado para decidir o próximo passo.',
+  },
 };
 
 const tireProjeto: SurveyPresentation = {
