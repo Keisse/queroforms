@@ -166,7 +166,7 @@ test('resultado PromptGP apresenta quatro desafios de prompts sem herdar o resul
     'estrutura_prompt','planejamento_escopo','analise_decisao','comunicacao_monitoramento',
   ]);
   assert.equal(presentation.showSalaryProjection,false);
-  assert.match(presentation.insightCard.title,/Pare de improvisar perguntas para a IA/);
+  assert.match(presentation.insightCard.title,/pedido mais claro/i);
   assert.equal(presentation.levels[1].name,'Improvisador');
   assert.equal(presentation.levels[4].name,'Estrategista de Prompts');
 });
