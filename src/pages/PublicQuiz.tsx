@@ -44,7 +44,8 @@ function introHeading(title: string){
 
 function currentSurveySlug(){
   const match=window.location.pathname.match(/^\/d\/([^/?#]+)/);
-  return match?.[1] ? decodeURIComponent(match[1]) : 'gp-ia';
+  const slug=match?.[1] ? decodeURIComponent(match[1]) : 'gp-ia';
+  return slug==='promptgp' ? 'prompt-gp' : slug;
 }
 
 function publicStepsForSurvey(slug:string, steps:Step[]){
