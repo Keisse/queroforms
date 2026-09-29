@@ -22,7 +22,8 @@ function resolveSurveySlug(fallback: string) {
   const querySlug = new URLSearchParams(window.location.search).get('survey');
   if (querySlug) return querySlug;
   const match = window.location.pathname.match(/^\/(?:builder|d)\/([^/?#]+)/);
-  return match?.[1] ? decodeURIComponent(match[1]) : fallback;
+  const slug = match?.[1] ? decodeURIComponent(match[1]) : fallback;
+  return slug === 'promptgp' ? 'prompt-gp' : slug;
 }
 
 export async function fetchPublishedSurvey(slug: string): Promise<SurveySnapshot | null> {
