@@ -29,11 +29,11 @@ function AuthorSection(){
 export function ResultBookOffer({surveySlug='gp-ia'}:{surveySlug?:string}){
   if(surveySlug==='prompt-gp'){
     return <div className="offer-card qf-book-offer-hero">
-      <div className="ebook-cover-real"><img src="/books/promptgp-offer.webp" alt="Capa do livro PromptGP, de Mario Trentim" loading="eager" decoding="async" /></div>
+      <div className="ebook-cover-real"><img src="/books/promptgp-result.webp" alt="Livro PromptGP, de Mario Trentim" loading="eager" decoding="async" /></div>
       <div className="offer-copy">
         <small className="qf-book-kicker">O PRÓXIMO PASSO DO SEU DIAGNÓSTICO</small>
-        <h2>PromptGP: o guia de prompt engineering para gerentes de projetos</h2>
-        <p>Pare de improvisar perguntas para a IA. Tenha o prompt certo para cada desafio da gestão de projetos.</p>
+        <h2>Mais de 100 prompts para gestão de projetos, em um só livro.</h2>
+        <p>Encontre um ponto de partida para o desafio que está na sua mesa, adapte o comando ao contexto do projeto e ganhe clareza para agir.</p>
         <a className="primary big qf-sales-primary" href={PROMPT_GP_CHECKOUT_URL} target="_blank" rel="noreferrer">QUERO O PROMPTGP</a>
       </div>
     </div>;
@@ -111,20 +111,20 @@ export default function ResultSalesSections({surveySlug='gp-ia'}:{surveySlug?:st
   if(surveySlug==='prompt-gp'){
     return <>
       <section className="qf-sales-section qf-sales-map">
-        <span className="qf-sales-eyebrow">DO DIAGNÓSTICO PARA A PRÁTICA</span>
-        <h2>O desafio não é perguntar mais. É pedir à IA a análise certa.</h2>
-        <p>O PromptGP reúne fundamentos e comandos aplicáveis a diferentes momentos do projeto. Use o seu mapa para começar pelas situações em que você mais perde tempo improvisando.</p>
+        <span className="qf-sales-eyebrow">SEU PRIMEIRO PASSO</span>
+        <h2>Comece pela dimensão em que sua pontuação foi menor.</h2>
+        <p>Estrutura do prompt, planejamento, análise ou comunicação: escolha uma situação real do seu projeto e use o livro para transformar essa necessidade em um pedido claro para a IA.</p>
       </section>
       <section className="qf-sales-section qf-sales-difference">
-        <span className="qf-sales-eyebrow">UM PROMPT PARA CADA DESAFIO</span>
-        <h2>Da ideia inicial ao relatório final, trabalhe com contexto, objetivo e critérios.</h2>
-        <p>Encontre caminhos para estruturar escopo, analisar riscos, comunicar decisões e acompanhar resultados. Adapte os prompts ao seu projeto e revise as respostas antes de agir.</p>
+        <span className="qf-sales-eyebrow">DA INICIAÇÃO AO MONITORAMENTO</span>
+        <h2>Uma referência para diferentes momentos do projeto.</h2>
+        <p>Explore exemplos para escopo, cronograma, custos, comunicação, riscos, qualidade, equipes e aquisições. Cada resposta da IA continua sob sua revisão e decisão.</p>
       </section>
       <AuthorSection/>
       <section className="qf-sales-section qf-sales-final">
-        <span className="qf-sales-eyebrow">COMECE AGORA</span>
-        <h2>Pare de improvisar perguntas para a IA.</h2>
-        <p>Tenha o prompt certo para cada desafio da gestão de projetos.</p>
+        <span className="qf-sales-eyebrow">LEVE PARA O PRÓXIMO PROJETO</span>
+        <h2>Seu próximo desafio já tem um ponto de partida.</h2>
+        <p>Abra o PromptGP, escolha o caso mais próximo da sua realidade e ajuste o comando antes de usar.</p>
         <a className="primary big qf-sales-primary qf-sales-final-button" href={PROMPT_GP_CHECKOUT_URL} target="_blank" rel="noreferrer">Quero meu PromptGP</a>
       </section>
     </>;
