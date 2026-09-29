@@ -191,10 +191,9 @@ const promptGp: SurveyPresentation = {
   ],
   showSalaryProjection:false,
   insightCard:{
-    eyebrow:'PromptGP | do comando à decisão',
-    title:'Pare de improvisar perguntas para a IA. Tenha o prompt certo para cada desafio da gestão de projetos.',
-    body:'O livro combina fundamentos de gestão de projetos com prompts organizados por aplicação: iniciação, escopo, cronograma, custos, comunicação, riscos, qualidade, equipes e monitoramento. Adapte cada comando ao contexto e revise o resultado antes de agir.',
-    source:'Mario Trentim, Prompt GP, 1ª edição, 2026',
+    eyebrow:'O que seu diagnóstico revela',
+    title:'Um pedido mais claro ajuda a IA a responder ao problema certo.',
+    body:'Olhe para as quatro dimensões do seu mapa: onde faltam contexto, objetivo ou critérios, a resposta tende a exigir mais tentativas. Comece pela sua maior oportunidade de melhoria e valide a saída com os dados do projeto.',
   },
 };
 
