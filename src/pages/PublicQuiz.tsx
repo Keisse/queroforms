@@ -8,6 +8,7 @@ import { toggleMultiAnswer } from '../lib/answerRules';
 import { fetchPublishedSurvey } from '../lib/surveyConfig';
 import { supabaseEnabled } from '../lib/supabase';
 import { personalizeText } from '../lib/textVariables';
+import { createQuizPixelTracker } from '../lib/metaPixel';
 import {
   clearQuizProgress,
   enqueueSubmission,
@@ -88,6 +89,8 @@ export default function PublicQuiz(){
   const saveStarted=useRef(false);
   const progressReady=useRef(false);
   const attemptId=useRef(createAttemptId());
+  const pixelTracker=useRef<ReturnType<typeof createQuizPixelTracker>|null>(null);
+  if(!pixelTracker.current) pixelTracker.current=createQuizPixelTracker();
 
   useEffect(()=>{
     let active=true;
@@ -157,6 +160,19 @@ export default function PublicQuiz(){
   },[]);
 
   const result=useMemo(()=>steps?scoreResult(steps,answers):{pct:0,level:1,dimensions:{} as Record<string,number>},[steps,answers]);
+
+  useEffect(()=>{
+    const visibleStep=steps?.[idx];
+    if(!visibleStep||loadError||!progressReady.current) return;
+    pixelTracker.current?.({
+      surveySlug,
+      stepId:visibleStep.id,
+      stepKind:visibleStep.kind,
+      stepIndex:idx,
+      attemptId:attemptId.current,
+      preview:previewMode,
+    });
+  },[steps,idx,surveySlug,previewMode,loadError]);
 
   if(loadError) return <div className="quiz-wrap"><div className="quiz-stage" style={{textAlign:'center',paddingTop:100,color:'#52667a'}}><h1 style={{fontSize:28}}>Não foi possível carregar o diagnóstico.</h1><p>Para evitar mostrar uma versão diferente da publicada, o formulário não usa conteúdo local quando o banco está indisponível.</p><button className="primary big" onClick={()=>window.location.reload()}>Tentar novamente</button></div></div>;
   if(!steps) return <div className="quiz-wrap"><div className="quiz-stage" style={{textAlign:'center',paddingTop:100,color:'#7a8b9c'}}>Carregando diagnóstico...</div></div>;
