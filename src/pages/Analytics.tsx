@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, Search, Trash2, Users, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import QuestionAnalytics from '../components/QuestionAnalytics';
 import DeliveryIntelligence from '../components/DeliveryIntelligence';
 import { Step } from '../data/gpIa';
@@ -11,6 +12,14 @@ const levelNames: Record<number, string> = {
   3: 'Aumentado',
   4: 'Orientado por IA',
 };
+
+const surveyChoices = [
+  { slug: 'gp-ia', label: 'Gestão de Projetos com IA' },
+  { slug: 'pmo-vmo', label: 'PMO / VMO' },
+  { slug: 'tire-projeto-do-papel', label: 'Tire Esse Projeto do Papel' },
+  { slug: 'gestao-agil-sem-bagunca', label: 'Gestão Ágil sem Bagunça' },
+  { slug: 'prompt-gp', label: 'PromptGP' },
+];
 
 const dimensionNames: Record<string, string> = {
   planejamento: 'Planejamento',
@@ -110,6 +119,7 @@ function exportCsv(rows: Submission[], versions: Record<number, Step[]>) {
 }
 
 export default function Analytics({ embedded = false, view, onOpenResponses }: AnalyticsProps = {}) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<'overview' | 'responses'>(() =>
     new URLSearchParams(window.location.search).get('tab') === 'responses' ? 'responses' : 'overview',
   );
@@ -125,7 +135,23 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const currentTab = view || tab;
-  const surveySlug = new URLSearchParams(window.location.search).get('survey') || 'gp-ia';
+  const surveySlug = searchParams.get('survey') || 'gp-ia';
+  const surveyLabel = surveyChoices.find(choice => choice.slug === surveySlug)?.label || surveySlug;
+  const changeSurvey = (nextSlug: string) => {
+    if (nextSlug === surveySlug) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('survey', nextSlug);
+    setSearchParams(next);
+    setSelected(null);
+    setSearch('');
+    setLevelFilter('all');
+  };
+  const surveyPicker = <label style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',fontWeight:600,color:'#42556b'}}>
+    Diagnóstico
+    <select aria-label="Selecionar diagnóstico para análise" value={surveySlug} onChange={event => changeSurvey(event.target.value)} style={{minWidth:250,maxWidth:'100%',padding:'10px 12px',border:'1px solid #d6dfe8',borderRadius:9,background:'#fff',color:'#20364a'}}>
+      {surveyChoices.map(choice => <option key={choice.slug} value={choice.slug}>{choice.label}</option>)}
+    </select>
+  </label>;
 
   useEffect(() => {
     let active = true;
@@ -190,8 +216,10 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   const changeTab = (next: 'overview' | 'responses') => {
     if (view) return;
     setTab(next);
-    const url = next === 'responses' ? `/analytics?survey=${encodeURIComponent(surveySlug)}&tab=responses` : `/analytics?survey=${encodeURIComponent(surveySlug)}`;
-    window.history.replaceState(null, '', url);
+    const params = new URLSearchParams(searchParams);
+    if (next === 'responses') params.set('tab','responses');
+    else params.delete('tab');
+    setSearchParams(params, { replace: true });
   };
 
   const openResponses = () => {
@@ -218,14 +246,16 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
     }
   };
 
-  if (loading) return <div className="analytics-loading">Carregando dados do diagnóstico...</div>;
-  if (error) return <div className="analytics-error"><b>Não foi possível carregar os dados.</b><span>{error}</span></div>;
+  if (loading) return <div>{surveyPicker}<div className="analytics-loading">Carregando dados de {surveyLabel}...</div></div>;
+  if (error) return <div>{surveyPicker}<div className="analytics-error"><b>Não foi possível carregar os dados.</b><span>{error}</span></div></div>;
 
   return <>
     {!embedded && <header className="page-head analytics-head">
-      <div><div className="crumb">Keisse › My workspace</div><h1>Análises</h1><p>Resultados e respostas do diagnóstico selecionado.</p></div>
+      <div><div className="crumb">Keisse › My workspace</div><h1>Análises</h1><p>Resultados e respostas de {surveyLabel}.</p></div>
       <button className="btn" onClick={() => exportCsv(filtered, versions)} disabled={!filtered.length}><Download size={17}/> Exportar CSV</button>
     </header>}
+
+    <div style={{margin:'0 0 20px'}}>{surveyPicker}</div>
 
     {!embedded && !view && <div className="analytics-tabs">
       <button className={currentTab === 'overview' ? 'active' : ''} onClick={() => changeTab('overview')}><BarChart3 size={17}/> Visão geral</button>
