@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, Search, Trash2, Users, X } from 'lucide-react';
 import QuestionAnalytics from '../components/QuestionAnalytics';
+import DeliveryIntelligence from '../components/DeliveryIntelligence';
 import { Step } from '../data/gpIa';
 import { deleteSubmission, fetchSubmissions, fetchSurveyVersionSteps, Submission } from '../lib/adminData';
 
@@ -124,10 +125,14 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const currentTab = view || tab;
+  const surveySlug = new URLSearchParams(window.location.search).get('survey') || 'gp-ia';
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchSubmissions('gp-ia', 2000), fetchSurveyVersionSteps('gp-ia')])
+    setLoading(true);
+    setRows([]);
+    setError('');
+    Promise.all([fetchSubmissions(surveySlug, 2000), fetchSurveyVersionSteps(surveySlug)])
       .then(([snapshot, versionSteps]) => {
         if (!active) return;
         setRows(snapshot.rows);
@@ -143,7 +148,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [surveySlug]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -172,19 +177,20 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   }, [rows]);
 
   const dimensionAverages = useMemo(() => {
-    return Object.keys(dimensionNames).map(key => {
+    const keys = [...new Set(rows.flatMap(row => Object.keys(row.dimension_scores || {})))];
+    return keys.map(key => {
       const values = rows
         .map(row => row.dimension_scores?.[key])
         .filter((value): value is number => typeof value === 'number');
       const average = values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
-      return { key, label: dimensionNames[key], average };
+      return { key, label: dimensionNames[key] || key.replace(/_/g, ' '), average };
     });
   }, [rows]);
 
   const changeTab = (next: 'overview' | 'responses') => {
     if (view) return;
     setTab(next);
-    const url = next === 'responses' ? '/analytics?tab=responses' : '/analytics';
+    const url = next === 'responses' ? `/analytics?survey=${encodeURIComponent(surveySlug)}&tab=responses` : `/analytics?survey=${encodeURIComponent(surveySlug)}`;
     window.history.replaceState(null, '', url);
   };
 
@@ -217,7 +223,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
 
   return <>
     {!embedded && <header className="page-head analytics-head">
-      <div><div className="crumb">Keisse › My workspace</div><h1>Análises</h1><p>Resultados e respostas do Diagnóstico de Maturidade em IA para Gestão de Projetos.</p></div>
+      <div><div className="crumb">Keisse › My workspace</div><h1>Análises</h1><p>Resultados e respostas do diagnóstico selecionado.</p></div>
       <button className="btn" onClick={() => exportCsv(filtered, versions)} disabled={!filtered.length}><Download size={17}/> Exportar CSV</button>
     </header>}
 
@@ -246,7 +252,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
             {[1, 2, 3, 4].map(level => {
               const count = levelCounts[level] || 0;
               const pct = rows.length ? Math.round((count / rows.length) * 100) : 0;
-              return <div className="level-dist-row" key={level}><div><span>{levelNames[level]}</span><b>{count} · {pct}%</b></div><div className="level-dist-track"><i style={{ width: `${pct}%` }}/></div></div>;
+              return <div className="level-dist-row" key={level}><div><span>{{surveySlug==='gp-ia'?levelNames[level]:`Nível ${level}`}</span><b>{count} · {pct}%</b></div><div className="level-dist-track"><i style={{ width: `${pct}%` }}/></div></div>;
             })}
           </div>
         </article>
@@ -259,13 +265,14 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
         </article>
       </section>
 
+      <DeliveryIntelligence rows={rows} versions={versions}/>
       <QuestionAnalytics rows={rows} versions={versions}/>
 
       <section className="analysis-card recent-card">
         <div className="analysis-card-head"><div><small>Atividade recente</small><h2>Últimas respostas</h2></div><button className="text-button" onClick={openResponses}>Ver todas</button></div>
         <div className="response-table compact">
           <div className="response-table-row response-table-head"><span>Lead</span><span>Score</span><span>Nível</span><span>Origem</span><span>Data</span></div>
-          {rows.slice(0, 5).map(row => <button className="response-table-row" key={row.id} onClick={() => setSelected(row)}><span><b>{row.name || 'Sem nome'}</b><small>{row.email || 'Sem e-mail'}</small></span><span>{row.score ?? '—'}%</span><span>{levelNames[row.level || 0] || '—'}</span><span>{row.source || 'direct'}</span><span>{formatDate(row.created_at)}</span></button>)}
+          {rows.slice(0, 5).map(row => <button className="response-table-row" key={row.id} onClick={() => setSelected(row)}><span><b>{row.name || 'Sem nome'}</b><small>{row.email || 'Sem e-mail'}</small></span><span>{row.score ?? '—'}%</span><span>{(surveySlug==='gp-ia'?levelNames[row.level || 0]:`Nível ${row.level || '—'}`) || '—'}</span><span>{row.source || 'direct'}</span><span>{formatDate(row.created_at)}</span></button>)}
           {!rows.length && <div className="table-empty">Nenhuma resposta ainda.</div>}
         </div>
       </section>
@@ -285,7 +292,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
       </div>
       <div className="response-table">
         <div className="response-table-row response-table-head"><span>Lead</span><span>Score</span><span>Nível</span><span>Versão</span><span>Origem</span><span>Data</span></div>
-        {filtered.map(row => <button className="response-table-row" key={row.id} onClick={() => setSelected(row)}><span><b>{row.name || 'Sem nome'}</b><small>{row.email || 'Sem e-mail'}</small></span><span>{row.score ?? '—'}%</span><span>{levelNames[row.level || 0] || '—'}</span><span>v{row.survey_version}</span><span>{row.source || 'direct'}</span><span>{formatDate(row.created_at)}</span></button>)}
+        {filtered.map(row => <button className="response-table-row" key={row.id} onClick={() => setSelected(row)}><span><b>{row.name || 'Sem nome'}</b><small>{row.email || 'Sem e-mail'}</small></span><span>{row.score ?? '—'}%</span><span>{(surveySlug==='gp-ia'?levelNames[row.level || 0]:`Nível ${row.level || '—'}`) || '—'}</span><span>v{row.survey_version}</span><span>{row.source || 'direct'}</span><span>{formatDate(row.created_at)}</span></button>)}
         {!filtered.length && <div className="table-empty">Nenhuma resposta encontrada com esses filtros.</div>}
       </div>
     </section>}
@@ -293,7 +300,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
     {selected && <div className="response-drawer-backdrop" onMouseDown={() => setSelected(null)}>
       <aside className="response-drawer" onMouseDown={event => event.stopPropagation()}>
         <div className="drawer-head"><div><small>Resposta individual · versão {selected.survey_version}</small><h2>{selected.name || 'Sem nome'}</h2><p>{selected.email || 'Sem e-mail'}</p></div><button onClick={() => setSelected(null)} aria-label="Fechar"><X size={20}/></button></div>
-        <div className="drawer-kpis"><div><span>Score</span><b>{selected.score ?? '—'}%</b></div><div><span>Nível</span><b>{levelNames[selected.level || 0] || '—'}</b></div><div><span>Origem</span><b>{selected.source || 'direct'}</b></div></div>
+        <div className="drawer-kpis"><div><span>Score</span><b>{selected.score ?? '—'}%</b></div><div><span>Nível</span><b>{(surveySlug==='gp-ia'?levelNames[selected.level || 0]:`Nível ${selected.level || '—'}`) || '—'}</b></div><div><span>Origem</span><b>{selected.source || 'direct'}</b></div></div>
         <div className="drawer-meta"><span>Respondido em {formatDate(selected.created_at)}</span>{selected.utm_campaign && <span>Campanha: {selected.utm_campaign}</span>}</div>
         <button
           className="btn"
