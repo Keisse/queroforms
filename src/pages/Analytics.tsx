@@ -252,7 +252,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
             {[1, 2, 3, 4].map(level => {
               const count = levelCounts[level] || 0;
               const pct = rows.length ? Math.round((count / rows.length) * 100) : 0;
-              return <div className="level-dist-row" key={level}><div><span>{{surveySlug==='gp-ia'?levelNames[level]:`Nível ${level}`}</span><b>{count} · {pct}%</b></div><div className="level-dist-track"><i style={{ width: `${pct}%` }}/></div></div>;
+              return <div className="level-dist-row" key={level}><div><span>{surveySlug==='gp-ia'?levelNames[level]:`Nível ${level}`}</span><b>{count} · {pct}%</b></div><div className="level-dist-track"><i style={{ width: `${pct}%` }}/></div></div>;
             })}
           </div>
         </article>
