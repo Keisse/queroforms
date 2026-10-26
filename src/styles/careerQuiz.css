@@ -130,3 +130,11 @@
  .career-quiz.thanks-page .thanks-steps .thanks-group p:not(.eyebrow){font-size:15px}
  .career-quiz.thanks-page .thanks-steps .card{padding:22px}
 }
+
+/* Selected answers use the same green gradient as the workshop buttons. */
+.career-quiz.thanks-page .option.selected,
+.career-quiz.thanks-page .option.selected:hover{
+ background:linear-gradient(180deg,var(--lp-cta-top),var(--lp-cta-bottom));
+ border-color:#12905a;color:#fff;box-shadow:0 0 0 1px #12905a57;
+}
+.career-quiz.thanks-page .option.selected span{background:#ffffff20;border-color:#ffffff80;color:#fff}
