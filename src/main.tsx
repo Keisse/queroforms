@@ -8,6 +8,7 @@ import Diagnostics from './pages/Diagnostics';
 import Analytics from './pages/Analytics';
 import Builder from './pages/BuilderPage';
 import PublicQuiz from './pages/PublicQuiz';
+import CareerQuiz from './pages/CareerQuiz';
 import Contacts from './pages/Contacts';
 import Placeholder from './pages/Placeholder';
 import Settings from './pages/Settings';
@@ -58,6 +59,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/analytics" element={<Admin><Analytics/></Admin>}/>
         <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
         <Route path="/settings" element={<Admin><Settings/></Admin>}/>
+        <Route path="/d/masterclass-21-novembro" element={<CareerQuiz/>}/>
         <Route path="/d/:slug" element={<PublicQuiz/>}/>
         <Route path="*" element={<NotFound/>}/>
       </Routes>
