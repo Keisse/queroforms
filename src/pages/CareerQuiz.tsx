@@ -34,7 +34,7 @@ export default function CareerQuiz(){
   if(advanceTimer.current!==null)clearTimeout(advanceTimer.current);
   setAnswers(current=>({...current,[question.id]:value}));
   const answeredIndex=idx;
-  advanceTimer.current=setTimeout(()=>{advanceTimer.current=null;setIdx(current=>current===answeredIndex?current+1:current)},1000);
+  advanceTimer.current=setTimeout(()=>{advanceTimer.current=null;setIdx(current=>current===answeredIndex?current+1:current)},500);
  }
  const q=questions[idx];const selected=q?answers[q.id]:undefined;
  return <div className="career-quiz thanks-page"><div className="wrap"><section className="thanks-hero" aria-labelledby="thanks-title">
