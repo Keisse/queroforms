@@ -4,3 +4,9 @@
 .career-quiz .field{width:100%;background:#081726;border:1px solid #7eb4e350;border-radius:10px;padding:14px;color:white;font:inherit;margin:10px 0}.career-quiz .cta{text-decoration:none}.career-quiz .error{color:#ffb4a8}.career-quiz{min-height:100vh}.career-quiz .option{width:100%}.career-quiz .card h2:focus{outline:none}
 
 .career-quiz .workshop-title{font-size:25px;line-height:1.35;color:var(--blue);font-weight:500;margin:24px 0}.career-quiz .fill-time{font-size:14px;color:var(--green);margin-top:28px}.career-quiz small{display:block;margin-top:18px}.career-quiz button{font-family:inherit}.career-quiz .cta{white-space:normal;gap:12px;text-align:left}
+
+@keyframes career-option-nudge-a{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}
+@keyframes career-option-nudge-b{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}
+.career-quiz .option.selection-nudge-0{animation:career-option-nudge-a 300ms ease-in-out}
+.career-quiz .option.selection-nudge-1{animation:career-option-nudge-b 300ms ease-in-out}
+@media(prefers-reduced-motion:reduce){.career-quiz .option.selection-nudge-0,.career-quiz .option.selection-nudge-1{animation:none}}
