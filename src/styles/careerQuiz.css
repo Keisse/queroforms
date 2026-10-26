@@ -153,3 +153,10 @@
  .career-quiz.thanks-page .thanks-steps .thanks-group>.cta::before{top:-38px;height:22px}
  .career-quiz.thanks-page .thanks-steps .thanks-group>.cta::after{top:-24px}
 }
+
+/* Anchor the desktop arrow tip to the middle of the form card. */
+@media(min-width:801px){
+ .career-quiz.thanks-page .thanks-steps .thanks-step-intro{position:relative}
+ .career-quiz.thanks-page .thanks-step-guide{position:absolute;flex:none;top:calc(50% - 64px);left:-12px;right:-22px;height:64px;min-height:0;margin:0}
+ .career-quiz.thanks-page .thanks-form-row:has(.card>p:only-child) .thanks-step-guide{visibility:hidden}
+}
