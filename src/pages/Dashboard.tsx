@@ -39,7 +39,7 @@ export default function Dashboard(){
 
   return <>
     <header className="page-head">
-      <div><div className="crumb">Keisse › My workspace</div><h1>Dashboard</h1><p className="page-subtitle">Visão geral dos diagnósticos e dos leads capturados.</p></div>
+      <div><div className="crumb">Keisse › My workspace</div><h1>Dashboard</h1><p className="page-subtitle">Visão geral dos formulários e dos leads capturados.</p></div>
     </header>
 
     {loading&&<div className="analytics-loading">Carregando indicadores...</div>}
@@ -47,15 +47,15 @@ export default function Dashboard(){
 
     {!loading&&!error&&<>
       <section className="metric-grid dashboard-metrics">
-        <article className="metric-card"><div className="metric-icon"><Users size={19}/></div><span>Leads totais</span><strong>{totalLeads}</strong><small>Somando todos os diagnósticos</small></article>
-        <article className="metric-card"><div className="metric-icon"><Activity size={19}/></div><span>Diagnósticos ativos</span><strong>{activeSurveys}</strong><small>Publicados e disponíveis para captação</small></article>
+        <article className="metric-card"><div className="metric-icon"><Users size={19}/></div><span>Leads totais</span><strong>{totalLeads}</strong><small>Somando todos os formulários</small></article>
+        <article className="metric-card"><div className="metric-icon"><Activity size={19}/></div><span>Formulários ativos</span><strong>{activeSurveys}</strong><small>Publicados e disponíveis para captação</small></article>
         <article className="metric-card"><div className="metric-icon"><BarChart3 size={19}/></div><span>Leads nos últimos 7 dias</span><strong>{last7Days}</strong><small>Novas respostas no período</small></article>
         <article className="metric-card"><div className="metric-icon"><FileQuestion size={19}/></div><span>Diagnóstico com mais leads</span><strong className="metric-text-value">{topSurvey?.name||'—'}</strong><small>{topSurvey?`${topSurvey.leads} lead${topSurvey.leads===1?'':'s'}`:'Nenhum diagnóstico criado'}</small></article>
       </section>
 
       <section className="dashboard-grid">
         <article className="analysis-card">
-          <div className="analysis-card-head"><div><small>Performance por diagnóstico</small><h2>Diagnósticos do workspace</h2></div><Link className="text-button" to="/diagnostics">Ver todos</Link></div>
+          <div className="analysis-card-head"><div><small>Performance por diagnóstico</small><h2>Formulários do workspace</h2></div><Link className="text-button" to="/diagnostics">Ver todos</Link></div>
           <div className="dashboard-diagnostic-list">
             {surveys.slice(0,6).map(item=><Link to={`/builder/gp-ia?survey=${encodeURIComponent(item.slug)}`} key={item.id} className="dashboard-diagnostic-item">
               <span><strong>{item.name}</strong><small>{item.status==='published'?'● Ativo':'Rascunho'} · /d/{item.slug}</small></span>

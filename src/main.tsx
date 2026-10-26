@@ -6,6 +6,7 @@ import { AppShell } from './components/AppShell';
 import Dashboard from './pages/Dashboard';
 import Diagnostics from './pages/Diagnostics';
 import Analytics from './pages/Analytics';
+import WorkshopDashboard from './pages/WorkshopDashboard';
 import Builder from './pages/BuilderPage';
 import PublicQuiz from './pages/PublicQuiz';
 import CareerQuiz from './pages/CareerQuiz';
@@ -35,6 +36,7 @@ import './styles/diagnostics.css';
 import './styles/contacts.css';
 
 function Admin({children}:{children:React.ReactNode}){
+  useEffect(()=>{document.title='Quero Forms'},[]);
   const [session,setSession]=useState<Session|null|undefined>(undefined);
   useEffect(()=>{
     getSession().then(setSession);
@@ -57,6 +59,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/contacts" element={<Admin><Contacts/></Admin>}/>
         <Route path="/responses" element={<Admin><Navigate to="/analytics?tab=responses" replace/></Admin>}/>
         <Route path="/analytics" element={<Admin><Analytics/></Admin>}/>
+        <Route path="/dashboard/workshop-21-novembro" element={<WorkshopDashboard/>}/>
         <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
         <Route path="/settings" element={<Admin><Settings/></Admin>}/>
         <Route path="/d/masterclass-21-novembro" element={<CareerQuiz/>}/>

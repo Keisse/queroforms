@@ -3,8 +3,10 @@ import { BarChart3, Download, Search, Trash2, Users, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import QuestionAnalytics from '../components/QuestionAnalytics';
 import DeliveryIntelligence from '../components/DeliveryIntelligence';
+import WorkshopDashboard from './WorkshopDashboard';
+import { WORKSHOP_SLUG, workshopCopy } from '../lib/workshopDashboardModel';
 import { Step } from '../data/gpIa';
-import { deleteSubmission, fetchSubmissions, fetchSurveyVersionSteps, Submission } from '../lib/adminData';
+import { deleteSubmission, fetchSubmissions, fetchSurveyVersionSteps, fetchSurveySummaries, Submission } from '../lib/adminData';
 
 const levelNames: Record<number, string> = {
   1: 'Explorador',
@@ -13,12 +15,13 @@ const levelNames: Record<number, string> = {
   4: 'Orientado por IA',
 };
 
-const surveyChoices = [
+const fallbackSurveyChoices = [
   { slug: 'gp-ia', label: 'Gestão de Projetos com IA' },
   { slug: 'pmo-vmo', label: 'PMO / VMO' },
   { slug: 'tire-projeto-do-papel', label: 'Tire Esse Projeto do Papel' },
   { slug: 'gestao-agil-sem-bagunca', label: 'Gestão Ágil sem Bagunça' },
   { slug: 'prompt-gp', label: 'PromptGP' },
+  { slug: WORKSHOP_SLUG, label: 'Ficha do aluno — Workshop 21 de novembro' },
 ];
 
 const dimensionNames: Record<string, string> = {
@@ -52,7 +55,7 @@ function answerLabel(step: Extract<Step, { kind: 'question' }> | undefined, valu
   return labels.join(', ');
 }
 
-function answerRows(submission: Submission, steps: Step[]) {
+function answerRows(submission: Submission, steps: Step[], career=false) {
   const answers = submission.answers || {};
   const questionSteps = steps.filter((step): step is Extract<Step, { kind: 'question' }> => step.kind === 'question');
   const stepById = new Map(questionSteps.map(step => [step.id, step]));
@@ -65,38 +68,38 @@ function answerRows(submission: Submission, steps: Step[]) {
     const fallbackTitle = id === 'cloud-use' ? 'Você já utiliza cloud?' : id;
     return {
       id,
-      question: question?.title || fallbackTitle,
+      question: career?workshopCopy(question?.title || fallbackTitle):question?.title || fallbackTitle,
       answer: answerLabel(question, raw),
     };
   });
 }
 
-function exportCsv(rows: Submission[], versions: Record<number, Step[]>) {
+function exportCsv(rows: Submission[], versions: Record<number, Step[]>, slug='gp-ia') {
+  const career=slug===WORKSHOP_SLUG;
   const questionIds: string[] = [];
   const questionLabels: Record<string, string> = {};
 
   for (const submission of rows) {
     const steps = versions[submission.survey_version] || [];
-    for (const item of answerRows(submission, steps)) {
+    for (const item of answerRows(submission, steps, career)) {
       if (!questionIds.includes(item.id)) questionIds.push(item.id);
       if (!questionLabels[item.id]) questionLabels[item.id] = item.question;
     }
   }
 
   const header = [
-    'Data', 'Nome', 'E-mail', 'Score', 'Nível', 'Versão', 'Origem', 'UTM Source', 'UTM Medium', 'UTM Campaign',
+    'Data', 'Nome', 'E-mail', ...(career?[]:['Score','Nível']), 'Versão', 'Origem', 'UTM Source', 'UTM Medium', 'UTM Campaign',
     ...questionIds.map(id => questionLabels[id] || id),
   ];
 
   const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
   const lines = rows.map(submission => {
-    const mapped = new Map(answerRows(submission, versions[submission.survey_version] || []).map(item => [item.id, item.answer]));
+    const mapped = new Map(answerRows(submission, versions[submission.survey_version] || [], career).map(item => [item.id, item.answer]));
     return [
       formatDate(submission.created_at),
       submission.name || '',
       submission.email || '',
-      submission.score ?? '',
-      levelNames[submission.level || 0] || submission.level || '',
+      ...(career?[]:[submission.score ?? '',levelNames[submission.level || 0] || submission.level || '']),
       submission.survey_version,
       submission.source || '',
       submission.utm_source || '',
@@ -111,7 +114,7 @@ function exportCsv(rows: Submission[], versions: Record<number, Step[]>) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `respostas-gp-ia-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `respostas-${slug}-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -136,6 +139,9 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   const [deleteError, setDeleteError] = useState('');
   const currentTab = view || tab;
   const surveySlug = searchParams.get('survey') || 'gp-ia';
+  const isWorkshop=surveySlug===WORKSHOP_SLUG;
+  const [surveyChoices,setSurveyChoices]=useState(fallbackSurveyChoices);
+  useEffect(()=>{let active=true;fetchSurveySummaries().then(items=>{if(active)setSurveyChoices(items.map(item=>({slug:item.slug,label:item.name})))}).catch(()=>undefined);return()=>{active=false}},[]);
   const surveyLabel = surveyChoices.find(choice => choice.slug === surveySlug)?.label || surveySlug;
   const changeSurvey = (nextSlug: string) => {
     if (nextSlug === surveySlug) return;
@@ -147,8 +153,8 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
     setLevelFilter('all');
   };
   const surveyPicker = <label style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',fontWeight:600,color:'#42556b'}}>
-    Diagnóstico
-    <select aria-label="Selecionar diagnóstico para análise" value={surveySlug} onChange={event => changeSurvey(event.target.value)} style={{minWidth:250,maxWidth:'100%',padding:'10px 12px',border:'1px solid #d6dfe8',borderRadius:9,background:'#fff',color:'#20364a'}}>
+    Formulário
+    <select aria-label="Selecionar formulário para análise" value={surveySlug} onChange={event => changeSurvey(event.target.value)} style={{minWidth:250,maxWidth:'100%',padding:'10px 12px',border:'1px solid #d6dfe8',borderRadius:9,background:'#fff',color:'#20364a'}}>
       {surveyChoices.map(choice => <option key={choice.slug} value={choice.slug}>{choice.label}</option>)}
     </select>
   </label>;
@@ -252,7 +258,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   return <>
     {!embedded && <header className="page-head analytics-head">
       <div><div className="crumb">Keisse › My workspace</div><h1>Análises</h1><p>Resultados e respostas de {surveyLabel}.</p></div>
-      <button className="btn" onClick={() => exportCsv(filtered, versions)} disabled={!filtered.length}><Download size={17}/> Exportar CSV</button>
+      <button className="btn" onClick={() => exportCsv(filtered, versions, surveySlug)} disabled={!filtered.length}><Download size={17}/> Exportar CSV</button>
     </header>}
 
     <div style={{margin:'0 0 20px'}}>{surveyPicker}</div>
@@ -262,12 +268,13 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
       <button className={currentTab === 'responses' ? 'active' : ''} onClick={() => changeTab('responses')}><Users size={17}/> Respostas individuais</button>
     </div>}
 
-    {embedded && <div className="analytics-embedded-toolbar"><span>{totalCount} resposta{totalCount === 1 ? '' : 's'} concluída{totalCount === 1 ? '' : 's'}</span><button className="btn" onClick={() => exportCsv(filtered, versions)} disabled={!filtered.length}><Download size={16}/> Exportar CSV</button></div>}
+    {embedded && <div className="analytics-embedded-toolbar"><span>{totalCount} resposta{totalCount === 1 ? '' : 's'} concluída{totalCount === 1 ? '' : 's'}</span><button className="btn" onClick={() => exportCsv(filtered, versions, surveySlug)} disabled={!filtered.length}><Download size={16}/> Exportar CSV</button></div>}
 
     {deleteError && <div className="analytics-error" style={{marginBottom:16}}><b>Não foi possível excluir o lead.</b><span>{deleteError}</span></div>}
     {truncated && <div className="analytics-notice">Existem {totalCount} respostas. Esta versão do painel carrega as 2.000 mais recentes para análise detalhada.</div>}
 
-    {currentTab === 'overview' && <div className="analytics-overview">
+    {currentTab === 'overview' && isWorkshop && <WorkshopDashboard embedded/>}
+    {currentTab === 'overview' && !isWorkshop && <div className="analytics-overview">
       <section className="metric-grid">
         <article className="metric-card"><span>Respostas concluídas</span><strong>{totalCount}</strong><small>Submissões gravadas no Supabase</small></article>
         <article className="metric-card"><span>Score médio</span><strong>{averageScore}%</strong><small>Média de maturidade das respostas carregadas</small></article>
@@ -311,18 +318,18 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
     {currentTab === 'responses' && <section className="analysis-card responses-card">
       <div className="responses-toolbar">
         <div className="search-box"><Search size={17}/><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar por nome, e-mail ou origem"/></div>
-        <select value={levelFilter} onChange={event => setLevelFilter(event.target.value)}>
+        {!isWorkshop&&<select value={levelFilter} onChange={event => setLevelFilter(event.target.value)}>
           <option value="all">Todos os níveis</option>
           <option value="1">Explorador</option>
           <option value="2">Usuário</option>
           <option value="3">Aumentado</option>
           <option value="4">Orientado por IA</option>
-        </select>
+        </select>}
         <span className="response-count">{filtered.length} resposta{filtered.length === 1 ? '' : 's'}</span>
       </div>
       <div className="response-table">
-        <div className="response-table-row response-table-head"><span>Lead</span><span>Score</span><span>Nível</span><span>Versão</span><span>Origem</span><span>Data</span></div>
-        {filtered.map(row => <button className="response-table-row" key={row.id} onClick={() => setSelected(row)}><span><b>{row.name || 'Sem nome'}</b><small>{row.email || 'Sem e-mail'}</small></span><span>{row.score ?? '—'}%</span><span>{(surveySlug==='gp-ia'?levelNames[row.level || 0]:`Nível ${row.level || '—'}`) || '—'}</span><span>v{row.survey_version}</span><span>{row.source || 'direct'}</span><span>{formatDate(row.created_at)}</span></button>)}
+        <div className="response-table-row response-table-head" style={isWorkshop?{gridTemplateColumns:"2fr 1fr 1fr 1fr"}:undefined}><span>Aluno</span>{!isWorkshop&&<><span>Score</span><span>Nível</span></>}<span>Versão</span><span>Origem</span><span>Data</span></div>
+        {filtered.map(row => <button className="response-table-row" style={isWorkshop?{gridTemplateColumns:"2fr 1fr 1fr 1fr"}:undefined} key={row.id} onClick={() => setSelected(row)}><span><b>{row.name || 'Sem nome'}</b><small>{row.email || 'Sem e-mail'}</small></span>{!isWorkshop&&<><span>{row.score ?? '—'}%</span><span>{(surveySlug==='gp-ia'?levelNames[row.level || 0]:`Nível ${row.level || '—'}`) || '—'}</span></>}<span>v{row.survey_version}</span><span>{row.source || 'direct'}</span><span>{formatDate(row.created_at)}</span></button>)}
         {!filtered.length && <div className="table-empty">Nenhuma resposta encontrada com esses filtros.</div>}
       </div>
     </section>}
@@ -330,7 +337,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
     {selected && <div className="response-drawer-backdrop" onMouseDown={() => setSelected(null)}>
       <aside className="response-drawer" onMouseDown={event => event.stopPropagation()}>
         <div className="drawer-head"><div><small>Resposta individual · versão {selected.survey_version}</small><h2>{selected.name || 'Sem nome'}</h2><p>{selected.email || 'Sem e-mail'}</p></div><button onClick={() => setSelected(null)} aria-label="Fechar"><X size={20}/></button></div>
-        <div className="drawer-kpis"><div><span>Score</span><b>{selected.score ?? '—'}%</b></div><div><span>Nível</span><b>{(surveySlug==='gp-ia'?levelNames[selected.level || 0]:`Nível ${selected.level || '—'}`) || '—'}</b></div><div><span>Origem</span><b>{selected.source || 'direct'}</b></div></div>
+        <div className="drawer-kpis">{!isWorkshop&&<><div><span>Score</span><b>{selected.score ?? '—'}%</b></div><div><span>Nível</span><b>{(surveySlug==='gp-ia'?levelNames[selected.level || 0]:`Nível ${selected.level || '—'}`) || '—'}</b></div></>}<div><span>Origem</span><b>{selected.source || 'direct'}</b></div></div>
         <div className="drawer-meta"><span>Respondido em {formatDate(selected.created_at)}</span>{selected.utm_campaign && <span>Campanha: {selected.utm_campaign}</span>}</div>
         <button
           className="btn"
@@ -342,7 +349,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
         </button>
         <small style={{display:'block',margin:'-8px 0 18px',color:'#8a6b6b',lineHeight:1.4}}>A exclusão é definitiva e remove esta submissão diretamente do Supabase.</small>
         <div className="individual-answers">
-          {answerRows(selected, versions[selected.survey_version] || []).map((item, index) => <article key={`${item.id}-${index}`}><small>Pergunta {index + 1}</small><h3>{item.question}</h3><p>{item.answer}</p></article>)}
+          {answerRows(selected, versions[selected.survey_version] || [], isWorkshop).map((item, index) => <article key={`${item.id}-${index}`}><small>Pergunta {index + 1}</small><h3>{item.question}</h3><p>{item.answer}</p></article>)}
         </div>
       </aside>
     </div>}

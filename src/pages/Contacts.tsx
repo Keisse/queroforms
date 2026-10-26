@@ -53,7 +53,7 @@ function toContacts(rows:Submission[],surveyNames:Map<string,string>):ContactRow
 }
 
 function exportContactsCsv(rows:ContactRow[],fileLabel='contatos'){
-  const header=['Nome','E-mail','Diagnósticos','Origem','Última resposta','Qtd. respostas'];
+  const header=['Nome','E-mail','Formulários','Origem','Última resposta','Qtd. respostas'];
   const lines=rows.map(row=>[
     row.name||'',row.email||'',row.surveyNames.join(' | '),row.source||'direct',formatDate(row.created_at),row.submissionIds.length
   ].map(csvEscape).join(','));
@@ -172,7 +172,7 @@ export default function Contacts(){
 
   return <>
     <header className="page-head contacts-head">
-      <div><div className="crumb">Keisse › My workspace</div><h1>Contatos</h1><p>Leads únicos capturados por todos os diagnósticos e salvos no Banco de dados.</p></div>
+      <div><div className="crumb">Keisse › My workspace</div><h1>Contatos</h1><p>Leads únicos capturados por todos os formulários e salvos no Banco de dados.</p></div>
       <div className="contacts-head-actions">
         <button className="btn" onClick={()=>exportContactsCsv(filtered,'contatos-filtrados')} disabled={!filtered.length}><Download size={17}/> Exportar CSV</button>
         <div className="contacts-total"><strong>{contacts.length}</strong><span>contato{contacts.length===1?'':'s'}</span></div>
@@ -190,7 +190,7 @@ export default function Contacts(){
       <div className="contacts-filters">
         <div className="contacts-filter-label"><Filter size={16}/><span>Filtros</span></div>
         <select value={diagnosticFilter} onChange={event=>setDiagnosticFilter(event.target.value)}>
-          <option value="all">Todos os diagnósticos</option>
+          <option value="all">Todos os formulários</option>
           {surveys.map(survey=><option key={survey.slug} value={survey.slug}>{survey.name}</option>)}
         </select>
         <select value={sourceFilter} onChange={event=>setSourceFilter(event.target.value)}>

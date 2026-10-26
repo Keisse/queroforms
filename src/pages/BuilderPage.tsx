@@ -70,11 +70,11 @@ export default function BuilderPage(){
 
   return <>
     <header className="builder-workspace-head">
-      <div><div className="crumb">Keisse › My workspace › Diagnósticos</div><h1>{surveyName}</h1><small style={{color:'#8191a1'}}>/d/{surveySlug}</small></div>
+      <div><div className="crumb">Keisse › My workspace › Formulários</div><h1>{surveyName}</h1><small style={{color:'#8191a1'}}>/d/{surveySlug}</small></div>
       {active === 'build' && <a className="btn" href={`/d/${surveySlug}?preview=draft`} target="_blank" rel="noreferrer">Pré-visualizar rascunho</a>}
     </header>
 
-    <nav className="builder-workspace-tabs" aria-label="Áreas do diagnóstico">
+    <nav className="builder-workspace-tabs" aria-label="Áreas do formulário">
       {sections.map(item => {
         const Icon = item.icon;
         return <button key={item.id} className={active === item.id ? 'active' : ''} onClick={() => changeSection(item.id)}><Icon size={17}/>{item.label}</button>;

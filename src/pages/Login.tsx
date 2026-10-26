@@ -21,7 +21,7 @@ export default function Login(){
   return <div style={{minHeight:'100vh',display:'grid',placeItems:'center',background:'#f6f8fb'}}>
     <form onSubmit={submit} style={{background:'#fff',border:'1px solid #e1e9ef',borderRadius:18,padding:36,width:340,display:'flex',flexDirection:'column',gap:14}}>
       <h1 style={{margin:0,fontSize:22}}>Entrar</h1>
-      <p style={{margin:0,color:'#7a8b9c',fontSize:14}}>Acesso ao painel do Diagnóstico de Maturidade.</p>
+      <p style={{margin:0,color:'#7a8b9c',fontSize:14}}>Acesso ao Quero Forms.</p>
       <label style={{fontSize:13,fontWeight:600}}>E-mail</label>
       <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} style={{padding:12,border:'1px solid #d0dbe3',borderRadius:10}}/>
       <label style={{fontSize:13,fontWeight:600}}>Senha</label>
