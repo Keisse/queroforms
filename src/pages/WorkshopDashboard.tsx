@@ -29,7 +29,7 @@ export default function WorkshopDashboard({embedded=false}:{embedded?:boolean}){
  const insights=[['Objetivo de carreira','career-goal'],['Principal obstáculo','career-obstacle'],['Apoio mais desejado','career-delivery']].map(([label,id])=>({label,value:top(id)}));
  const maxDay=Math.max(1,...days.map(d=>d.count));
  return <div className={`workshop-dashboard${embedded?' wd-embedded':''}`}><div className="wd-container">
- {!embedded&&<header className="wd-brand"><a href={WORKSHOP_DASHBOARD_PATH}><span>Q</span>Quero Forms</a><div className="wd-public-tag">Dashboard público · Dados agregados</div></header>}
+ {!embedded&&<header className="wd-brand"><a href={WORKSHOP_DASHBOARD_PATH}><span>Q</span>Quero Forms</a><div className="wd-public-tag">Ferramenta interna</div></header>}
  <header className="wd-hero"><div><div className="wd-kicker">WORKSHOP · 21 DE NOVEMBRO DE 2026</div><h1>Perfil dos alunos</h1><p>Momento profissional, desafios e expectativas de quem preencheu a ficha do Workshop Gestor de projetos de alto valor com IA.</p></div><div className="wd-actions"><button onClick={()=>void load()} disabled={refreshing}><RefreshCw size={16} className={refreshing?'wd-spinning':''}/> {refreshing?'Atualizando…':'Atualizar'}</button>{embedded&&<a href={WORKSHOP_DASHBOARD_PATH} target="_blank" rel="noreferrer"><ExternalLink size={16}/> Abrir dashboard público</a>}</div></header>
  <p className="wd-privacy">Somente quantidades e percentuais. Nomes, e-mails e respostas individuais ficam restritos ao Builder.</p>
  {error&&<div className="wd-error" role="alert">{error} {data&&'Os últimos resultados carregados continuam visíveis.'}</div>}
