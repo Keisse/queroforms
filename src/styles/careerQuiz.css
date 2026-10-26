@@ -10,3 +10,23 @@
 .career-quiz .option.selection-nudge-0{animation:career-option-nudge-a 300ms ease-in-out}
 .career-quiz .option.selection-nudge-1{animation:career-option-nudge-b 300ms ease-in-out}
 @media(prefers-reduced-motion:reduce){.career-quiz .option.selection-nudge-0,.career-quiz .option.selection-nudge-1{animation:none}}
+
+/* Fit the content to the available viewport instead of a fixed-height stage. */
+.career-quiz{min-height:100svh}
+.career-quiz .wrap{min-height:100svh;display:flex;flex-direction:column;padding-block:20px;width:100%}
+.career-quiz main{flex:1;min-height:0;padding-block:24px}
+.career-quiz footer{flex-shrink:0;padding-top:14px}
+@media(min-width:801px) and (max-height:800px){
+ .career-quiz .wrap{padding-block:16px}
+ .career-quiz main{padding-block:16px;gap:48px}
+ .career-quiz .card{padding:26px}
+ .career-quiz .options{gap:6px;margin-top:16px}
+ .career-quiz .option{padding:10px 12px}
+ .career-quiz .workshop-title{margin-block:18px}
+ .career-quiz .fill-time{margin-top:20px}
+}
+@media(max-width:800px){
+ .career-quiz .wrap{padding:20px 22px}
+ .career-quiz main{flex:1;gap:24px;padding-block:20px}
+ .career-quiz footer{flex-wrap:wrap;gap:8px 20px}
+}
