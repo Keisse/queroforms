@@ -107,3 +107,26 @@
  .career-quiz.thanks-page .thanks-form-row .thanks-step-intro h2{font-size:27px}
  .career-quiz.thanks-page .cta{font-size:16px;white-space:normal;text-align:center}
 }
+
+/* Shared white panel and matching columns for both next steps. */
+.career-quiz.thanks-page .thanks-steps{background:#fff;border:1px solid #e1e8ef;border-radius:24px;padding:40px;margin:64px 0 48px;box-shadow:0 20px 60px #0002;color:#17324d}
+.career-quiz.thanks-page .thanks-steps main.thanks-form-row{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:40px;margin:0;min-height:0;padding:0 0 36px;border:0;align-items:start}
+.career-quiz.thanks-page .thanks-steps .thanks-step-intro h2,
+.career-quiz.thanks-page .thanks-steps .thanks-group h2{font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.04em;color:#015bb1;margin:14px 0 18px;text-wrap:balance}
+.career-quiz.thanks-page .thanks-steps .thanks-step-intro>p:last-child,
+.career-quiz.thanks-page .thanks-steps .thanks-group p:not(.eyebrow){font-size:16px;line-height:1.65;color:#52667a;max-width:none;margin:0 0 16px}
+.career-quiz.thanks-page .thanks-steps .thanks-step-intro .eyebrow,
+.career-quiz.thanks-page .thanks-steps .thanks-group .eyebrow{color:#356d9e;margin:0;font-size:11px;line-height:1.5}
+.career-quiz.thanks-page .thanks-steps .thanks-group{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:40px;align-items:start;background:transparent;box-shadow:none;border:0;border-top:1px solid #dce5ed;border-radius:0;margin:0;padding:36px 0 0}
+.career-quiz.thanks-page .thanks-steps .thanks-group .cta{width:100%;margin:0;align-self:start;white-space:normal;min-height:56px}
+.career-quiz.thanks-page .thanks-steps .card{color:var(--lp-text);min-width:0}
+@media(max-width:800px){
+ .career-quiz.thanks-page .thanks-steps{padding:24px 20px;border-radius:18px;margin:40px 0 32px}
+ .career-quiz.thanks-page .thanks-steps main.thanks-form-row{grid-template-columns:minmax(0,1fr);gap:24px;padding:0 0 28px}
+ .career-quiz.thanks-page .thanks-steps .thanks-group{grid-template-columns:minmax(0,1fr);gap:16px;padding:28px 0 0}
+ .career-quiz.thanks-page .thanks-steps .thanks-step-intro h2,
+ .career-quiz.thanks-page .thanks-steps .thanks-group h2{font-size:25px}
+ .career-quiz.thanks-page .thanks-steps .thanks-step-intro>p:last-child,
+ .career-quiz.thanks-page .thanks-steps .thanks-group p:not(.eyebrow){font-size:15px}
+ .career-quiz.thanks-page .thanks-steps .card{padding:22px}
+}
