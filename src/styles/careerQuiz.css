@@ -30,3 +30,34 @@
  .career-quiz main{flex:1;gap:24px;padding-block:20px}
  .career-quiz footer{flex-wrap:wrap;gap:8px 20px}
 }
+
+/* Thank-you sections surround the existing student form. */
+.career-quiz.thanks-page .wrap{max-width:1200px;padding-top:64px}
+.career-quiz .thanks-hero{max-width:960px;margin-inline:auto;text-align:center}
+.career-quiz .thanks-confirmation{color:var(--green);font-size:16px;max-width:780px;margin:0 auto 24px}
+.career-quiz h1.thanks-title{font-size:clamp(29px,3.5vw,44px);line-height:1.2;letter-spacing:-1.4px;font-weight:650;margin:0 auto 32px;text-wrap:balance}
+.career-quiz .thanks-video{aspect-ratio:16/9;width:100%;border-radius:20px;border:1px solid #7eb4e333;background:radial-gradient(ellipse at 50% 50%,#183c56,#0a1c2d 75%);display:grid;place-items:center;color:#9ab7cc;font-size:15px;letter-spacing:.04em}
+.career-quiz .thanks-information{max-width:820px;margin:32px auto 0;text-align:left;font-size:16px;color:var(--muted)}
+.career-quiz .thanks-information p{margin:22px 0;line-height:1.75}
+.career-quiz .thanks-information a{color:var(--blue);text-underline-offset:4px}
+.career-quiz .thanks-date{border-left:2px solid var(--green);padding:12px 20px;margin:28px 0;display:grid;gap:5px;background:#7eb4e307;border-radius:0 10px 10px 0}
+.career-quiz .thanks-date strong{color:#e9f3fa;font-weight:650}
+.career-quiz .thanks-step-intro{margin-top:76px;border-top:1px solid #7eb4e326;padding-top:36px}
+.career-quiz .thanks-step-intro h2,.career-quiz .thanks-group h2{font-size:29px;line-height:1.25;color:var(--blue);margin:12px 0 16px;letter-spacing:-.5px}
+.career-quiz .thanks-step-intro>p:last-child{font-size:16px;color:var(--muted);max-width:760px}
+.career-quiz.thanks-page main{flex:none;min-height:calc(100svh - 80px);padding-block:40px}
+.career-quiz .thanks-group{display:grid;grid-template-columns:1fr auto;align-items:center;gap:40px;padding:38px;border:1px solid #7eb4e32b;border-radius:20px;background:#102a4280;margin-bottom:48px}
+.career-quiz .thanks-group p:not(.eyebrow){color:var(--muted);font-size:15px;max-width:620px}
+.career-quiz .thanks-group .cta{width:auto;margin:0;white-space:nowrap;gap:22px}
+.career-quiz.thanks-page footer{padding-bottom:10px}
+@media(max-width:800px){
+ .career-quiz.thanks-page .wrap{padding-top:36px}
+ .career-quiz h1.thanks-title{font-size:30px;letter-spacing:-.8px}
+ .career-quiz .thanks-confirmation,.career-quiz .thanks-information{font-size:14px}
+ .career-quiz .thanks-video{border-radius:14px}
+ .career-quiz .thanks-step-intro{margin-top:44px;padding-top:26px}
+ .career-quiz .thanks-step-intro h2,.career-quiz .thanks-group h2{font-size:25px}
+ .career-quiz.thanks-page main{min-height:0;padding-block:28px}
+ .career-quiz .thanks-group{grid-template-columns:1fr;gap:18px;padding:24px;margin-bottom:32px}
+ .career-quiz .thanks-group .cta{width:100%;white-space:normal}
+}
