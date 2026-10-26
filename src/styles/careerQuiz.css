@@ -45,7 +45,7 @@
 .career-quiz .thanks-date strong{color:#e9f3fa;font-weight:650}
 .career-quiz .thanks-step-intro{margin-top:76px;border-top:1px solid #7eb4e326;padding-top:36px}
 .career-quiz .thanks-step-intro h2,.career-quiz .thanks-group h2{font-size:29px;line-height:1.25;color:var(--blue);margin:12px 0 16px;letter-spacing:-.5px}
-.career-quiz .thanks-step-intro>p:last-child{font-size:16px;color:var(--muted);max-width:760px}
+.career-quiz .thanks-step-intro>p:not(.eyebrow){font-size:16px;color:var(--muted);max-width:760px}
 .career-quiz.thanks-page main{flex:none;min-height:calc(100svh - 80px);padding-block:40px}
 .career-quiz .thanks-group{display:grid;grid-template-columns:1fr auto;align-items:center;gap:40px;padding:38px;border:1px solid #7eb4e32b;border-radius:20px;background:#102a4280;margin-bottom:48px}
 .career-quiz .thanks-group p:not(.eyebrow){color:var(--muted);font-size:15px;max-width:620px}
@@ -99,11 +99,11 @@
 .career-quiz.thanks-page main.thanks-form-row{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);min-height:0;gap:64px;align-items:start;margin-top:64px;padding-block:48px 64px;border-top:1px solid var(--lp-border)}
 .career-quiz.thanks-page .thanks-form-row .thanks-step-intro{margin:0;padding:0;border:0}
 .career-quiz.thanks-page .thanks-form-row .thanks-step-intro h2{color:var(--lp-text);font-weight:600;font-size:clamp(27px,2.8vw,34px);line-height:1.15;margin:16px 0 20px;text-wrap:balance}
-.career-quiz.thanks-page .thanks-form-row .thanks-step-intro>p:last-child{font-size:17px;line-height:1.6}
+.career-quiz.thanks-page .thanks-form-row .thanks-step-intro>p:not(.eyebrow){font-size:17px;line-height:1.6}
 .career-quiz.thanks-page .thanks-step-intro .eyebrow{margin:0}
 @media(max-width:800px){
  .career-quiz.thanks-page main.thanks-form-row{grid-template-columns:minmax(0,1fr);gap:24px;margin-top:40px;padding-block:28px 40px}
- .career-quiz.thanks-page .thanks-form-row .thanks-step-intro>p:last-child{font-size:15px}
+ .career-quiz.thanks-page .thanks-form-row .thanks-step-intro>p:not(.eyebrow){font-size:15px}
  .career-quiz.thanks-page .thanks-form-row .thanks-step-intro h2{font-size:27px}
  .career-quiz.thanks-page .cta{font-size:16px;white-space:normal;text-align:center}
 }
@@ -113,7 +113,7 @@
 .career-quiz.thanks-page .thanks-steps main.thanks-form-row{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:40px;margin:0;min-height:0;padding:0 0 36px;border:0;align-items:start}
 .career-quiz.thanks-page .thanks-steps .thanks-step-intro h2,
 .career-quiz.thanks-page .thanks-steps .thanks-group h2{font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.04em;color:#015bb1;margin:14px 0 18px;text-wrap:balance}
-.career-quiz.thanks-page .thanks-steps .thanks-step-intro>p:last-child,
+.career-quiz.thanks-page .thanks-steps .thanks-step-intro>p:not(.eyebrow),
 .career-quiz.thanks-page .thanks-steps .thanks-group p:not(.eyebrow){font-size:16px;line-height:1.65;color:#52667a;max-width:none;margin:0 0 16px}
 .career-quiz.thanks-page .thanks-steps .thanks-step-intro .eyebrow,
 .career-quiz.thanks-page .thanks-steps .thanks-group .eyebrow{color:#356d9e;margin:0;font-size:11px;line-height:1.5}
@@ -126,7 +126,7 @@
  .career-quiz.thanks-page .thanks-steps .thanks-group{grid-template-columns:minmax(0,1fr);gap:16px;padding:28px 0 0}
  .career-quiz.thanks-page .thanks-steps .thanks-step-intro h2,
  .career-quiz.thanks-page .thanks-steps .thanks-group h2{font-size:25px}
- .career-quiz.thanks-page .thanks-steps .thanks-step-intro>p:last-child,
+ .career-quiz.thanks-page .thanks-steps .thanks-step-intro>p:not(.eyebrow),
  .career-quiz.thanks-page .thanks-steps .thanks-group p:not(.eyebrow){font-size:15px}
  .career-quiz.thanks-page .thanks-steps .card{padding:22px}
 }
@@ -138,3 +138,18 @@
  border-color:#12905a;color:#fff;box-shadow:0 0 0 1px #12905a57;
 }
 .career-quiz.thanks-page .option.selected span{background:#ffffff20;border-color:#ffffff80;color:#fff}
+
+/* Direction cues: introduction to form, then form to the WhatsApp button. */
+.career-quiz.thanks-page .thanks-steps .thanks-step-intro{align-self:stretch;display:flex;flex-direction:column;min-width:0}
+.career-quiz.thanks-page .thanks-step-guide{position:relative;flex:1;min-height:80px;margin:22px -22px 42px 8px;border-left:2px solid #2f86d6;border-bottom:2px solid #2f86d6;border-bottom-left-radius:16px;pointer-events:none}
+.career-quiz.thanks-page .thanks-step-guide::after{content:'';position:absolute;right:0;bottom:-5px;width:8px;height:8px;border-right:2px solid #2f86d6;border-top:2px solid #2f86d6;transform:rotate(45deg)}
+.career-quiz.thanks-page .thanks-steps .thanks-group>.cta{position:relative}
+.career-quiz.thanks-page .thanks-steps .thanks-group>.cta::before{content:'';position:absolute;left:50%;top:-62px;width:2px;height:40px;background:#2f86d6;pointer-events:none}
+.career-quiz.thanks-page .thanks-steps .thanks-group>.cta::after{content:'';position:absolute;left:calc(50% - 4px);top:-30px;width:8px;height:8px;border-right:2px solid #2f86d6;border-bottom:2px solid #2f86d6;transform:rotate(45deg);pointer-events:none}
+@media(max-width:800px){
+ .career-quiz.thanks-page .thanks-step-guide{flex:none;align-self:center;width:2px;height:30px;min-height:0;margin:10px 0 0;border:0;border-radius:0;background:#2f86d6}
+ .career-quiz.thanks-page .thanks-step-guide::after{right:-3px;bottom:0;border-top:0;border-right:2px solid #2f86d6;border-bottom:2px solid #2f86d6}
+ .career-quiz.thanks-page .thanks-steps .thanks-group>.cta{margin-top:38px}
+ .career-quiz.thanks-page .thanks-steps .thanks-group>.cta::before{top:-38px;height:22px}
+ .career-quiz.thanks-page .thanks-steps .thanks-group>.cta::after{top:-24px}
+}
