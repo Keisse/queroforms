@@ -529,7 +529,174 @@ export default function BuilderStable({surveySlug='gp-ia'}:{surveySlug?:string})
       try{
         const revision=saveLocalDraft(surveySlug,savedDraft,baseVersion,localRevision);
         setLocalRevision(revision);
-        setLocalDraf…3820 tokens truncated…(intro.text,e.target.value,'QF_INTRO_IMAGE')} as Partial<Step>)}/>
+        setLocalDraftExists(true);
+      }catch{
+        setLocalDraftConflict(true);
+      }
+      const message=err instanceof Error?err.message:'';
+      if(message.startsWith('CONFLICT:')){
+        setVersionConflict(true);
+        setPublishError('Outra aba ou computador publicou uma versão mais recente. Seu rascunho foi preservado neste navegador e não foi sobrescrito.');
+      }else{
+        setPublishError('Não consegui publicar no Supabase. O rascunho continua salvo neste navegador.');
+      }
+    }finally{
+      setPublishing(false);
+      window.setTimeout(()=>setSavedMsg(''),4000);
+    }
+  };
+
+  const openDelete=(index:number)=>{
+    if(localDraftConflict) return;
+    if(!currentScreenSaved){warnUnsavedScreen();return;}
+    setDeleteIdx(index);
+    setConfirmText('');
+  };
+
+  const confirmDelete=()=>{
+    if(deleteIdx===null||confirmText!=='EXCLUIR') return;
+    const deleting=steps[deleteIdx];
+    if(!deleting||isProtectedStructuralStep(deleting)){
+      setDeleteIdx(null);
+      setConfirmText('');
+      setPublishError('Esta tela é estrutural e não pode ser excluída.');
+      return;
+    }
+    const next=steps.filter((_,i)=>i!==deleteIdx);
+    const nextSelection=Math.max(0,Math.min(sel>deleteIdx?sel-1:sel,next.length-1));
+    try{
+      const revision=saveLocalDraft(surveySlug,next,baseVersion,localRevision);
+      setLocalRevision(revision);
+      setSteps(next);
+      setSavedDraft(next);
+      setLocalDraftExists(true);
+      setSel(nextSelection);
+      setDeleteIdx(null);
+      setConfirmText('');
+      if(!versionConflict) setPublishError('');
+      setSavedMsg('Tela removida e rascunho salvo neste navegador ✓');
+      window.setTimeout(()=>setSavedMsg(''),3500);
+    }catch{
+      setDeleteIdx(null);
+      setConfirmText('');
+      setLocalDraftConflict(true);
+      setPublishError('Outra aba alterou este rascunho. A exclusão não foi aplicada para evitar perda de trabalho. Recarregue o Builder.');
+    }
+  };
+
+  if(loading) return <p className="muted">Carregando versão publicada e rascunho local...</p>;
+  if(!step) return <p className="muted">Não foi possível carregar o formulário.</p>;
+
+  const intro=step.kind==='intro'?introData(step):null;
+  const insight=step.kind==='insight'?insightSource(step):null;
+  const questionHasScores=step.kind==='question'&&step.options.some(option=>typeof option.score==='number');
+
+  return <>
+    <header className="page-head">
+      <div><div className="crumb">Formulários › {surveySlug} › versão {baseVersion}</div><h1>Editor do diagnóstico</h1></div>
+      <div className="head-actions">
+        {hasUnsavedChanges&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>Edição ainda não salva</span>}
+        {!hasUnsavedChanges&&localDraftExists&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>Rascunho salvo neste navegador ✓</span>}
+        {savedMsg&&<span className="conn ok" style={{alignSelf:'center',marginRight:8}}>{savedMsg}</span>}
+        {publishError&&<span className="save-error" style={{alignSelf:'center',marginRight:8,padding:'6px 10px'}}>{publishError}</span>}
+        {localDraftConflict&&<button className="btn" onClick={()=>window.location.reload()}>Recarregar rascunho</button>}
+        {versionConflict&&!localDraftConflict&&<button className="btn" onClick={reloadPublished}>Usar versão publicada</button>}
+        <a className="btn" href={`/d/${surveySlug}`} target="_blank" rel="noreferrer">Ver versão pública</a>
+        <button className="btn dark" onClick={publish} disabled={publishing||versionConflict||localDraftConflict}>{publishing?'Publicando...':'Publicar'}</button>
+      </div>
+    </header>
+
+    <p className="muted" style={{margin:'-10px 0 18px'}}>Cada <b>Salvar edição desta tela</b> guarda o rascunho somente neste navegador. Se houver uma edição ainda não salva, o Builder impede a troca de tela para evitar perda acidental. Duas abas não podem mais sobrescrever silenciosamente o mesmo rascunho. <b>Publicar</b> valida o formulário, grava uma nova versão no Supabase e só então atualiza a página pública.</p>
+
+    <div className="builder-grid" style={{gridTemplateColumns:`${flowWidth}px 12px minmax(300px,1fr) 12px ${propsWidth}px`}}>
+      <section className="steps-panel">
+        <div className="steps-title">Fluxo <span>{steps.length} telas</span></div>
+        <div className="steps-list">
+          {steps.map((s,i)=>{
+            const reorderable=canReorderStep(s);
+            const deletable=!isProtectedStructuralStep(s);
+            const duplicable=canDuplicateStep(s);
+            const dropClass=dropTarget?.id===s.id?`builder-step-drop-${dropTarget.position}`:'';
+            return <div key={s.id} className={`step-item ${i===sel?'active':''} ${draggedStepId===s.id?'builder-step-dragging':''} ${dropClass}`} onDragOver={e=>dragOverStep(s,e)} onDrop={e=>dropStep(s,e)} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+              <span className={`builder-step-handle ${reorderable?'':'locked'}`} draggable={reorderable} onDragStart={e=>startStepDrag(s,e)} onDragEnd={()=>{setDraggedStepId(null);setDropTarget(null);}} onClick={e=>e.stopPropagation()} title={reorderable?'Arraste para mudar a ordem':'Esta tela tem posição protegida'}><GripVertical size={16}/></span>
+              <span onClick={()=>requestSelect(i)} style={{display:'flex',alignItems:'center',gap:10,flex:1,minWidth:0}}>
+                <span className="step-num">{i+1}</span>
+                <div style={{minWidth:0}}><b>{labelFor(s)}</b><small>{s.kind}</small></div>
+              </span>
+              {duplicable&&<button className="btn" title="Duplicar esta tela" onClick={e=>{e.stopPropagation();duplicateScreen(s,i);}} style={{padding:'6px 8px'}}><Copy size={15}/></button>}
+              {deletable&&<button className="btn" title="Excluir esta tela" onClick={e=>{e.stopPropagation();openDelete(i);}} style={{padding:'6px 8px',color:'#a93434',borderColor:'#f0d4d4'}}><Trash2 size={15}/></button>}
+            </div>;
+          })}
+        </div>
+        <div className="builder-add-screen-wrap">
+          <button className="btn builder-add-screen" onClick={()=>{if(localDraftConflict)return;if(!currentScreenSaved){warnUnsavedScreen();return;}setAddOpen(true);}}><Plus size={16}/> Adicionar tela</button>
+          <small>Arraste pelo ícone ⋮⋮ para reordenar. Telas estruturais são protegidas e a publicação é validada antes de chegar ao público.</small>
+        </div>
+      </section>
+
+      <div className="panel-resizer" role="separator" onPointerDown={e=>startResize('flow',e)}><span/></div>
+
+      <section className="builder-canvas">
+        <div className="canvas-phone">
+          <div className="mini-progress"><span style={{width:`${Math.round(((sel+1)/steps.length)*100)}%`}}/></div>
+          <div className="canvas-inner">
+            {step.kind==='question'&&<><h2>{step.title}</h2>{step.subtitle&&<p style={{textAlign:'center',color:'#7a8b9c',marginTop:-8}}>{step.subtitle}</p>}{step.options.map(o=><div className="option-card" key={o.value}>{o.emoji?`${o.emoji} `:''}{o.label}</div>)}</>}
+            {step.kind==='insight'&&<>{insight?.imageUrl&&!insight.hideImage&&<ImagePreview src={insight.imageUrl} alt="Imagem da tela de contexto"/>}<h2>{step.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>{step.body}</p>{step.stat&&<div className="option-card"><b>{step.stat}</b></div>}</>}
+            {step.kind==='intro'&&intro&&<div className="builder-intro-preview"><div className="builder-certificate-image-wrap"><img src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Imagem da tela inicial"/></div><h2>{step.title}</h2><p className="builder-intro-question">{intro.text}</p><div className="builder-intro-choices"><div>Sim <span>→</span></div><div>Não <span>→</span></div></div></div>}
+            {step.kind==='branch'&&<>{step.imageUrl&&<ImagePreview src={step.imageUrl} alt="Imagem da resposta condicional"/>}<h2>{Object.values(step.variants)[0]?.title}</h2><p style={{textAlign:'center',color:'#7a8b9c'}}>Varia conforme a resposta anterior</p></>}
+            {(step.kind==='email'||step.kind==='name'||step.kind==='processing')&&<h2>{step.title}</h2>}
+            {step.kind==='result'&&<p style={{textAlign:'center',color:'#7a8b9c'}}>Tela de resultado composta a partir das respostas.</p>}
+          </div>
+        </div>
+      </section>
+
+      <div className="panel-resizer" role="separator" onPointerDown={e=>startResize('props',e)}><span/></div>
+
+      <aside className="props-panel">
+        <h3>Propriedades</h3>
+
+        {step.kind==='question'&&<>
+          <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
+          <label>Subtítulo</label><textarea value={step.subtitle||''} onChange={e=>update({subtitle:e.target.value} as Partial<Step>)}/>
+          <label>Tipo</label><select value={step.input} onChange={e=>changeQuestionType(e.target.value as 'single'|'multi'|'scale')}><option value="single">Escolha única</option><option value="multi">Múltipla escolha</option><option value="scale">Escala</option></select>
+          <label>Dimensão / categoria</label><input value={step.dimension||''} placeholder="Ex.: planejamento" onChange={e=>update({dimension:e.target.value.trim()||undefined} as Partial<Step>)}/>
+          {step.input==='single'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:14}}><small className="muted">{questionHasScores?'Esta pergunta participa da pontuação.':'Esta pergunta não altera o score.'}</small><button className="btn" onClick={toggleScoring}>{questionHasScores?'Remover pontuação':'Ativar pontuação'}</button></div>}
+          {step.input==='scale'&&<small className="muted" style={{display:'block',marginTop:12}}>Escalas exigem score em todas as alternativas. A publicação é bloqueada se algum score estiver vazio.</small>}
+          <label>Opções</label>
+          {step.options.map((o,i)=><div key={`${o.value}-${i}`} style={{display:'grid',gridTemplateColumns:step.input!=='multi'&&(questionHasScores||step.input==='scale')?'42px minmax(0,1fr) 76px 38px':'42px minmax(0,1fr) 38px',gap:6,marginBottom:6}}><input style={{width:'100%'}} value={o.emoji||''} placeholder="🙂" onChange={e=>updateOption(i,{emoji:e.target.value})}/><input style={{width:'100%'}} value={o.label} onChange={e=>updateOption(i,{label:e.target.value})}/>{step.input!=='multi'&&(questionHasScores||step.input==='scale')&&<input type="number" step="any" title="Score desta alternativa" value={o.score??''} placeholder="score" onChange={e=>updateOption(i,{score:e.target.value===''?undefined:Number(e.target.value)})}/>}<button className="btn" onClick={()=>removeOption(i)} title="Remover opção">✕</button></div>)}
+          <button className="btn" onClick={addOption}>+ Adicionar opção</button>
+        </>}
+
+        {step.kind==='insight'&&insight&&<>
+          <label>Categoria (eyebrow)</label><textarea value={step.eyebrow||''} onChange={e=>update({eyebrow:e.target.value} as Partial<Step>)}/>
+          <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
+          <label>Texto</label><textarea value={step.body} onChange={e=>update({body:e.target.value} as Partial<Step>)}/>
+          <label>Destaque (stat)</label><textarea value={step.stat||''} onChange={e=>update({stat:e.target.value} as Partial<Step>)}/>
+          <label>Imagem desta tela</label>
+            <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadScreenImage} disabled={imageUploading} style={{display:'none'}}/>
+              {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
+            </label>
+            <small className="muted" style={{display:'block',margin:'0 0 10px'}}>PNG, JPG ou WebP, até 5 MB. A nova imagem substitui a imagem atual desta tela.</small>
+            {imageUploadError&&<div className="save-error" style={{marginBottom:10,padding:'8px 10px'}}>{imageUploadError}</div>}
+          <label>URL da imagem</label><input type="url" value={insight.imageUrl} placeholder="https://.../imagem.webp" onChange={e=>update({source:composeInsightSource(insight.text,e.target.value,insight.hideImage)} as Partial<Step>)}/>
+          <label style={{display:'flex',alignItems:'center',gap:10,margin:'12px 0 14px',cursor:'pointer',fontWeight:600}}><input type="checkbox" checked={insight.hideImage} onChange={e=>update({source:composeInsightSource(insight.text,insight.imageUrl,e.target.checked)} as Partial<Step>)} style={{width:18,height:18,margin:0,flex:'0 0 auto'}}/><span>Ocultar imagem nesta tela</span></label>
+          {insight.hideImage&&<small className="muted" style={{display:'block',margin:'-6px 0 12px'}}>A imagem continua configurada, mas não aparecerá no diagnóstico público.</small>}
+          <ImagePreview src={insight.imageUrl} alt="Prévia da imagem da tela de contexto"/>
+          <label>Fonte</label><textarea value={insight.text} onChange={e=>update({source:composeInsightSource(e.target.value,insight.imageUrl,insight.hideImage)} as Partial<Step>)}/>
+        </>}
+
+        {step.kind==='intro'&&intro&&<>
+          <label>Título</label><textarea value={step.title} onChange={e=>update({title:e.target.value} as Partial<Step>)}/>
+          <label>Pergunta</label><textarea value={intro.text} onChange={e=>update({body:composeMarked(e.target.value,intro.imageUrl,'QF_INTRO_IMAGE')} as Partial<Step>)}/>
+          <label>Imagem da abertura</label>
+          <label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',cursor:imageUploading?'wait':'pointer',marginBottom:8}}>
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadScreenImage} disabled={imageUploading} style={{display:'none'}}/>
+            {imageUploading?'Enviando imagem...':'Enviar nova imagem'}
+          </label>
+          <small className="muted" style={{display:'block',marginBottom:10}}>PNG, JPG ou WebP, até 5 MB. Salve esta tela e publique para atualizar o público.</small>
+          {imageUploadError&&<div className="save-error" style={{marginBottom:10,padding:'8px 10px'}}>{imageUploadError}</div>}
+          <label>URL da imagem da Tela 1</label><input type="url" value={intro.imageUrl} placeholder="https://.../certificado.webp" onChange={e=>update({body:composeMarked(intro.text,e.target.value,'QF_INTRO_IMAGE')} as Partial<Step>)}/>
           <ImagePreview src={intro.imageUrl||INTRO_FALLBACK_IMAGE} alt="Prévia da imagem da Tela 1"/>
         </>}
 
