@@ -30,6 +30,7 @@ const MAX_PENDING_SUBMISSIONS = 10;
 
 function activeSurveySlug(fallback = 'gp-ia') {
   if (typeof window === 'undefined') return fallback;
+  if (window.location.pathname.replace(/\/$/,'') === '/d/ficha-aluno-workshop') return 'masterclass-21-novembro';
   const querySlug = new URLSearchParams(window.location.search).get('survey');
   if (querySlug) return querySlug;
   const match = window.location.pathname.match(/^\/(?:builder|d)\/([^/?#]+)/);

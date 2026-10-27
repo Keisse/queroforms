@@ -62,6 +62,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/dashboard/workshop-21-novembro" element={<WorkshopDashboard/>}/>
         <Route path="/workflows" element={<Admin><Placeholder title="Workflows"/></Admin>}/>
         <Route path="/settings" element={<Admin><Settings/></Admin>}/>
+        <Route path="/d/ficha-aluno-workshop" element={<CareerQuiz standalone/>}/>
         <Route path="/d/masterclass-21-novembro" element={<CareerQuiz/>}/>
         <Route path="/d/:slug" element={<PublicQuiz/>}/>
         <Route path="*" element={<NotFound/>}/>
