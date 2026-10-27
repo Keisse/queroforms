@@ -19,6 +19,7 @@ function readSteps(config: SurveyConfig | null | undefined, key: 'steps' | 'draf
 
 function resolveSurveySlug(fallback: string) {
   if (typeof window === 'undefined') return fallback;
+  if (window.location.pathname.replace(/\/$/,'') === '/d/ficha-aluno-workshop') return 'masterclass-21-novembro';
   const querySlug = new URLSearchParams(window.location.search).get('survey');
   if (querySlug) return querySlug;
   const match = window.location.pathname.match(/^\/(?:builder|d)\/([^/?#]+)/);
