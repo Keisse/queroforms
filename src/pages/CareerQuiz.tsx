@@ -44,7 +44,7 @@ export default function CareerQuiz({standalone=false}:{standalone?:boolean}){
  return <div className="career-quiz thanks-page"><div className="wrap"><section className="thanks-hero" aria-labelledby="thanks-title">
  <p className="thanks-confirmation">Sua inscrição no Workshop Gestor de projetos de alto valor com IA está quase completa.</p>
  <h1 id="thanks-title" className="thanks-title">Assista ao vídeo abaixo e veja os próximos passos para garantir que sua experiência no Workshop Gestor de projetos de alto valor com IA, seja completa</h1>
- <div className="thanks-video" role="img" aria-label="Espaço reservado ao vídeo de boas-vindas"><span>Vídeo de boas-vindas</span></div>
+ <div className="thanks-video" style={{overflow:'hidden'}}><iframe src="https://www.youtube-nocookie.com/embed/rQbXzPPYELk" title="Boas-vindas ao Workshop Gestor de projetos de alto valor com IA" style={{width:'100%',height:'100%',border:0,display:'block'}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div>
  <div className="thanks-information"><p>Todas as informações sobre o workshop, incluindo o link de acesso e as orientações para participar, serão enviadas para o e-mail informado na compra. Confira também as pastas de Spam e Promoções.</p>
  <div className="thanks-date"><strong>21 de novembro de 2026 · Das 9h às 17h</strong><span>Online e ao vivo · Horário de Brasília</span></div>
  <p>Caso não tenha adquirido a gravação, recomendamos que <a href="https://chk.eduzz.com/auegcwdx?u=1" target="_blank" rel="noopener noreferrer">clique aqui para garantir seu acesso vitalício</a>. Contamos com sua presença no evento ao vivo!</p></div>
