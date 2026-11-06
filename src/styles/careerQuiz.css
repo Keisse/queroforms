@@ -176,3 +176,13 @@
  .career-quiz.student-sheet-page .student-sheet-intro>p:not(.eyebrow){font-size:14px;margin:10px 0}
  .career-quiz.student-sheet-page .student-sheet-date{margin-top:14px}
 }
+
+/* WhatsApp comes first; the student sheet is the second preparation step. */
+.career-quiz.thanks-page .thanks-steps-group-first .thanks-group{border-top:0;border-bottom:1px solid #dce5ed;padding:0 0 36px;margin:0 0 36px;align-items:center}
+.career-quiz.thanks-page .thanks-steps-group-first .thanks-group>.cta{align-self:center;margin-top:0}
+.career-quiz.thanks-page .thanks-steps-group-first .thanks-group>.cta::before,
+.career-quiz.thanks-page .thanks-steps-group-first .thanks-group>.cta::after{content:none}
+.career-quiz.thanks-page .thanks-steps-group-first main.thanks-form-row{padding-bottom:0}
+@media(max-width:800px){
+ .career-quiz.thanks-page .thanks-steps-group-first .thanks-group{padding-bottom:28px;margin-bottom:28px}
+}
