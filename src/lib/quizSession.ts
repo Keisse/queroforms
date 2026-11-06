@@ -10,6 +10,7 @@ export type QuizProgress = {
   answers: QuizAnswers;
   email: string;
   name: string;
+  phone?: string;
   attemptId: string;
   updatedAt: string;
 };
@@ -70,6 +71,7 @@ export function readQuizProgress(): QuizProgress | null {
     answers: progress.answers as QuizAnswers,
     email: String(progress.email || ''),
     name: String(progress.name || ''),
+    phone: String(progress.phone || ''),
     attemptId: String(progress.attemptId),
     updatedAt: String(progress.updatedAt || ''),
   };

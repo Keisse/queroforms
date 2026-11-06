@@ -88,7 +88,7 @@ function exportCsv(rows: Submission[], versions: Record<number, Step[]>, slug='g
   }
 
   const header = [
-    'Data', 'Nome', 'E-mail', ...(career?[]:['Score','Nível']), 'Versão', 'Origem', 'UTM Source', 'UTM Medium', 'UTM Campaign',
+    'Data', 'Nome', 'E-mail', 'Telefone', ...(career?[]:['Score','Nível']), 'Versão', 'Origem', 'UTM Source', 'UTM Medium', 'UTM Campaign',
     ...questionIds.map(id => questionLabels[id] || id),
   ];
 
@@ -99,6 +99,7 @@ function exportCsv(rows: Submission[], versions: Record<number, Step[]>, slug='g
       formatDate(submission.created_at),
       submission.name || '',
       submission.email || '',
+      submission.phone || '',
       ...(career?[]:[submission.score ?? '',levelNames[submission.level || 0] || submission.level || '']),
       submission.survey_version,
       submission.source || '',
@@ -185,7 +186,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return rows.filter(row => {
-      const matchesSearch = !term || [row.name, row.email, row.source].some(value => String(value || '').toLowerCase().includes(term));
+      const matchesSearch = !term || [row.name, row.email, row.phone, row.source].some(value => String(value || '').toLowerCase().includes(term));
       const matchesLevel = levelFilter === 'all' || String(row.level) === levelFilter;
       return matchesSearch && matchesLevel;
     });
@@ -336,7 +337,7 @@ export default function Analytics({ embedded = false, view, onOpenResponses }: A
 
     {selected && <div className="response-drawer-backdrop" onMouseDown={() => setSelected(null)}>
       <aside className="response-drawer" onMouseDown={event => event.stopPropagation()}>
-        <div className="drawer-head"><div><small>Resposta individual · versão {selected.survey_version}</small><h2>{selected.name || 'Sem nome'}</h2><p>{selected.email || 'Sem e-mail'}</p></div><button onClick={() => setSelected(null)} aria-label="Fechar"><X size={20}/></button></div>
+        <div className="drawer-head"><div><small>Resposta individual · versão {selected.survey_version}</small><h2>{selected.name || 'Sem nome'}</h2><p>{selected.email || 'Sem e-mail'}</p>{selected.phone&&<p>Telefone: {selected.phone}</p>}</div><button onClick={() => setSelected(null)} aria-label="Fechar"><X size={20}/></button></div>
         <div className="drawer-kpis">{!isWorkshop&&<><div><span>Score</span><b>{selected.score ?? '—'}%</b></div><div><span>Nível</span><b>{(surveySlug==='gp-ia'?levelNames[selected.level || 0]:`Nível ${selected.level || '—'}`) || '—'}</b></div></>}<div><span>Origem</span><b>{selected.source || 'direct'}</b></div></div>
         <div className="drawer-meta"><span>Respondido em {formatDate(selected.created_at)}</span>{selected.utm_campaign && <span>Campanha: {selected.utm_campaign}</span>}</div>
         <button

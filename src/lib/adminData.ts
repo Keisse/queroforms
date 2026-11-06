@@ -8,6 +8,7 @@ export type Submission = {
   attempt_id: string;
   name: string | null;
   email: string | null;
+  phone?: string | null;
   score: number | null;
   level: number | null;
   dimension_scores: Record<string, number> | null;
@@ -54,7 +55,7 @@ function requestedSurveySlug(fallback: string) {
   return match?.[1] ? decodeURIComponent(match[1]) : fallback;
 }
 
-const submissionSelect = 'id,survey_slug,survey_version,attempt_id,name,email,score,level,dimension_scores,answers,source,utm_source,utm_medium,utm_campaign,utm_content,utm_term,landing_url,referrer,created_at';
+const submissionSelect = 'id,survey_slug,survey_version,attempt_id,name,email,phone,score,level,dimension_scores,answers,source,utm_source,utm_medium,utm_campaign,utm_content,utm_term,landing_url,referrer,created_at';
 
 export async function fetchSubmissions(slug = 'gp-ia', limit = 2000): Promise<SubmissionSnapshot> {
   const resolvedSlug = requestedSurveySlug(slug);
